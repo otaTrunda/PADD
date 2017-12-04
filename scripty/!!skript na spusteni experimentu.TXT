@@ -1,0 +1,46 @@
+for i in `seq 0 37`; do echo $i; ssh u-pl$i "killall screen"; done
+
+
+
+
+for i in `seq 0 19`; do echo $i; ssh u-pl$i "./spust.sh"; done
+
+
+
+
+
+for i in `seq 1 37`; do echo $i; ssh u-pl$i "./spust.sh $i"; done
+
+
+
+
+
+
+
+
+for i in `seq 0 19`; do echo $i; ssh u-pl$i "./spust.sh"; done
+
+
+
+
+
+
+
+pocitace 
+lab:
+
+u-pl1 — u-pl20 - silne
+
+u-pl21 — u-pl37 - trochu slabsi
+
+
+u2-0 — u2-25 - silne, ucebna SU2
+
+u1-0 — u1-14 - trochu slabsi,ucebna SU1
+
+
+SU2:
+
+
+
+for i in `seq 1 7`; do echo $i; ssh u2-$i "./spust_2.sh $i"; done

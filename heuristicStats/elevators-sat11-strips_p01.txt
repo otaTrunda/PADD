@@ -1,0 +1,8 @@
+realDistance	heuristic	count
+0	0	810000
+1	1	321725
+--- end of histogram ---
+realDistance	heuristic	count
+0	0	810000
+1	1	321725
+--- end of histogram ---

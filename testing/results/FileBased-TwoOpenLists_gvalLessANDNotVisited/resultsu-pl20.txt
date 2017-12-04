@@ -1,0 +1,1 @@
+0;0;blocks;probBLOCKS-4-2.sas;Multiple open lists A*+Wintelect Red-Black Tree Heap;Fast Forward heuristic;0;45;True;6;0;13.4615384615385;

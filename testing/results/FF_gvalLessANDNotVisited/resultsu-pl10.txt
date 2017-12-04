@@ -1,0 +1,2 @@
+0;0;blocks;probBLOCKS-13-1.sas;A*+Wintelect Red-Black Tree Heap;Fast Forward heuristic;1800;2155948;False;-1;19;47.3619334682742;
+0;0;blocks;probBLOCKS-8-0.sas;A*+Wintelect Red-Black Tree Heap;Fast Forward heuristic;1;5789;True;36;0;29.513078470825;

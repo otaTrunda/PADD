@@ -1,0 +1,2 @@
+0;0;blocks;probBLOCKS-15-1.sas;A*+Wintelect Red-Black Tree Heap;Neural net heuristic;1800;2211952;False;-1;2;4.46219769332543;
+0;0;blocks;probBLOCKS-9-1.sas;A*+Wintelect Red-Black Tree Heap;Neural net heuristic;1800;4615400;False;-1;2;3.64994352974796;

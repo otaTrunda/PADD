@@ -1,0 +1,19 @@
+realDistance	heuristic	count
+0	0	10816
+1	1	70304
+2	2	297440
+3	3	1074164
+4	3	666
+4	4	19774
+--- end of histogram ---
+realDistance	heuristic	count
+0	0	10816
+1	1	70304
+2	2	102752
+2	1	194688
+3	2	778752
+3	1	295412
+4	3	1332
+4	2	17915
+4	1	1193
+--- end of histogram ---
