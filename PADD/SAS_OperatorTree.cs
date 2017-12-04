@@ -147,6 +147,7 @@ namespace PADD
         public SASOperatorApplicableSelector(SASMutexGroups mutexGroups)
         {
             mutexManager = new SASMutexManager(mutexGroups);
+			this.retList = new List<Successor>();			
         }
 
         /// <summary>
@@ -160,8 +161,9 @@ namespace PADD
         public Successors GetApplicableOperators(SASState referState, ISASOperatorTreeNode treeNode, int inputOperTrigger, int operatorsToReturn)
         {
             refState = referState;
-            retList = new List<Successor>();
-            inputTrigger = inputOperTrigger;
+			retList.Clear();
+			//retList = new List<Successor>();
+			inputTrigger = inputOperTrigger;
             numOfOperatorsToReturn = operatorsToReturn;
 
             mutexManager.SetReferenceStateLocks(refState);
