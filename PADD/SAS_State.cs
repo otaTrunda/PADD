@@ -443,4 +443,30 @@ namespace PADD
             return ArrayEqualityComparer.comparer.Equals(stateValues, s.stateValues);
         }
     }
+
+	/// <summary>
+	/// Extension of SAS state, where variables are allowed to have another value: a wild card (-1), that indicates, that the value might be arbitrary. Is used in backward planning.
+	/// </summary>
+	public class RelativeState : SASState
+	{
+		public RelativeState(SASProblem problem, int[] values) : base(problem, values)
+		{
+		}
+
+		/// <summary>
+		/// If wild card is present, then this method returns FALSE!! I.e. Wild card is not considered "any value" in this test. The reason is that this method is called when deciding backwards applicability, 
+		/// and if operator is applied, the value of its effect can not be wildcard.
+		/// </summary>
+		/// <param name="variable"></param>
+		/// <param name="value"></param>
+		/// <returns></returns>
+		public override bool HasValue(int variable, int value)
+		{
+			throw new Exception();
+			{
+				//this should not be called at all
+			}
+			//return stateValues[variable] == value;
+		}
+	}
 }

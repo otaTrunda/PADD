@@ -34,16 +34,19 @@ namespace PADD
 		public static IEnumerable<StateDistanceResult> enumerateAllStatesWithDistances(IPlanningProblem p)
 		{
 			StateSpaceEnumeratorInternal e = new StateSpaceEnumeratorInternal(p, new BlindHeuristic());
-			foreach (var item in e.Enumerate())
+			foreach (var item in e.EnumerateNEW())
+			//foreach (var item in e.Enumerate())
 			{
 				yield return item;
 			}
 
+			/*
 			if (e.searchStatus == SearchStatus.MemoryLimitExceeded || e.searchStatus == SearchStatus.TimeLimitExceeded)
 				foreach (var item in e.enumerateByRandomWalks(10000, 200))
 				{
 					yield return item;
 				}
+			*/
 		}
 
 		public static IEnumerable<IState> getAllStatesMeetingConditions(Dictionary<int, int> conditions, SASProblem domain)
@@ -319,6 +322,179 @@ namespace PADD
 				}
 			}
 
+			/// <summary>
+			/// Uses backward planning for enumeration. Does not iterate through all goal states. Search is preformed on meta-states that use wildcards.
+			/// </summary>
+			/// <param name="quiet"></param>
+			/// <returns></returns>
+			public IEnumerable<StateDistanceResult> EnumerateNEW(bool quiet = false)
+			{
+				fillGvalues(quiet);
+				return sampleFromGValues(quiet);
+			}
+
+			/// <summary>
+				/// Uses backward planning for enumeration. Does not iterate through all goal states. Search is preformed on meta-states that use wildcards.
+				/// </summary>
+				/// <param name="quiet"></param>
+				/// <returns></returns>
+			private void fillGvalues(bool quiet = false)
+			{
+				var sasProblem = (SASProblem)this.problem;
+				gValues = new Dictionary<IState, StateInformation>();
+				searchStatus = SearchStatus.InProgress;
+				predecessor = new Dictionary<IState, IState>();
+				PrintMessage("Enumeration started. Problem: " + problem.GetProblemName(), quiet);
+				if (!stopwatch.IsRunning)
+					stopwatch.Start();
+
+				IState goalState = getRelativeGoalState();
+				openNodes.insert(0, goalState);
+				predecessor.Add(goalState, null);
+
+				int steps = -1;
+				while (openNodes.size() > 0)
+				{
+					steps++;
+
+					if (stopwatch.Elapsed > timeLimit)
+					{
+						PrintMessage("Enumeration ended - time limit exceeded.", quiet);
+						stopwatch.Stop();
+						searchTime = stopwatch.Elapsed;
+						PrintMessage("Enumeration ended in " + searchTime.TotalSeconds + " seconds", quiet);
+						printSearchStats(quiet);
+						searchStatus = SearchStatus.TimeLimitExceeded;
+						setSearchResults();
+						return;
+					}
+
+					if (gValues.Count > memoryLimit)
+					{
+						PrintMessage("Enumeration ended - memory limit exceeded.", quiet);
+						stopwatch.Stop();
+						searchTime = stopwatch.Elapsed;
+						PrintMessage("Enumeration ended in " + searchTime.TotalSeconds + " seconds", quiet);
+						printSearchStats(quiet);
+						searchStatus = SearchStatus.MemoryLimitExceeded;
+						setSearchResults();
+						return;
+					}
+
+					IState currentState = openNodes.removeMin();
+					if (gValues[currentState].isClosed)
+						continue;
+					addToClosedList(currentState);
+					int currentGValue = gValues[currentState].gValue;
+
+					var backwardSuccessors = sasProblem.GetPredecessorsRelative(currentState);
+					foreach (var succ in backwardSuccessors)
+					{
+						if (stopwatch.Elapsed > timeLimit)
+						{
+							PrintMessage("Enumeration ended - time limit exceeded.", quiet);
+							stopwatch.Stop();
+							searchTime = stopwatch.Elapsed;
+							PrintMessage("enumeration ended in " + searchTime.TotalSeconds + " seconds", quiet);
+							printSearchStats(quiet);
+							searchStatus = SearchStatus.TimeLimitExceeded;
+							setSearchResults();
+							return;
+						}
+
+						IState state = succ.GetPredecessorState();
+
+						int gVal = currentGValue + succ.GetOperator().GetCost();
+						try
+						{
+							addToOpenList(state, gVal, currentState);
+						}
+						catch (OutOfMemoryException)
+						{
+							PrintMessage("Enumeration ended - memory limit exceeded.", quiet);
+							stopwatch.Stop();
+							searchTime = stopwatch.Elapsed;
+							PrintMessage("enumeration ended in " + searchTime.TotalSeconds + " seconds", quiet);
+							printSearchStats(quiet);
+							searchStatus = SearchStatus.MemoryLimitExceeded;
+							setSearchResults();
+							return;
+						}
+
+					}
+				}
+				PrintMessage("All states has been enumerated.", quiet);
+				printSearchStats(quiet);
+				if (searchStatus == SearchStatus.InProgress)
+					searchStatus = SearchStatus.NoSolutionExist;
+				setSearchResults();
+				return;
+			}
+
+			/// <summary>
+			/// Now that the GValues for relative states have been computed, we sample some of stored relative states. Relative states will most likely describe several "ground" states (i.e. will contain wildcards).
+			/// During the sampling, a ground state is created by substituting wildcards by random ground values. Furthermore, the ground state's real G-Val might not be the same as its "parent's" g-val, because the same
+			/// ground state might match several relative states. Therefore it is necessary to find all relative states that this ground state matches and take minimum from their g-vals.
+			/// To do that a specialized data structure is used, and gVals from the dictionary are transformed into this structure.
+			/// The special structure is decission tree that allows to quickly find all relative states that match given ground state.
+			/// 
+			/// We create one sample for every relative state stored.
+			/// 
+			/// Currently, only the g-val from "parrent" is used, that might over-estimate the real g-value. To be improved later.. TODO
+			/// </summary>
+			/// <param name="quiet"></param>
+			/// <returns></returns>
+			private IEnumerable<StateDistanceResult> sampleFromGValues(bool quiet = false)
+			{
+				Random r = new Random();
+				SASProblem sASProblem = (SASProblem)problem;
+				SASState initialState = (SASState)problem.GetInitialState();
+				foreach (var relativeStateKeyValuePair in gValues)
+				{
+					RelativeState s = (RelativeState)relativeStateKeyValuePair.Key;
+					int gVal = relativeStateKeyValuePair.Value.gValue;
+					for (int i = 0; i < sASProblem.GetVariablesCount(); i++)
+					{
+						if (s.GetValue(i) != -1)
+							continue;   //already fixed variables will not be modified.
+						if (sASProblem.isRigid(i))
+						{
+							s.SetValue(i, initialState.GetValue(i));    //rigid variables (that are never changed by any operator) has to take the same value as in the initial state.
+							continue;
+						}
+						//this variable is not fixed, neither is it rigid, we assign it a random value from its range
+						s.SetValue(i, r.Next(sASProblem.GetVariableDomainRange(i)));
+					}
+					//now all variables are set (there are no more wildcards)
+
+					//there should be fingind ALL matching relative states here, and taking minimum of their gvalues! TODO
+					yield return new StateDistanceResult(s, gVal);
+				}
+			}
+
+			private IState getRelativeGoalState()
+			{
+				var sasProblem = (SASProblem)problem;
+				int[] values = new int[sasProblem.GetVariablesCount()];
+				for (int i = 0; i < values.Length; i++)
+				{
+					values[i] = -1;	//everything is wildcard unless told differently
+				}
+				foreach (var item in sasProblem.GetGoalConditions())
+				{
+					values[item.variable] = item.value;
+				}
+
+				RelativeState s = new RelativeState(sasProblem, values);
+				return s;
+			}
+
+			/// <summary>
+			/// Enumerates all goal states and then runs a standard BFS with reversed operators. Migh fail when there are too many goal states. Method EnumerateNEW should be used instead.
+			/// </summary>
+			/// <param name="quiet"></param>
+			/// <returns></returns>
+			[Obsolete]
 			public IEnumerable<StateDistanceResult> Enumerate(bool quiet = false)
 			{
 				int maxGoalStates = 1000000;

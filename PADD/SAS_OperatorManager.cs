@@ -20,6 +20,11 @@ namespace PADD
         /// </summary>
         private List<SASOperator> operatorsList;
 
+		/// <summary>
+		/// Just a placeholder to avoid creating new object every time
+		/// </summary>
+		private List<Predecessor> predecessorPlaceHolder;
+
         /// <summary>
         /// Flag whether the metric (i.e. operator costs) is used in the SAS+ planning problem.
         /// </summary>
@@ -50,6 +55,7 @@ namespace PADD
             metricUsed = isMetricUsed;
             operatorDecisionTreeInst = null;
             substitTriggers = new Dictionary<SASState, int>();
+			predecessorPlaceHolder = new List<Predecessor>();
         }
 
         /// <summary>
@@ -205,7 +211,25 @@ namespace PADD
         {
             substitTriggers.Clear();
         }
-    }
+
+		/// <summary>
+		/// Returns all relative predecessors of given state. Predecessors are computed by fixing operator's preconditions. Other values might be arbitrary. RelativeStates are used here to denote a set of states.
+		/// </summary>
+		/// <param name="state"></param>
+		/// <returns></returns>
+		public Predecessors GetRelativePredecessors(IState state)
+		{
+			predecessorPlaceHolder.Clear();
+			foreach (var op in this.operatorsList)
+			{
+				var predecessor = op.ApplyBackwardsRelative(state);
+				if (predecessor == null)
+					continue;
+				predecessorPlaceHolder.Add(new Predecessor(predecessor, op));
+			}
+			return new Predecessors(predecessorPlaceHolder);
+		}
+	}
 
     /// <summary>
     /// Implementation of SAS+ operator decision tree.

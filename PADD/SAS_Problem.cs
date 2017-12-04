@@ -272,6 +272,16 @@ namespace PADD
             return operatorsManager.GetApplicableRelevantTransition((SASState)state);
         }
 
+		/// <summary>
+		/// Returns a set of RELATIVE predecessors to given state.
+		/// </summary>
+		/// <param name="state"></param>
+		/// <returns></returns>
+		public Predecessors GetPredecessorsRelative(IState state)
+		{
+			return operatorsManager.GetRelativePredecessors(state);
+		}
+
         /// <summary>
         /// Resets the triggers in transitions space - calling of getNextSuccessors and getNextPredecessors on any state will begin
         /// from the first available applicable grounded operator (the "history" of returned transitions is cleared).
@@ -522,5 +532,6 @@ namespace PADD
                 blackVariables.Add(i);
             }
         }
-    }
+
+	}
 }

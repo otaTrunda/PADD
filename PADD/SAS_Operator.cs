@@ -147,7 +147,7 @@ namespace PADD
         }
 
         /// <summary>
-        /// Applies the operator backwards to the given state. The result is a set of states (possible predecessors).
+        /// Applies the operator backwards to the given state. The result is a set of states (all possible predecessors).
         /// </summary>
         /// <param name="state">Reference state.</param>
         /// <returns>Possible predecessor states to the given state.</returns>
@@ -175,13 +175,15 @@ namespace PADD
 					return emptyPredecessorsList;
 			}
 
+#if DEBUG
 			//this only works if the operators don't have conditional effects
 			if (operatorEffects.Any(eff => eff.GetConditions().Count > 0))
 				throw new Exception();
+#endif
 
-			
 			var result = StateSpaceEnumerator.getAllStatesMeetingConditions(fixedVariables, this.parentProblem).ToList();
 
+#if DEBUG
 			foreach (var item in result)
 			{
 				if (!this.Apply(item).Equals(state))
@@ -189,11 +191,57 @@ namespace PADD
 					throw new Exception();
 				}
 			}
-
+#endif
 			return result;
 
 		}
-    }
+
+		/// <summary>
+		/// Returns a relative state that describes all predecessors of given state using this operator, i.e. all states, that when this operators is aplied to them, they yield given state. 
+		/// </summary>
+		/// <param name="state"></param>
+		/// <returns></returns>
+		public RelativeState ApplyBackwardsRelative(IState state)
+		{
+			RelativeState currentState = (RelativeState)state;
+
+			//checks backwards applicability and backwards relevance of operator
+			//operator must contribute to currently fixed variables - i.e. some variable in current state whose value is not wildcard must be in operators effects, AND
+			//operator's effects must not be in conflict with other fixed variables - i.e. for all variables in operator's effects, either in given state this variables has required value, or it has wildcard.
+			bool hasContributed = false;
+			foreach (var item in this.operatorEffects)
+			{
+				int variable = item.GetEff().variable;
+				int requiredVal = item.GetEff().value;
+				int presentVal = currentState.GetValue(variable);
+				if (presentVal == -1)
+					continue;   //wildcard = it is not a conflict but it doesn't contribute.
+				if (presentVal != requiredVal)
+					return null;    //this is a conflict, operator is not backward applicable to given state.
+				hasContributed = true; //this means that the value is the same as required and not a wildcard
+			}
+			if (!hasContributed)
+				return null;
+
+			//operator is backwards applicable, now we construct the result
+			//we only fix preconditions of the operator. (They don't need to hold in the effect, so we replace current values by preconditions even if the were already fixed!)
+
+			RelativeState result = (RelativeState)currentState.Clone();
+
+			foreach (var item in this.operatorPreconditions)
+			{
+				result.SetValue(item.variable, item.value);
+			}
+
+#if DEBUG
+			//this only works if operators don't have conditional effects
+			if (operatorEffects.Any(eff => eff.GetConditions().Count > 0))
+				throw new Exception();
+#endif
+			return result;
+		}
+
+	}
 
     /// <summary>
     /// Structure representing a simple variable-value pair.

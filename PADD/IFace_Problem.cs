@@ -83,5 +83,5 @@ namespace PADD
         /// from the first available applicable grounded operator (the "history" of returned transitions is cleared).
         /// </summary>
         void ResetTransitionsTriggers();
-    }
+	}
 }
