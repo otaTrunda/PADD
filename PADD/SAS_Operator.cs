@@ -12,6 +12,7 @@ namespace PADD
     public class SASOperator : IOperator
     {
 		private static List<IState> emptyPredecessorsList = new List<IState>();
+		private HashSet<int> hashSetPlaceholder = new HashSet<int>();
 
         /// <summary>
         /// Name of the operator.
@@ -204,14 +205,19 @@ namespace PADD
 		public RelativeState ApplyBackwardsRelative(IState state)
 		{
 			RelativeState currentState = (RelativeState)state;
+			hashSetPlaceholder.Clear();
 
 			//checks backwards applicability and backwards relevance of operator
 			//operator must contribute to currently fixed variables - i.e. some variable in current state whose value is not wildcard must be in operators effects, AND
 			//operator's effects must not be in conflict with other fixed variables - i.e. for all variables in operator's effects, either in given state this variables has required value, or it has wildcard.
+
+			//!! Operator also have hidden effects!!! : some variables might be present in its preconditions but not in effects. These variables, however, should be considered operator effect, 
+			//since they will have predetermined value after applying the operator.
 			bool hasContributed = false;
 			foreach (var item in this.operatorEffects)
 			{
 				int variable = item.GetEff().variable;
+				hashSetPlaceholder.Add(variable);	//collects all variables that are present in some effect
 				int requiredVal = item.GetEff().value;
 				int presentVal = currentState.GetValue(variable);
 				if (presentVal == -1)
@@ -223,10 +229,32 @@ namespace PADD
 			if (!hasContributed)
 				return null;
 
+			//now "hidden effects" are checked:
+			foreach (var item in this.operatorPreconditions)
+			{
+				int variable = item.variable;
+				if (!hashSetPlaceholder.Contains(variable)) //is hiddent effect
+				{
+					int requiredVal = item.value;
+					int presentVal = currentState.GetValue(variable);
+					if (presentVal == -1)
+						continue;   //wildcard = it is not a conflict
+					if (presentVal != requiredVal)
+						return null;  //this is a conflict, operator is not backward applicable to given state.
+				}
+			}
+
+
 			//operator is backwards applicable, now we construct the result
-			//we only fix preconditions of the operator. (They don't need to hold in the effect, so we replace current values by preconditions even if the were already fixed!)
+			//first, we replace effect variables by wildcards. Operator sets the variables, but in the predecessor their value might be arbitrary (unless they are in preconditions) so we no longer require that they hold the value.
+			//then we fix preconditions of the operator. (They don't need to hold in the effect, so we replace current values by preconditions even if the were already fixed!)
 
 			RelativeState result = (RelativeState)currentState.Clone();
+
+			foreach (var item in this.operatorEffects)
+			{
+				result.SetValue(item.GetEff().variable, -1);
+			}
 
 			foreach (var item in this.operatorPreconditions)
 			{

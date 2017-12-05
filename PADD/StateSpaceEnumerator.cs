@@ -33,20 +33,39 @@ namespace PADD
 		/// <returns></returns>
 		public static IEnumerable<StateDistanceResult> enumerateAllStatesWithDistances(IPlanningProblem p)
 		{
-			StateSpaceEnumeratorInternal e = new StateSpaceEnumeratorInternal(p, new BlindHeuristic());
-			foreach (var item in e.EnumerateNEW())
-			//foreach (var item in e.Enumerate())
-			{
-				yield return item;
-			}
+			bool useRelativeStates = true;
 
-			/*
-			if (e.searchStatus == SearchStatus.MemoryLimitExceeded || e.searchStatus == SearchStatus.TimeLimitExceeded)
-				foreach (var item in e.enumerateByRandomWalks(10000, 200))
+			StateSpaceEnumeratorInternal e = new StateSpaceEnumeratorInternal(p, new BlindHeuristic());
+
+			if (useRelativeStates)
+			{
+				foreach (var item in e.EnumerateNEW())
+				//foreach (var item in e.Enumerate())
 				{
 					yield return item;
 				}
-			*/
+
+
+				if (e.searchStatus == SearchStatus.MemoryLimitExceeded || e.searchStatus == SearchStatus.TimeLimitExceeded)
+					foreach (var item in e.enumerateByRandomWalks(10000, 200, true))
+					{
+						yield return item;
+					}
+			}
+			else
+			{
+				foreach (var item in e.Enumerate())
+				{
+					yield return item;
+				}
+
+
+				if (e.searchStatus == SearchStatus.MemoryLimitExceeded || e.searchStatus == SearchStatus.TimeLimitExceeded)
+					foreach (var item in e.enumerateByRandomWalks(10000, 200, false))
+					{
+						yield return item;
+					}
+			}
 		}
 
 		public static IEnumerable<IState> getAllStatesMeetingConditions(Dictionary<int, int> conditions, SASProblem domain)
@@ -61,6 +80,7 @@ namespace PADD
 			public IHeap<double, IState> openNodes;
 			protected Dictionary<IState, StateInformation> gValues;
 			protected Dictionary<IState, IState> predecessor;
+			protected Dictionary<IState, IOperator> predOperator = new Dictionary<IState, IOperator>();
 
 			protected double lengthShorteningCoeficient;
 
@@ -68,7 +88,7 @@ namespace PADD
 			public TimeSpan timeLimit = TimeSpan.FromHours(1);
 
 			//protected const long memoryLimit = 5000;
-            protected const long memoryLimit = 20000000;
+            protected const long memoryLimit = 200000;
 
             protected void addToClosedList(IState state)
 			{
@@ -100,13 +120,14 @@ namespace PADD
 				}
 			}
 
-			protected virtual void addToOpenList(IState s, int gValue, IState pred)
+			protected virtual void addToOpenList(IState s, int gValue, IState pred, IOperator op)
 			{
 				if (!gValues.ContainsKey(s))
 				{
 					//double hValue = heuristic.getValue(s);
 					gValues.Add(s, new StateInformation(gValue));
-					//predecessor.Add(s, pred);
+					predecessor.Add(s, pred);
+					predOperator.Add(s, op);
 					openNodes.insert(0, s);
 					return;
 				}
@@ -274,8 +295,10 @@ namespace PADD
 			/// </summary>
 			/// <param name="randomWalksCount"></param>
 			/// <returns></returns>
-			public IEnumerable<StateDistanceResult> enumerateByRandomWalks(int randomWalksCount, int walkMaxLength)
+			public IEnumerable<StateDistanceResult> enumerateByRandomWalks(int randomWalksCount, int walkMaxLength, bool relativeStatesUsed = false)
 			{
+				SASProblem sasProblem = (SASProblem)problem;
+				SASState initialState = (SASState)sasProblem.GetInitialState();
 				estimateShorteningCoeficient(randomWalksCount);
 				List<IState> initialStates = gValues.Where(kw => kw.Value.gValue == 0).Select(kw => kw.Key).ToList(),
 					predecessors = new List<IState>();
@@ -318,7 +341,11 @@ namespace PADD
 						currentState = selectedPred;
 					}
 					if (realWalkLength >= maxVisitedGVal)
-						yield return new StateDistanceResult(currentState, realWalkLength * lengthShorteningCoeficient);
+					{
+						if (!relativeStatesUsed)
+							yield return new StateDistanceResult(currentState, realWalkLength * lengthShorteningCoeficient);
+						yield return generateSample((RelativeState)currentState, realWalkLength * lengthShorteningCoeficient, r, sasProblem, initialState);
+					}
 				}
 			}
 
@@ -330,7 +357,36 @@ namespace PADD
 			public IEnumerable<StateDistanceResult> EnumerateNEW(bool quiet = false)
 			{
 				fillGvalues(quiet);
-				return sampleFromGValues(quiet);
+
+				var initialS = gValues.Keys.Where(state => ((SASState)state).GetAllValues().Zip(((SASState)(problem.GetInitialState())).GetAllValues(), (f, s) => f == s || f == -1 ? true : false).All(x => x));
+				if (initialS.Any())
+				{
+					Console.WriteLine("plan found. Length = " + gValues[initialS.First()].gValue);
+					Console.WriteLine("initial state:");
+					var pred = predecessor[initialS.First()];
+					var op = predOperator[initialS.First()];
+
+					Console.WriteLine(string.Join(" ", ((SASState)(problem.GetInitialState())).GetAllValues().Select(v => v >= 0 ? " " + v : v.ToString())));
+					Console.WriteLine(string.Join(" ", ((SASState)(initialS.First())).GetAllValues().Select(v => v >= 0 ? " " + v : v.ToString())));
+					while (pred != null)
+					{
+						Console.WriteLine(string.Join(" ", ((SASState)(pred)).GetAllValues().Select(v => v >= 0 ? " " + v : v.ToString())) + "\t" + op.GetOrderIndex());
+						if (pred != null && predOperator.ContainsKey(pred))
+							op = predOperator[pred];
+						pred = predecessor[pred];
+					}
+
+					Console.WriteLine();
+					Console.WriteLine("operators:");
+					int i = 1;
+					foreach (var item in ((SASProblem)problem).GetOperators())
+					{
+						Console.WriteLine(i++ + " " + string.Join(", ", item.GetPreconditions().Select(t => "var" + t.variable + " = " + t.value)) + " => "
+							+ string.Join(", ", item.GetEffects().Select(t => "var" + t.GetEff().variable + " = " + t.GetEff().value)));
+					}
+				}
+
+				return sampleFromGValues(memoryLimit, quiet);
 			}
 
 			/// <summary>
@@ -350,6 +406,7 @@ namespace PADD
 
 				IState goalState = getRelativeGoalState();
 				openNodes.insert(0, goalState);
+				gValues.Add(goalState, new StateInformation());
 				predecessor.Add(goalState, null);
 
 				int steps = -1;
@@ -407,7 +464,7 @@ namespace PADD
 						int gVal = currentGValue + succ.GetOperator().GetCost();
 						try
 						{
-							addToOpenList(state, gVal, currentState);
+							addToOpenList(state, gVal, currentState, succ.GetOperator());
 						}
 						catch (OutOfMemoryException)
 						{
@@ -438,38 +495,56 @@ namespace PADD
 			/// To do that a specialized data structure is used, and gVals from the dictionary are transformed into this structure.
 			/// The special structure is decission tree that allows to quickly find all relative states that match given ground state.
 			/// 
-			/// We create one sample for every relative state stored.
+			/// We create one sample for every relative state stored. And then some more, randomly, until required number of samples is reached.
 			/// 
 			/// Currently, only the g-val from "parrent" is used, that might over-estimate the real g-value. To be improved later.. TODO
 			/// </summary>
 			/// <param name="quiet"></param>
 			/// <returns></returns>
-			private IEnumerable<StateDistanceResult> sampleFromGValues(bool quiet = false)
+			private IEnumerable<StateDistanceResult> sampleFromGValues(long numberOfSamples, bool quiet = false)
 			{
 				Random r = new Random();
 				SASProblem sASProblem = (SASProblem)problem;
 				SASState initialState = (SASState)problem.GetInitialState();
+				int samplesGenerated = 0;
+				double samplesPerRelativeState = (double)numberOfSamples / gValues.Count;
+				double samplesToGenerate = 0;
+
 				foreach (var relativeStateKeyValuePair in gValues)
 				{
+					samplesToGenerate += samplesPerRelativeState;
 					RelativeState s = (RelativeState)relativeStateKeyValuePair.Key;
 					int gVal = relativeStateKeyValuePair.Value.gValue;
-					for (int i = 0; i < sASProblem.GetVariablesCount(); i++)
-					{
-						if (s.GetValue(i) != -1)
-							continue;   //already fixed variables will not be modified.
-						if (sASProblem.isRigid(i))
-						{
-							s.SetValue(i, initialState.GetValue(i));    //rigid variables (that are never changed by any operator) has to take the same value as in the initial state.
-							continue;
-						}
-						//this variable is not fixed, neither is it rigid, we assign it a random value from its range
-						s.SetValue(i, r.Next(sASProblem.GetVariableDomainRange(i)));
-					}
-					//now all variables are set (there are no more wildcards)
 
-					//there should be fingind ALL matching relative states here, and taking minimum of their gvalues! TODO
-					yield return new StateDistanceResult(s, gVal);
+					yield return generateSample(s, gVal, r, sASProblem, initialState);
+					samplesGenerated++;
+					while(samplesToGenerate > samplesGenerated)
+					{
+						yield return generateSample(s, gVal, r, sASProblem, initialState);
+						samplesGenerated++;
+					}
 				}
+			}
+
+			private StateDistanceResult generateSample(RelativeState state, double gVal, Random r, SASProblem sasProblem, SASState initialState)
+			{
+				RelativeState fixedState = (RelativeState)state.Clone();
+				for (int i = 0; i < sasProblem.GetVariablesCount(); i++)
+				{
+					if (fixedState.GetValue(i) != -1)
+						continue;   //already fixed variables will not be modified.
+					if (sasProblem.isRigid(i))
+					{
+						fixedState.SetValue(i, initialState.GetValue(i));    //rigid variables (that are never changed by any operator) has to take the same value as in the initial state.
+						continue;
+					}
+					//this variable is not fixed, neither is it rigid, we assign it a random value from its range
+					fixedState.SetValue(i, r.Next(sasProblem.GetVariableDomainRange(i)));
+				}
+				//now all variables are set (there are no more wildcards)
+
+				//there should be finding ALL matching relative states here, and taking minimum of their gvalues! TODO
+				return new StateDistanceResult(fixedState, gVal);
 			}
 
 			private IState getRelativeGoalState()
@@ -584,7 +659,7 @@ namespace PADD
 						int gVal = currentGValue + succ.GetOperator().GetCost();
 						try
 						{
-							addToOpenList(state, gVal, currentState);
+							addToOpenList(state, gVal, currentState, succ.GetOperator());
 						}
 						catch (OutOfMemoryException)
 						{
