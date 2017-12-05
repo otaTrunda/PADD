@@ -468,5 +468,11 @@ namespace PADD
 			}
 			//return stateValues[variable] == value;
 		}
+
+		public override IState Clone()
+		{
+			return new RelativeState(this.parentProblem, this.stateValues.ToArray());
+		}
+
 	}
 }
