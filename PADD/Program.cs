@@ -604,6 +604,26 @@ namespace PADD
 				string domainName = Path.GetFileName(domainFolder);
 				string probleName = Path.GetFileName(item);
 
+				/*
+				List<int> solution = new List<int>() { 3, 5, 14, 13, 12, 10, 1, 16 };
+				List<SASOperator> allOps = d.GetOperators();
+
+				var s = d.GetInitialState();
+				foreach (var opIndex in solution)
+				{
+					SASOperator op = allOps[opIndex];
+					Console.WriteLine();
+					Console.WriteLine(string.Join(" ", ((SASState)(s)).GetAllValues().Select(v => v >= 0 ? " " + v : v.ToString())));
+					if (!op.IsApplicable(s))
+						throw new Exception();
+					s = op.Apply(s);
+				}
+				if (s.IsMeetingGoalConditions())
+				{
+					Console.WriteLine("huraa");
+				}
+				*/
+
 				string resultsPath = Path.Combine(domainFolder, "histograms");
 
 				if (!Directory.Exists(resultsPath))
