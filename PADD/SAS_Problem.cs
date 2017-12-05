@@ -249,6 +249,8 @@ namespace PADD
         /// <returns>A collection of transitions - possible predecessors and corresponding operators to be applied.</returns>
         public Predecessors GetAllPredecessors(IState state)
         {
+			if (state is RelativeState)
+				return GetPredecessorsRelative(state);
             return operatorsManager.GetAllPredecessors((SASState)state);
         }
 
