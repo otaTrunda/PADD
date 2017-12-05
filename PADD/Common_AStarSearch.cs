@@ -77,7 +77,12 @@ namespace PADD
             this.gValue = val;
             this.isClosed = false;
         }
-    }
+
+		public override string ToString()
+		{
+			return "{" + gValue + ", " + isClosed + "}";
+		}
+	}
 
     public class AStarSearch : HeuristicSearchEngine
     {
