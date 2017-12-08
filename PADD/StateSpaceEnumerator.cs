@@ -88,7 +88,7 @@ namespace PADD
 			public TimeSpan timeLimit = TimeSpan.FromHours(1);
 
 			//protected const long memoryLimit = 5000;
-            protected const long memoryLimit = 200000;
+            protected const long memoryLimit = 20000000;
 
             protected void addToClosedList(IState state)
 			{
@@ -126,23 +126,27 @@ namespace PADD
 				{
 					//double hValue = heuristic.getValue(s);
 					gValues.Add(s, new StateInformation(gValue));
+#if DEBUG
 					predecessor.Add(s, pred);
 					predOperator.Add(s, op);
+#endif
 					openNodes.insert(0, s);
 					return;
 				}
 				if (gValues[s].gValue > gValue)
 				{
-					throw new Exception();
-					/*
-					double hValue = heuristic.getValue(s);
+					//throw new Exception();	//this is still possible when there are action costs involved
+					
+					//double hValue = heuristic.getValue(s);
 					StateInformation f = gValues[s];
 					f.gValue = gValue;
 					gValues[s] = f;
+#if DEBUG
 					predecessor[s] = pred;
-					openNodes.insert(gValue + hValue, s);
+#endif
+					openNodes.insert(gValue, s);
 					return;
-					*/
+					
 				}
 			}
 
@@ -357,7 +361,7 @@ namespace PADD
 			public IEnumerable<StateDistanceResult> EnumerateNEW(bool quiet = false)
 			{
 				fillGvalues(quiet);
-
+				/*
 				var initialS = gValues.Keys.Where(state => ((SASState)state).GetAllValues().Zip(((SASState)(problem.GetInitialState())).GetAllValues(), (f, s) => f == s || f == -1 ? true : false).All(x => x));
 				if (initialS.Any())
 				{
@@ -385,7 +389,7 @@ namespace PADD
 							+ string.Join(", ", item.GetEffects().Select(t => "var" + t.GetEff().variable + " = " + t.GetEff().value)));
 					}
 				}
-
+				*/
 				return sampleFromGValues(memoryLimit, quiet);
 			}
 
