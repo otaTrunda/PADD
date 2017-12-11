@@ -36,6 +36,8 @@ namespace PADD
 			bool useRelativeStates = true;
 
 			StateSpaceEnumeratorInternal e = new StateSpaceEnumeratorInternal(p, new BlindHeuristic());
+			int randomWalksCount = 1000,
+				randomWalksMaxLength = 200;
 
 			if (useRelativeStates)
 			{
@@ -44,10 +46,10 @@ namespace PADD
 				{
 					yield return item;
 				}
-
+				
 
 				if (e.searchStatus == SearchStatus.MemoryLimitExceeded || e.searchStatus == SearchStatus.TimeLimitExceeded)
-					foreach (var item in e.enumerateByRandomWalks(10000, 200, true))
+					foreach (var item in e.enumerateByRandomWalks(randomWalksCount, randomWalksMaxLength, true))
 					{
 						yield return item;
 					}
@@ -61,7 +63,7 @@ namespace PADD
 
 
 				if (e.searchStatus == SearchStatus.MemoryLimitExceeded || e.searchStatus == SearchStatus.TimeLimitExceeded)
-					foreach (var item in e.enumerateByRandomWalks(10000, 200, false))
+					foreach (var item in e.enumerateByRandomWalks(randomWalksCount, randomWalksMaxLength, false))
 					{
 						yield return item;
 					}
@@ -263,6 +265,7 @@ namespace PADD
 
 			private void estimateShorteningCoeficient(int numberOfSamples)
 			{
+				PrintMessage("Estimating shortening coeficient");
 				List<IState> initialStates = gValues.Where(kw => kw.Value.gValue == 0).Select(kw => kw.Key).ToList();
 				Random r = new Random();
 				List<IState> predecessors = new List<IState>();
@@ -292,6 +295,7 @@ namespace PADD
 					}
 				}
 				lengthShorteningCoeficient = coeffsSum / coeffsCount;
+				PrintMessage("DONE Estimating shortening coeficient");
 			}
 
 			/// <summary>
@@ -301,6 +305,7 @@ namespace PADD
 			/// <returns></returns>
 			public IEnumerable<StateDistanceResult> enumerateByRandomWalks(int randomWalksCount, int walkMaxLength, bool relativeStatesUsed = false)
 			{
+				PrintMessage("Enumerating by random walks");
 				SASProblem sasProblem = (SASProblem)problem;
 				SASState initialState = (SASState)sasProblem.GetInitialState();
 				estimateShorteningCoeficient(randomWalksCount);
@@ -348,9 +353,10 @@ namespace PADD
 					{
 						if (!relativeStatesUsed)
 							yield return new StateDistanceResult(currentState, realWalkLength * lengthShorteningCoeficient);
-						yield return generateSample((RelativeState)currentState, realWalkLength * lengthShorteningCoeficient, r, sasProblem, initialState);
+						yield return generateSample((RelativeState)currentState, realWalkLength * lengthShorteningCoeficient, r, sasProblem, initialState, false);
 					}
 				}
+				PrintMessage("DONE Enumeratin by random walks");
 			}
 
 			/// <summary>
@@ -358,9 +364,11 @@ namespace PADD
 			/// </summary>
 			/// <param name="quiet"></param>
 			/// <returns></returns>
-			public IEnumerable<StateDistanceResult> EnumerateNEW(bool quiet = false)
+			public IEnumerable<StateDistanceResult> EnumerateNEW(bool useApproximation, bool quiet = false)
 			{
+				PrintMessage("Computing g-Values");
 				fillGvalues(quiet);
+				PrintMessage("DONE Computing g-Values");
 				/*
 				var initialS = gValues.Keys.Where(state => ((SASState)state).GetAllValues().Zip(((SASState)(problem.GetInitialState())).GetAllValues(), (f, s) => f == s || f == -1 ? true : false).All(x => x));
 				if (initialS.Any())
@@ -390,7 +398,8 @@ namespace PADD
 					}
 				}
 				*/
-				return sampleFromGValues(memoryLimit, quiet);
+				PrintMessage("Sampling from g-Values");
+				return sampleFromGValues(memoryLimit / 2, useApproximation, quiet);
 			}
 
 			/// <summary>
@@ -505,7 +514,7 @@ namespace PADD
 			/// </summary>
 			/// <param name="quiet"></param>
 			/// <returns></returns>
-			private IEnumerable<StateDistanceResult> sampleFromGValues(long numberOfSamples, bool quiet = false)
+			private IEnumerable<StateDistanceResult> sampleFromGValues(long numberOfSamples, bool useApproximation, bool quiet = false)
 			{
 				Random r = new Random();
 				SASProblem sASProblem = (SASProblem)problem;
@@ -520,17 +529,35 @@ namespace PADD
 					RelativeState s = (RelativeState)relativeStateKeyValuePair.Key;
 					int gVal = relativeStateKeyValuePair.Value.gValue;
 
-					yield return generateSample(s, gVal, r, sASProblem, initialState);
+					yield return generateSample(s, gVal, r, sASProblem, initialState, useApproximation);
 					samplesGenerated++;
 					while(samplesToGenerate > samplesGenerated)
 					{
-						yield return generateSample(s, gVal, r, sASProblem, initialState);
+						yield return generateSample(s, gVal, r, sASProblem, initialState, useApproximation);
 						samplesGenerated++;
 					}
 				}
 			}
 
-			private StateDistanceResult generateSample(RelativeState state, double gVal, Random r, SASProblem sasProblem, SASState initialState)
+			/// <summary>
+			/// Returns true if given fixed state matches given relative state, i.e. for all variables it must hold that either their values are identical in both states, or relative state has a wildcard on that position.
+			/// </summary>
+			/// <param name="relative"></param>
+			/// <param name="fixedState"></param>
+			/// <returns></returns>
+			private bool canMatch(RelativeState relative, RelativeState fixedState)
+			{
+				for (int i = 0; i < relative.GetAllValues().Length; i++)
+				{
+					if (relative.GetAllValues()[i] == -1)
+						continue;
+					if (relative.GetAllValues()[i] != fixedState.GetAllValues()[i])
+						return false;
+				}
+				return true;
+			}
+
+			private StateDistanceResult generateSample(RelativeState state, double gVal, Random r, SASProblem sasProblem, SASState initialState, bool useApproximation)
 			{
 				RelativeState fixedState = (RelativeState)state.Clone();
 				for (int i = 0; i < sasProblem.GetVariablesCount(); i++)
@@ -547,8 +574,18 @@ namespace PADD
 				}
 				//now all variables are set (there are no more wildcards)
 
-				//there should be finding ALL matching relative states here, and taking minimum of their gvalues! TODO
-				return new StateDistanceResult(fixedState, gVal);
+				if (useApproximation)
+				{
+					//This is just an approximation. It takes just the gVal of the parrent. This can over-estimate the result.
+					return new StateDistanceResult(fixedState, gVal);
+				}
+
+				else
+				{
+					//this finds all matching relative states and takes minimum of their gvalues. This will return the REAL GoalDistance, but is quite costly.
+					double realGVal = gValues.Keys.Where(key => canMatch((RelativeState)key, fixedState)).Min(key => gValues[key].gValue);
+					return new StateDistanceResult(fixedState, realGVal);
+				}
 			}
 
 			private IState getRelativeGoalState()
@@ -867,7 +904,6 @@ namespace PADD
 		}
 	}
 
-
 	class FeaturesCalculator
 	{
 		/// <summary>
@@ -933,17 +969,21 @@ namespace PADD
 		/// <summary>
 		/// The folder should contain multiple text files with histograms (histogram triplets). This method reads them all and produces a set of features and targets for a ML model to learn.
 		/// (In a .tsv format).
-		/// These features will be written to file "dataToLearn.tsv" in the same directory. Values are tab-separated, last collumn is the target.
+		/// These features will be written to file "dataToLearn.tsv" in the same directory. Values are tab-separated, last column is the target.
 		/// Features include problem description and heuristic function, desired targets are the best real-distance predictions based on heurVals. 
 		/// (I.e. weighted sum of real values on which the heuristic returns the given heurVal, weights are the number of accurences where it happens.)
 		/// </summary>
 		/// <param name="folderPath"></param>
-		public static void processFolder(string folderPath)
+		public static void processHistogramsFolder(string folderPath)
 		{
 			string resultFileName = "dataToLearn.tsv";
 			List<List<double>> resultFeatures = new List<List<double>>();
-			foreach (var file in System.IO.Directory.EnumerateFiles(folderPath))
+			foreach (var file in Directory.EnumerateFiles(folderPath))
 			{
+				//checks whether this file is a histogram of some SASProblem in a parrent directory.
+				if (Path.GetExtension(file) != ".txt" || !Directory.GetParent(Directory.GetParent(file).FullName).EnumerateFiles().Any(f => Path.ChangeExtension(f.Name, "txt") == Path.GetFileName(file)))
+					continue;
+
 				var predictions = generatePredictions(file);
 				var problemFeatures = generateFeaturesFromProblem(readProblemFromFileName(file));
 				foreach (var pred in predictions)
@@ -954,7 +994,27 @@ namespace PADD
 					resultFeatures.Add(vector);
 				}
 			}
-			System.IO.File.WriteAllLines(folderPath + "\\" + resultFileName, resultFeatures.Select(t => ListToString(t, "\t")));
+			System.IO.File.WriteAllLines(Path.Combine(folderPath, resultFileName), resultFeatures.Select(t => ListToString(t, "\t")));
+		}
+
+		/// <summary>
+		/// writes a single number on a standard output that corresponds to total number of computed histograms for all domains in a given folder
+		/// </summary>
+		/// <param name="domainsFolder"></param>
+		public static void countHistograms(string domainsFolder)
+		{
+			int totalCount = 0;
+			foreach (var domainFolder in Directory.EnumerateDirectories(domainsFolder))
+			{
+				foreach (var problemFile in Directory.EnumerateFiles(domainFolder))
+				{
+					if (Path.GetExtension(problemFile) != ".sas")
+						continue;
+					if (Program.IsHistogramComputed(domainFolder, problemFile))
+						totalCount++;
+				}
+			}
+			Console.WriteLine(totalCount);
 		}
 
 		private static string ListToString<T>(List<T> list, string separator)
@@ -976,6 +1036,16 @@ namespace PADD
 		/// <returns></returns>
 		public static SASProblem readProblemFromFileName(string resultsFileName)
 		{
+			if (resultsFileName.Contains("histograms"))
+			{
+				//histograms are in this case in a separate folder just inside the domain folder
+				string fileNameWithoutPathAndExtension = Path.GetFileNameWithoutExtension(resultsFileName);
+				string domainDirectory = Directory.GetParent(Directory.GetParent(resultsFileName).FullName).FullName;
+				string domainFile = Path.Combine(domainDirectory, fileNameWithoutPathAndExtension + ".sas");
+				return SASProblem.CreateFromFile(domainFile);
+			}
+
+
 			string name = resultsFileName;
 			if (resultsFileName.Contains('/') || resultsFileName.Contains('\\'))
 			{

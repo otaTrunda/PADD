@@ -9,6 +9,7 @@ namespace PADD
     class Program
     {
         public static Random r = new Random();
+		public static Logger logger = new Logger();
 
 		private static string SAS_allFolder = "./../tests/benchmarksSAS_ALL";
 		private static string mediumDomainsFolder = "./../tests/benchmarksSAS_ALL - medium";
@@ -25,6 +26,12 @@ namespace PADD
 		/// <param name="args"></param>
 		static void Main3(string[] args)
 		{
+			/*
+			FeaturesCalculator.countHistograms(small_and_mediumDomainsFolder);
+			return;
+			*/
+
+			/*
 			string folder = mediumDomainsFolderSecondHalf;
 			int domainID = int.Parse(args[0]);
             if (Directory.EnumerateDirectories(folder).ToList().Count <= domainID)
@@ -37,9 +44,11 @@ namespace PADD
                 createHeuristic2distanceStatictics(domainFolder, i);
             }
 			return;
+			*/
+			processAllHistogramFolders(small_and_mediumDomainsFolder);
 		}
 
-		static void Main(string[] args)
+		static void Main5(string[] args)
 		{
 			//string blocksDomainFolder = @"./../tests/benchmarksSAS_ALL/blocks";
 			string domainsFolder = small_and_mediumDomainsFolder;
@@ -59,16 +68,15 @@ namespace PADD
 		/// </summary>
 		/// <param name="args"></param>
 		[STAThread]
-        static void Main4(string[] args)
+        static void Main(string[] args)
         {
 			//runPlanningExperiments(testFilesFolder, TimeSpan.FromMinutes(15), 3);
 			//runPlanningExperiments(mediumDomainsFolderFirstHalf, TimeSpan.FromMinutes(15), int.Parse(args[0]));
 			//runPlanningExperiments(mediumDomainsFolderSecondHalf, TimeSpan.FromMinutes(15), int.Parse(args[0]));
 
+			runPlanningExperiments(small_and_mediumDomainsFolder, TimeSpan.FromMinutes(30), int.Parse(args[0]) - 1);
 
-			//Main4(new string[] { "3" });
-			//Main4(args);
-			runPlanningExperiments(test2FilesFolder, TimeSpan.FromMinutes(30), int.Parse(args[0]) - 1);
+			//runPlanningExperiments(test2FilesFolder, TimeSpan.FromMinutes(30), int.Parse(args[0]) - 1);
 
 			//runPlanningExperiments(test2FilesFolder, TimeSpan.FromMinutes(30), 30);
 
@@ -86,7 +94,7 @@ namespace PADD
 			while (true)
 			{
 				double input = double.Parse(Console.ReadLine());
-				Console.WriteLine("point: " + input + "\tval: " + m.eval(new double[] { input }));
+				logger.Log("point: " + input + "\tval: " + m.eval(new double[] { input }));
 			}
 			*/
 
@@ -110,7 +118,7 @@ namespace PADD
 			/*
 			foreach (var item in m.evalOnFile(dataFilePath))
 			{
-				Console.WriteLine(item);
+				logger.Log(item);
 			}
 			*/
 
@@ -227,7 +235,7 @@ namespace PADD
 
 
             //long ccc = (StopBytes - StartBytes);
-            //Console.WriteLine("Byte size = {0}, bit size = {1}, ints = {2}", ccc, ccc*8, ccc/4);
+            //logger.Log("Byte size = {0}, bit size = {1}, ints = {2}", ccc, ccc*8, ccc/4);
 
             //PDDLDesignator predd = new PDDLDesignator();
 
@@ -394,17 +402,17 @@ namespace PADD
                 {
                     foreach (var item in Directory.EnumerateFiles(directory))
                     {
-                        Console.WriteLine(" ----- new problem ----- ");
+                        logger.Log(" ----- new problem ----- ");
                         ds.clear();
                         d = SASProblem.CreateFromFile(item);
                         //ast = new AStarSearch(d, new FFHeuristic(d));
                         ast = new AStarSearch(d, new FFHeuristic(d));
                         ast.setHeapDatastructure(ds);
                         ast.Search();
-                        Console.WriteLine();
+                        logger.Log();
                         results[results.Count - 1].Add(ast.searchTime.TotalSeconds.ToString());
                     }
-                    Console.WriteLine(" ----- new domain ----- ");
+                    logger.Log(" ----- new domain ----- ");
                 }
             }
             foreach (var row in results)
@@ -413,7 +421,7 @@ namespace PADD
                 {
                     Console.Write(item + "\t");
                 }
-                Console.WriteLine();
+                logger.Log();
             }
         }
 
@@ -437,8 +445,8 @@ namespace PADD
                         var files = Directory.EnumerateFiles(directory);
                         foreach (var item in files)
                         {
-                            Console.WriteLine(" ----- new problem ----- ");
-                            Console.WriteLine(directory + "\\" + item);
+                            logger.Log(" ----- new problem ----- ");
+                            logger.Log(directory + "\\" + item);
 
                             d = SASProblem.CreateFromFile(item);
                             //ast = new AStarSearch(d, new FFHeuristic(d));
@@ -459,9 +467,9 @@ namespace PADD
                             writer.WriteLine(currentDirectory.Name + "_" + currentFile.Name + "\t" + ast.searchTime.TotalSeconds + "\t" + ast.GetSearchStatus());
                             writer.Flush();
 
-                            Console.WriteLine();
+                            logger.Log();
                         }
-                        Console.WriteLine(" ----- new domain ----- ");
+                        logger.Log(" ----- new domain ----- ");
                     }
                 }
             }
@@ -474,6 +482,12 @@ namespace PADD
 			//try
 			//{
 
+			//the number of computes that participate on this job. Computation is distributed among them.
+			int numberOfComputes = 20;
+
+			//if set to true, problem file that don't have histogram computed will be skipped. Otherwise all problems will be processed.
+			bool onlyWhenHistogramExists = true;
+
 			SASProblem d;
 			AStarSearch ast;
 			//HillClimbingSearch ast;
@@ -485,11 +499,13 @@ namespace PADD
 				foreach (var SASFile in files)
 				{
 					int indexOfFile = files.IndexOf(SASFile);
-					if (indexOfFile % 20 != param) //if (indexOfFile != param) 
-					continue;
+					if (indexOfFile % numberOfComputes != param) //if (indexOfFile != param) 
+						continue;
+					if (onlyWhenHistogramExists && !IsHistogramComputed(directory, SASFile))
+						continue;
 
-					Console.WriteLine(" ----- new problem ----- ");
-					Console.WriteLine(directory + "\\" + SASFile);
+					logger.Log(" ----- new problem ----- ");
+					logger.Log(directory + "\\" + SASFile);
 
 					d = SASProblem.CreateFromFile(SASFile);
 
@@ -508,12 +524,12 @@ namespace PADD
 					//string trainedNetworkFile = Path.Combine("..", "trainedNetwork.bin");
 					//Heuristic h = new NNHeuristic(d, trainedNetworkFile);
 
-					string dataFile = Path.Combine("..", "dataToLearn.tsv");
+					string dataFile = Path.Combine(directory, "histograms", "dataToLearn.tsv");
 					//Heuristic h = new FileBasedHeuristic(d, dataFile, false);
 
-					Heuristic h = new FFHeuristic(d);
+					//Heuristic h = new FFHeuristic(d);
 					//Heuristic h = new RegHeuristic(new FFHeuristic(d));
-					Heuristic hNN = new FileBasedHeuristic(d, dataFile, false);
+					Heuristic h = new FileBasedHeuristic(d, dataFile, false);
 
 					//h = getHeuristicByParam(param, d);
 					//h = getHeuristicByParam(6, d);
@@ -535,7 +551,6 @@ namespace PADD
 					//IHeap<double, IState> heapStructure = new Heaps.RegularTernaryHeap<IState>();
 					//IHeap<double, IState> heapStructure = new Heaps.BinomialHeap<IState>();
 					//IHeap<double, IState> heapStructure = new Heaps.LeftistHeap<IState>();
-
 
 					//ast.setHeapDatastructure(heapStructure);
 
@@ -560,9 +575,9 @@ namespace PADD
 					allResults.Add(ast.results);
 					if (ast.openNodes is Heaps.MeasuredHeap<IState>)
 						((Heaps.MeasuredHeap<IState>)ast.openNodes).clearStatistics();
-					Console.WriteLine();
+					logger.Log();
 				}
-				Console.WriteLine(" ----- new domain ----- ");
+				logger.Log(" ----- new domain ----- ");
 			}
 
 
@@ -579,7 +594,23 @@ namespace PADD
 				{
 					writer.WriteLine(item.ToString());
 				}
+		}
 
+		/// <summary>
+		/// Takes path to a SAS planning problem and determines whether histogram for this file is computed and stored in apropriate folder.
+		/// I.e. it checks a folder ./histograms and searches for a file with the same name as the domain file (except the extension).
+		/// </summary>
+		/// <param name="folderPath"></param>
+		/// <param name="fileName"></param>
+		/// <returns>True if the histogram file is found.</returns>
+		public static bool IsHistogramComputed(string folderPath, string fileName)
+		{
+			if (!Directory.Exists(Path.Combine(folderPath, "histograms")))
+				return false;
+			var histogramFiles = Directory.EnumerateFiles(Path.Combine(folderPath, "histograms"));
+			if (histogramFiles.Any(t => Path.GetFileNameWithoutExtension(t) == Path.GetFileNameWithoutExtension(fileName)))
+				return true;
+			return false;
 		}
 
 		/// <summary>
@@ -612,15 +643,15 @@ namespace PADD
 				foreach (var opIndex in solution)
 				{
 					SASOperator op = allOps[opIndex];
-					Console.WriteLine();
-					Console.WriteLine(string.Join(" ", ((SASState)(s)).GetAllValues().Select(v => v >= 0 ? " " + v : v.ToString())));
+					logger.Log();
+					logger.Log(string.Join(" ", ((SASState)(s)).GetAllValues().Select(v => v >= 0 ? " " + v : v.ToString())));
 					if (!op.IsApplicable(s))
 						throw new Exception();
 					s = op.Apply(s);
 				}
 				if (s.IsMeetingGoalConditions())
 				{
-					Console.WriteLine("huraa");
+					logger.Log("huraa");
 				}
 				*/
 
@@ -635,7 +666,7 @@ namespace PADD
 				return;
 				*/
 
-				Console.WriteLine("Processing domain " + domainName + " , file " + probleName);
+				logger.Log("Processing domain " + domainName + " , file " + probleName);
 
 				var histogram = StateSpaceHistogramCalculator.getHistogram(problemFile, heuristics);
 
@@ -644,6 +675,24 @@ namespace PADD
 				//StateSpaceHistogramCalculator.writeHistograms(domainName + "_" + Path.ChangeExtension(probleName, "txt"), histogram);
 			}
         }
+
+		/// <summary>
+		/// Reads all folders in given folder, searches for folders named "histograms". Inside these folders it finds all histogram files and merges them into a "dataToLearn.tsv" file that can then be used for training a ML model.
+		/// These files will be created in every respective directory. If the ".tsv" file already exists, it will be rewritten.
+		/// </summary>
+		static void processAllHistogramFolders(string domainsFolderPath)
+		{
+			foreach (var domainFolder in Directory.EnumerateDirectories(domainsFolderPath))
+			{
+				string histogramFolder = Path.Combine(domainFolder, "histograms");
+				if (Directory.Exists(histogramFolder))
+				{
+					logger.Log("processing folder " + histogramFolder);
+					FeaturesCalculator.processHistogramsFolder(histogramFolder);
+					logger.Log("done");
+				}
+			}
+		}
 
         static Heuristic getHeuristicByParam(int param, SASProblem d)
         {
@@ -785,11 +834,11 @@ namespace PADD
                 var files = Directory.EnumerateFiles(directory);
                 foreach (var item in files)
                 {
-                    Console.WriteLine(" ----- new problem ----- ");
-                    Console.WriteLine(directory + "\\" + item);
+                    logger.Log(" ----- new problem ----- ");
+                    logger.Log(directory + "\\" + item);
                     if (removingAllFiles)
                     {
-                        Console.WriteLine("deleting file " + item);
+                        logger.Log("deleting file " + item);
                         File.Delete(item);
                         continue;
                     }
@@ -804,7 +853,7 @@ namespace PADD
                     if (ast.GetSearchStatus() != SearchStatus.SolutionFound && ast.GetSearchStatus() != SearchStatus.NoSolutionExist)
                     {
                         //task not solved. it will be removed
-                        Console.WriteLine("deleting file " + item);
+                        logger.Log("deleting file " + item);
                         File.Delete(item);
                         if (previousFileNotSolved)
                         {
@@ -818,15 +867,15 @@ namespace PADD
                         isSomethingSolvedInThisDirectory = true;
                         previousFileNotSolved = false;
                     }
-                    Console.WriteLine();
+                    logger.Log();
                 }
                 if (!isSomethingSolvedInThisDirectory)
                 {
                     //no task has been solved - removing empty folder
-                    Console.WriteLine("deleting directory " + directory);
+                    logger.Log("deleting directory " + directory);
                     Directory.Delete(directory);
                 }
-                Console.WriteLine(" ----- new domain ----- ");
+                logger.Log(" ----- new domain ----- ");
             }
             
         }
@@ -845,11 +894,11 @@ namespace PADD
                 var files = Directory.EnumerateFiles(directory);
                 foreach (var item in files)
                 {
-                    Console.WriteLine(" ----- new problem ----- ");
-                    Console.WriteLine(directory + "\\" + item);
+                    logger.Log(" ----- new problem ----- ");
+                    logger.Log(directory + "\\" + item);
                     if (removingAllFiles)
                     {
-                        Console.WriteLine("deleting file " + item);
+                        logger.Log("deleting file " + item);
                         File.Delete(item);
                         continue;
                     }
@@ -864,7 +913,7 @@ namespace PADD
                     if (ast.GetSearchStatus() == SearchStatus.SolutionFound || ast.GetSearchStatus() == SearchStatus.NoSolutionExist)
                     {
                         //task solved. it will be removed
-                        Console.WriteLine("deleting file " + item);
+                        logger.Log("deleting file " + item);
                         File.Delete(item);
                         if (previousFileNotSolved)
                         {
@@ -878,15 +927,15 @@ namespace PADD
                         isSomethingSolvedInThisDirectory = true;
                         previousFileNotSolved = false;
                     }
-                    Console.WriteLine();
+                    logger.Log();
                 }
                 if (!isSomethingSolvedInThisDirectory)
                 {
                     //no task has been solved - removing empty folder
-                    Console.WriteLine("deleting directory " + directory);
+                    logger.Log("deleting directory " + directory);
                     Directory.Delete(directory);
                 }
-                Console.WriteLine(" ----- new domain ----- ");
+                logger.Log(" ----- new domain ----- ");
             }
 
         }
@@ -904,11 +953,11 @@ namespace PADD
 				var files = Directory.EnumerateFiles(directory);
 				foreach (var item in files)
 				{
-					Console.WriteLine(" ----- new problem ----- ");
-					Console.WriteLine(directory + "\\" + item);
+					logger.Log(" ----- new problem ----- ");
+					logger.Log(directory + "\\" + item);
 					if (removingAllFiles)
 					{
-						Console.WriteLine("deleting file " + item);
+						logger.Log("deleting file " + item);
 						File.Delete(item);
 						continue;
 					}
@@ -918,7 +967,7 @@ namespace PADD
 					if (d.GetAxiomRules().Count > 0)
 					{
 						//task has axioms. it will be removed
-						Console.WriteLine("deleting file " + item);
+						logger.Log("deleting file " + item);
 						File.Delete(item);
 						if (previousFileNotSolved)
 						{
@@ -932,19 +981,18 @@ namespace PADD
 						isSomethingSolvedInThisDirectory = true;
 						previousFileNotSolved = false;
 					}
-					Console.WriteLine();
+					logger.Log();
 				}
 				if (!isSomethingSolvedInThisDirectory)
 				{
 					//no task remains here - removing empty folder
-					Console.WriteLine("deleting directory " + directory);
+					logger.Log("deleting directory " + directory);
 					Directory.Delete(directory);
 				}
-				Console.WriteLine(" ----- new domain ----- ");
+				logger.Log(" ----- new domain ----- ");
 			}
 
 		}
-
 
 		#region Patterns methods
 
@@ -1035,12 +1083,12 @@ namespace PADD
                 /*
                 //Writing the results
 
-                Console.WriteLine("<---- \tResults\t ---->");
-                Console.WriteLine();
-                Console.WriteLine("ID\tSize\tCreation\tSearch\tNodes");
+                logger.Log("<---- \tResults\t ---->");
+                logger.Log();
+                logger.Log("ID\tSize\tCreation\tSearch\tNodes");
                 for (int i = 0; i < res.Count; i++)
                 {
-                    Console.WriteLine(i + "\t" + res[i].pattern.Count + "\t" + res[i].creation + "\t" + res[i].search + "\t" + res[i].nodes);
+                    logger.Log(i + "\t" + res[i].pattern.Count + "\t" + res[i].creation + "\t" + res[i].search + "\t" + res[i].nodes);
                 }
                  */
             }
@@ -1051,29 +1099,29 @@ namespace PADD
         #region Heap test methods
         private static void runHeapTests()
         {
-            Console.WriteLine("\nTest number 0");
+            logger.Log("\nTest number 0");
             heapTests(2000, 10);
-            Console.WriteLine("\nTest number 1");
+            logger.Log("\nTest number 1");
             heapTests(int.MaxValue / 20000, 2);
-            Console.WriteLine("\nTest number 2");
+            logger.Log("\nTest number 2");
             heapTests(int.MaxValue / 2000, 2);
-            Console.WriteLine("\nTest number 3");
+            logger.Log("\nTest number 3");
             heapTests(int.MaxValue / 2000, 10);
-            Console.WriteLine("\nTest number 4");
+            logger.Log("\nTest number 4");
             heapTests(int.MaxValue / 2000, 50);
-            Console.WriteLine("\nTest number 5");
+            logger.Log("\nTest number 5");
             heapTests(int.MaxValue / 200, 2);
-            Console.WriteLine("\nTest number 6");
+            logger.Log("\nTest number 6");
             heapTests(int.MaxValue / 200, 10);
-            Console.WriteLine("\nTest number 7");
+            logger.Log("\nTest number 7");
             heapTests(int.MaxValue / 200, 50);
-            Console.WriteLine("\nTest number 8");
+            logger.Log("\nTest number 8");
             heapTests(int.MaxValue / 100, 10);
-            Console.WriteLine("\nTest number 9");
+            logger.Log("\nTest number 9");
             heapTests(int.MaxValue / 100, 20);
-            Console.WriteLine("\nTest number 10");
+            logger.Log("\nTest number 10");
             heapTests(int.MaxValue / 100, 50);
-            Console.WriteLine("\nTest number 11");
+            logger.Log("\nTest number 11");
             heapTests(int.MaxValue / 100, 100);
         }
 
@@ -1101,7 +1149,7 @@ namespace PADD
 
             for (int j = 0; j < testSubjects.Count; j++)
             {
-                Console.WriteLine("testing the " + names[j]);
+                logger.Log("testing the " + names[j]);
                 IHeap<double, int> heap = testSubjects[j];
                 //removedValues.Add(new List<int>());
                 //int index = removedValues.Count -1;
@@ -1115,13 +1163,13 @@ namespace PADD
                         heap.removeMin();
                         if ((DateTime.Now - start).TotalSeconds > 120)
                         {
-                            Console.WriteLine(names[j] + " time limit exceeded.");
+                            logger.Log(names[j] + " time limit exceeded.");
                             break;
                         }
                     }
                 }
                 DateTime end = DateTime.Now;
-                Console.WriteLine("Test finished.");
+                logger.Log("Test finished.");
                 results.Add(end - start);
                 testSubjects[j] = null;
                 GC.Collect();
@@ -1134,14 +1182,14 @@ namespace PADD
                 {
                     if (removedValues[j][i] != removedValues[0][i])
                     {
-                        Console.WriteLine("chyba");
+                        logger.Log("chyba");
                     }
                 }
             }
              */
             for (int i = 0; i < testSubjects.Count; i++)
             {
-                Console.WriteLine(names[i] + " " + results[i].TotalSeconds + " seconds.");
+                logger.Log(names[i] + " " + results[i].TotalSeconds + " seconds.");
             }
 
         }
@@ -1149,7 +1197,7 @@ namespace PADD
         private static List<int> generateTestInput(int size, int maxValue)
         {
             HashSet<int> a = new HashSet<int>();
-            Console.WriteLine("Generating test input");
+            logger.Log("Generating test input");
             Random r = new Random();
             List<int> result = new List<int>();
             for (int i = 0; i < size; i++)
@@ -1160,12 +1208,12 @@ namespace PADD
                 result.Add(item);
                 a.Add(item);
             }
-            Console.WriteLine("Done");
+            logger.Log("Done");
             return result;
         }
         private static List<int> generateNonDecreasingTestInput(int size, int maxValue)
         {
-            Console.WriteLine("Generating test input");
+            logger.Log("Generating test input");
             Random r = new Random();
             List<int> result = new List<int>();
             result.Add(0);
@@ -1176,7 +1224,7 @@ namespace PADD
                     item = r.Next(maxValue);*/
                 result.Add(item);
             }
-            Console.WriteLine("Done");
+            logger.Log("Done");
             return result;
         }
         
@@ -1196,23 +1244,23 @@ namespace PADD
         private static void testHashSet(int size)
         {
             TimeSpan totalDict, totalHash;
-            Console.WriteLine("\n -------- Running a new test --------");
+            logger.Log("\n -------- Running a new test --------");
             GC.Collect();
             List<int> inputToAdd = generateTestInput(size, size / 10),
                 inputToQuerry = generateTestInput(size, size / 10);
             Dictionary<int, int> dictionary = new Dictionary<int, int>();
             HashSet<int> hashSet = new HashSet<int>();
 
-            Console.WriteLine("Testing dictionary");
-            Console.WriteLine("Adding items");
+            logger.Log("Testing dictionary");
+            logger.Log("Adding items");
             DateTime start = DateTime.Now;
             for (int i = 0; i < size; i++)
             {
                 dictionary.Add(inputToAdd[i], inputToAdd[i]);
             }
             DateTime end = DateTime.Now;
-            Console.WriteLine("Items added in " + (end-start).TotalSeconds + " seconds.");
-            Console.WriteLine("Querrying items");
+            logger.Log("Items added in " + (end-start).TotalSeconds + " seconds.");
+            logger.Log("Querrying items");
             int found = 0;
             DateTime start2 = DateTime.Now;
             for (int i = 0; i < size; i++)
@@ -1221,22 +1269,22 @@ namespace PADD
                     found++;
             }
             DateTime end2 = DateTime.Now;
-            Console.WriteLine("Querrying finished in " + (end2 - start2).TotalSeconds + "seconds.");
+            logger.Log("Querrying finished in " + (end2 - start2).TotalSeconds + "seconds.");
             totalDict = ((end2 - start2) + (end - start));
-            Console.WriteLine("Total time " + totalDict.TotalSeconds + "seconds.");
+            logger.Log("Total time " + totalDict.TotalSeconds + "seconds.");
             dictionary.Clear();
             GC.Collect();
 
-            Console.WriteLine("\nTesting HashSet");
-            Console.WriteLine("Adding items");
+            logger.Log("\nTesting HashSet");
+            logger.Log("Adding items");
             start = DateTime.Now;
             for (int i = 0; i < size; i++)
             {
                 hashSet.Add(inputToAdd[i]);
             }
             end = DateTime.Now;
-            Console.WriteLine("Items added in " + (end - start).TotalSeconds + " seconds.");
-            Console.WriteLine("Querrying items");
+            logger.Log("Items added in " + (end - start).TotalSeconds + " seconds.");
+            logger.Log("Querrying items");
             found = 0;
             start2 = DateTime.Now;
             for (int i = 0; i < size; i++)
@@ -1245,10 +1293,10 @@ namespace PADD
                     found++;
             }
             end2 = DateTime.Now;
-            Console.WriteLine("Querrying finished in " + (end2 - start2).TotalSeconds + "seconds.");
+            logger.Log("Querrying finished in " + (end2 - start2).TotalSeconds + "seconds.");
             totalHash = ((end2 - start2) + (end - start));
-            Console.WriteLine("Total time " + totalHash.TotalSeconds + "seconds.");
-            Console.WriteLine("Results: \nDictionary: " + totalDict.TotalSeconds + "\nHashSet: " + totalHash.TotalSeconds);
+            logger.Log("Total time " + totalHash.TotalSeconds + "seconds.");
+            logger.Log("Results: \nDictionary: " + totalDict.TotalSeconds + "\nHashSet: " + totalHash.TotalSeconds);
         }
 
         #endregion
@@ -1259,34 +1307,34 @@ namespace PADD
         {
             HashSet<int[]> hash = new HashSet<int[]>(new ArrayEqualityComparer());
             int[] a = { 0, 0 }, b = { 0, 0 };
-            Console.WriteLine(a.GetHashCode());
-            Console.WriteLine(b.GetHashCode());
+            logger.Log(a.GetHashCode());
+            logger.Log(b.GetHashCode());
             if (a.Equals(b))
-                Console.WriteLine("equal");
-            else Console.WriteLine("not equal");
+                logger.Log("equal");
+            else logger.Log("not equal");
             hash.Add(a);
             if (hash.Contains(a))
             {
-                Console.WriteLine("t");
+                logger.Log("t");
             }
-            else Console.WriteLine("f");
+            else logger.Log("f");
             if (hash.Contains(b))
             {
-                Console.WriteLine("t");
+                logger.Log("t");
             }
-            else Console.WriteLine("f");
+            else logger.Log("f");
         }
 
         private static List<int[]> generateInputs(int size, int arraySize, int[] valuesRange)
         {
-            Console.WriteLine("Generating inputs");
+            logger.Log("Generating inputs");
             List<int[]> result = new List<int[]>();
             for (int i = 0; i < size; i++)
             {
                 int[] item = generateInput(arraySize, valuesRange);
                 result.Add(item);
             }
-            Console.WriteLine("Done");
+            logger.Log("Done");
             return result;
         }
 
@@ -1305,8 +1353,8 @@ namespace PADD
         private static TimeSpan testComparer(List<int[]> inputsToAdd, List<int[]> inputsToTest, IEqualityComparer<int[]> testSubject, string name)
         {
             GC.Collect();
-            Console.WriteLine("\nTesting " + name);
-            Console.WriteLine("Adding items");
+            logger.Log("\nTesting " + name);
+            logger.Log("Adding items");
             HashSet<int[]> h = new HashSet<int[]>();
             DateTime startAdding = DateTime.Now;
             for (int i = 0; i < inputsToAdd.Count; i++)
@@ -1315,9 +1363,9 @@ namespace PADD
                     h.Add(inputsToAdd[i]);
             }
             DateTime endAdding = DateTime.Now;
-            Console.WriteLine("Done");
+            logger.Log("Done");
 
-            Console.WriteLine("Finding items");
+            logger.Log("Finding items");
             DateTime startFinding = DateTime.Now;
             for (int i = 0; i < inputsToTest.Count; i++)
             {
@@ -1325,16 +1373,16 @@ namespace PADD
                     h.Remove(inputsToTest[i]);
             }
             DateTime endFinding = DateTime.Now;
-            Console.WriteLine("Done");
-            Console.WriteLine("Time to add: " + (endAdding - startAdding).TotalSeconds + " seconds");
-            Console.WriteLine("Time to find: " + (endFinding - startFinding).TotalSeconds + " seconds");
-            Console.WriteLine("Total time: " + ((endAdding - startAdding) + (endFinding - startFinding)).TotalSeconds + " seconds");
+            logger.Log("Done");
+            logger.Log("Time to add: " + (endAdding - startAdding).TotalSeconds + " seconds");
+            logger.Log("Time to find: " + (endFinding - startFinding).TotalSeconds + " seconds");
+            logger.Log("Total time: " + ((endAdding - startAdding) + (endFinding - startFinding)).TotalSeconds + " seconds");
             return (endAdding - startAdding) + (endFinding - startFinding);
         }
 
         private static void runTestOnComparers(int size, int arraySize, bool standard)
         {
-            Console.WriteLine("\nNew test started ------------");
+            logger.Log("\nNew test started ------------");
 
             int[] valuesRange = new int[arraySize];
             if (standard)
@@ -1361,10 +1409,10 @@ namespace PADD
             TimeSpan t0 = testComparer(toAdd, toFind, new ArrayEqualityComparer(), "comparer 0");
             TimeSpan t1 = testComparer(toAdd, toFind, new ArrayEqualityComparer1(), "comparer 1");
             TimeSpan t2 = testComparer(toAdd, toFind, new ArrayEqualityComparer2(), "comparer 2");
-            Console.WriteLine("Results: ");
-            Console.WriteLine("comparer 0: " + t0.TotalSeconds + " seconds");
-            Console.WriteLine("comparer 1: " + t1.TotalSeconds + " seconds");
-            Console.WriteLine("comparer 2: " + t2.TotalSeconds + " seconds");
+            logger.Log("Results: ");
+            logger.Log("comparer 0: " + t0.TotalSeconds + " seconds");
+            logger.Log("comparer 1: " + t1.TotalSeconds + " seconds");
+            logger.Log("comparer 2: " + t2.TotalSeconds + " seconds");
         }
 
         private static void testComparers()
@@ -1386,4 +1434,96 @@ namespace PADD
 
         #endregion
     }
+
+	/// <summary>
+	/// Performs looging about progress of computations. Allows several computers to log simultaneously.
+	/// </summary>
+	public class Logger :IDisposable
+	{
+		string logFolder = Path.Combine(".", "Logs");
+		bool quiet = false;
+
+		string logBuffer;
+
+		StreamWriter writter;
+
+		public void Log(string MSG)
+		{
+			if (quiet)
+				return;
+			string LogFileFullPath_Name = Path.Combine(logFolder, "log_" + Environment.MachineName + ".txt");
+			if (!Directory.Exists(logFolder))
+				Directory.CreateDirectory(logFolder);
+			if (!File.Exists(LogFileFullPath_Name))
+				File.Create(LogFileFullPath_Name);
+
+			if (writter == null)
+			{
+				writter = new StreamWriter(LogFileFullPath_Name);
+				writter.AutoFlush = true;
+			}
+
+			writter.WriteLine(MSG);
+			/*
+			logBuffer += (MSG + "\n");
+
+			try
+			{
+				using (var writer = new StreamWriter(LogFileFullPath_Name, true))
+				{
+					writer.WriteLine(logBuffer);
+				}
+			}
+			catch(Exception)
+			{
+				//file is currently in use. buffer will be written later.
+				return;
+			}
+			//if the writing succeded, the buffer must empty.
+			logBuffer = "";
+			*/
+		}
+
+		/// <summary>
+		/// Just to write empty line, to be compatible with console.writeln()
+		/// </summary>
+		public void Log()
+		{
+			Log("\n");
+		}
+
+		/// <summary>
+		/// Just to write integer, to be compatible with console.writeln()
+		/// </summary>
+		public void Log(int x)
+		{
+			Log(x.ToString());
+		}
+
+		public void Dispose()
+		{
+			if (writter != null && writter.BaseStream.CanWrite)
+			{
+				writter.Flush();
+				writter.Close();
+				writter = null;
+			}
+		}
+
+		public Logger()
+		{
+
+		}
+
+		~Logger()
+		{
+			if (writter != null && writter.BaseStream.CanWrite)
+			{
+				writter.Flush();
+				writter.Close();
+				writter = null;
+			}
+		}
+
+	}
 }

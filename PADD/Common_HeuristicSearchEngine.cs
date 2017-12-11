@@ -81,14 +81,17 @@ namespace PADD
         }
 
         /// <summary>
-        /// Prints a message to the console, if the quiet flag is on.
+        /// Prints a message to the console and to the log, if the quiet flag is off.
         /// </summary>
         /// <param name="message">Message to be printed.</param>
         /// <param name="quiet">Are we in quiet mode?</param>
-        protected void PrintMessage(string message, bool quiet)
+        protected void PrintMessage(string message, bool quiet = false)
         {
-            if (!quiet)
-                Console.WriteLine(message);
+			if (!quiet)
+			{
+				Console.WriteLine(message);
+				Program.logger.Log(message);
+			}
         }
 
         public virtual string getDescription()
