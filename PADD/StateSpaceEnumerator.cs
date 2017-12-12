@@ -1259,13 +1259,16 @@ namespace PADD
 		{
 			public override int GetHashCode()
 			{
-				int p = 17177117, m = 7;
-				foreach (var item in this)
+				unchecked
 				{
-					p += (int)(m * item);
-					m *= 7;
+					int p = 17177117, m = 7;
+					foreach (var item in this)
+					{
+						p += (int)(m * item);
+						m *= 71;
+					}
+					return p;
 				}
-				return p;
 			}
 
 			public override bool Equals(object obj)
