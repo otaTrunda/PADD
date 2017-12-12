@@ -48,17 +48,22 @@ namespace PADD
 			processAllHistogramFolders(small_and_mediumDomainsFolder);
 		}
 
-		static void Main5(string[] args)
+		/// <summary>
+		/// Main function for creating heuristic-distance histograms.
+		/// </summary>
+		/// <param name="args"></param>
+		static void Main(string[] args)
 		{
 			//string blocksDomainFolder = @"./../tests/benchmarksSAS_ALL/blocks";
 			string domainsFolder = small_and_mediumDomainsFolder;
+			bool reWrite = true;
 
 			foreach (var domain in Directory.EnumerateDirectories(domainsFolder))
 			{
-				//int problemNumber = 16;
-				int problemNumber = int.Parse(args[0]) - 1;
+				int problemNumber = 16;
+				//int problemNumber = int.Parse(args[0]) - 1;
 
-				createHeuristic2distanceStatictics(domain, problemNumber);
+				createHeuristic2distanceStatictics(domain, problemNumber, reWrite);
 			}
 			return;
 		}
@@ -68,7 +73,7 @@ namespace PADD
 		/// </summary>
 		/// <param name="args"></param>
 		[STAThread]
-        static void Main(string[] args)
+        static void Main5(string[] args)
         {
 			//runPlanningExperiments(testFilesFolder, TimeSpan.FromMinutes(15), 3);
 			//runPlanningExperiments(mediumDomainsFolderFirstHalf, TimeSpan.FromMinutes(15), int.Parse(args[0]));
@@ -614,9 +619,10 @@ namespace PADD
 		}
 
 		/// <summary>
-		/// The method takes the given problem and enumerates its state-space
+		/// The method takes the given problem and enumerates its state-space.
+		/// If rewrite is set to true, new histograms will be created even if they already exist, is it is set to false, domains, where there already are histograms, will be skipped.
 		/// </summary>
-		static void createHeuristic2distanceStatictics(string domainFolder, int param)
+		static void createHeuristic2distanceStatictics(string domainFolder, int param, bool reWrite)
         {
             var files = Directory.EnumerateFiles(domainFolder).ToList();
 			foreach (var item in files)
@@ -659,6 +665,14 @@ namespace PADD
 
 				if (!Directory.Exists(resultsPath))
 					Directory.CreateDirectory(resultsPath);
+
+				string resultFile = Path.Combine(resultsPath, Path.ChangeExtension(probleName, "txt"));
+				if(!reWrite && File.Exists(resultFile))
+				{
+					logger.Log("Skipping domain " + domainName + " , file " + probleName + " - histogram already exists");
+					continue;
+				}
+
 				/*
 				StreamWriter w = new StreamWriter(Path.Combine(resultsPath, Path.ChangeExtension(probleName, "txt")));
 				w.WriteLine("testing");
@@ -670,7 +684,7 @@ namespace PADD
 
 				var histogram = StateSpaceHistogramCalculator.getHistogram(problemFile, heuristics);
 
-				StateSpaceHistogramCalculator.writeHistograms(Path.Combine(resultsPath, Path.ChangeExtension(probleName, "txt")), histogram);
+				StateSpaceHistogramCalculator.writeHistograms(resultFile, histogram);
 				
 				//StateSpaceHistogramCalculator.writeHistograms(domainName + "_" + Path.ChangeExtension(probleName, "txt"), histogram);
 			}
