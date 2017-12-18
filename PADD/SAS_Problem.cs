@@ -80,6 +80,8 @@ namespace PADD
 		/// </summary>
 		private List<SASOperator> operatorsPlaceholder = new List<SASOperator>();
 
+		protected int[] variablesRanges;
+
 		/// <summary>
 		/// Name of the SAS+ planning problem.
 		/// </summary>
@@ -146,7 +148,14 @@ namespace PADD
 
             // initial application of axiom rules
             ApplyAxiomRules(initialState);
-        }
+
+			List<int> ranges = new List<int>();
+			for (int i = 0; i < GetVariablesCount(); i++)
+			{
+				ranges.Add(GetVariableDomainRange(i));
+			}
+			this.variablesRanges = ranges.ToArray();
+		}
 
         /// <summary>
         /// Creates an instance of SAS+ planning problem from the SAS+ input file.
@@ -368,6 +377,11 @@ namespace PADD
         {
             return variablesData[varIndex].GetDomainRange();
         }
+
+		public int[] GetVariablesRanges()
+		{
+			return variablesRanges;
+		}
 
         /// <summary>
         /// Checks whether the specified variable is abstracted in the SAS+ planning problem.

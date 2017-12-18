@@ -32,6 +32,11 @@ namespace PADD
             stateValues = values;
         }
 
+		public int[] GetVariablesRanges()
+		{
+			return parentProblem.GetVariablesRanges();
+		}
+
         /// <summary>
         /// Checks whether the state satisfy the goal conditions of the planning problem.
         /// </summary>
