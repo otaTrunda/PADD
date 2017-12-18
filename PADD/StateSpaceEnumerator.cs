@@ -80,7 +80,7 @@ namespace PADD
 			public Stopwatch stopwatch = new Stopwatch();
 			public SearchResults results;
 			public IHeap<double, IState> openNodes;
-			protected Dictionary<IState, StateInformation> gValues;
+			protected SASStatePiecewiseDictionary<StateInformation> gValues;
 			protected Dictionary<IState, IState> predecessor;
 			protected Dictionary<IState, IOperator> predOperator = new Dictionary<IState, IOperator>();
 
@@ -101,9 +101,9 @@ namespace PADD
 
 			protected virtual void addToOpenList(IState s, int gValue, IState pred, double hValue)
 			{
-				if (!gValues.ContainsKey(s))
+				if (!gValues.ContainsKey((SASState)s))
 				{
-					gValues.Add(s, new StateInformation(gValue));
+					gValues.Add((SASState)s, new StateInformation(gValue));
 					//predecessor.Add(s, pred);
 					openNodes.insert(gValue + hValue, s);
 					return;
@@ -124,10 +124,13 @@ namespace PADD
 
 			protected virtual void addToOpenList(IState s, int gValue, IState pred, IOperator op)
 			{
-				if (!gValues.ContainsKey(s))
+				if (!gValues.ContainsKey((SASState)s))
 				{
+					if (gValues.ContainsMatchingState((SASState)s))	//there is a matching state already added. Matching state will always have better gVal.
+						return;
+
 					//double hValue = heuristic.getValue(s);
-					gValues.Add(s, new StateInformation(gValue));
+					gValues.Add((SASState)s, new StateInformation(gValue));
 #if DEBUG
 					predecessor.Add(s, pred);
 					predOperator.Add(s, op);
@@ -266,7 +269,8 @@ namespace PADD
 			private void estimateShorteningCoeficient(int numberOfSamples)
 			{
 				PrintMessage("Estimating shortening coeficient");
-				List<IState> initialStates = gValues.Where(kw => kw.Value.gValue == 0).Select(kw => kw.Key).ToList();
+				//List<IState> initialStates = gValues.Where(kw => kw.Value.gValue == 0).Select(kw => kw.Key).ToList();
+				List<SASState> initialStates = gValues.EnumerateKeys.Where(k => gValues[k].gValue == 0).ToList();
 				Random r = new Random();
 				List<IState> predecessors = new List<IState>();
 				double coeffsSum = 0, coeffsCount = 0;
@@ -281,7 +285,7 @@ namespace PADD
 						if (predecessors.Count == 0)
 							break;
 						IState selectedPred = predecessors[r.Next(predecessors.Count)];
-						if (!gValues.ContainsKey(selectedPred))
+						if (!gValues.ContainsKey((SASState)selectedPred))
 							break;
 						currentState = selectedPred;
 						walkLength++;
@@ -309,9 +313,13 @@ namespace PADD
 				SASProblem sasProblem = (SASProblem)problem;
 				SASState initialState = (SASState)sasProblem.GetInitialState();
 				estimateShorteningCoeficient(randomWalksCount);
-				List<IState> initialStates = gValues.Where(kw => kw.Value.gValue == 0).Select(kw => kw.Key).ToList(),
-					predecessors = new List<IState>();
-				int maxVisitedGVal = gValues.Max(kw => kw.Value.gValue);
+				//List<IState> initialStates = gValues.Where(kw => kw.Value.gValue == 0).Select(kw => kw.Key).ToList(),
+				List<SASState> initialStates = gValues.EnumerateKeys.Where(k => gValues[k].gValue == 0).ToList();
+
+				List<IState> predecessors = new List<IState>();
+				//int maxVisitedGVal = gValues.Max(kw => kw.Value.gValue);
+				int maxVisitedGVal = gValues.EnumerateKeys.Max(k => gValues[k].gValue);
+
 				Random r = new Random();
 				List<IState> visitedStates = new List<IState>();
 
@@ -334,7 +342,7 @@ namespace PADD
 							int selectedIndex = r.Next(predecessors.Count);
 							selectedPred = predecessors[selectedIndex];
 							visitedByThisWalk = visitedStates.Contains(selectedPred);
-							visitedBefore = gValues.ContainsKey(selectedPred);
+							visitedBefore = gValues.ContainsKey((SASState)selectedPred);
 							if (visitedByThisWalk || (hasLeftVisitedArea && visitedBefore))
 							{
 								predecessors.RemoveAt(selectedIndex);
@@ -399,7 +407,15 @@ namespace PADD
 				}
 				*/
 				PrintMessage("Sampling from g-Values");
-				return sampleFromGValues(memoryLimit / 2, useApproximation, quiet);
+				double samplesPerNode = 1;
+				for (int i = 0; i < ((SASProblem)problem).GetVariablesRanges().Length; i++)
+				{
+					samplesPerNode *= ((SASProblem)problem).GetVariablesRanges()[i] * 0.51;	//51% from every variable's range
+				}
+				PrintMessage("Samples per node: " + samplesPerNode);
+				samplesPerNode = Math.Round(Math.Min(samplesPerNode * gValues.Count, memoryLimit / 10)); //ideally there will be "samplesPerNode * gValues.Count" samples, but no more than "memoryLimit / 10"
+				PrintMessage("Number of samples: " + samplesPerNode);
+				return sampleFromGValues((int)samplesPerNode, useApproximation, quiet);
 			}
 
 			/// <summary>
@@ -410,7 +426,7 @@ namespace PADD
 			private void fillGvalues(bool quiet = false)
 			{
 				var sasProblem = (SASProblem)this.problem;
-				gValues = new Dictionary<IState, StateInformation>();
+				gValues = new SASStatePiecewiseDictionary<StateInformation>();
 				searchStatus = SearchStatus.InProgress;
 				predecessor = new Dictionary<IState, IState>();
 				PrintMessage("Enumeration started. Problem: " + problem.GetProblemName(), quiet);
@@ -419,7 +435,7 @@ namespace PADD
 
 				IState goalState = getRelativeGoalState();
 				openNodes.insert(0, goalState);
-				gValues.Add(goalState, new StateInformation());
+				gValues.Add((SASState)goalState, new StateInformation());
 				predecessor.Add(goalState, null);
 
 				int steps = -1;
@@ -525,11 +541,11 @@ namespace PADD
 				double samplesPerRelativeState = (double)numberOfSamples / gValues.Count;
 				double samplesToGenerate = 0;
 
-				foreach (var relativeStateKeyValuePair in gValues)
+				foreach (var relativeState in gValues.EnumerateKeys)
 				{
 					samplesToGenerate += samplesPerRelativeState;
-					RelativeState s = (RelativeState)relativeStateKeyValuePair.Key;
-					int gVal = relativeStateKeyValuePair.Value.gValue;
+					RelativeState s = (RelativeState)relativeState;
+					int gVal = gValues[relativeState].gValue;
 
 					yield return generateSample(s, gVal, r, sASProblem, initialState, useApproximation);
 					samplesGenerated++;
@@ -585,16 +601,13 @@ namespace PADD
 				else
 				{
 					//this finds all matching relative states and takes minimum of their gvalues. This will return the REAL GoalDistance, but is quite costly.
-					var matchingStates = gValues.Keys.Where(key => canMatch((RelativeState)key, fixedState));
+					//var matchingStates = gValues.Keys.Where(key => canMatch((RelativeState)key, fixedState));
+
+					var matchingStates = gValues.GetAllMatchingStates(fixedState);
 					double realGVal = gVal;
 					if (matchingStates.Any())	//sometimes this is called on a state generated by a randomWalk such that the result is not in the gVals.
-						realGVal = matchingStates.Min(key => gValues[key].gValue);
-#if DEBUG
-					if (realGVal != gVal)
-					{
+						realGVal = matchingStates.Min(kw => kw.Value.gValue);
 
-					}
-#endif
 					return new StateDistanceResult(fixedState, realGVal);
 				}
 			}
@@ -626,7 +639,7 @@ namespace PADD
 			{
 				int maxGoalStates = 1000000;
 
-				gValues = new Dictionary<IState, StateInformation>();
+				//gValues = new Dictionary<IState, StateInformation>();
 				searchStatus = SearchStatus.InProgress;
 				predecessor = new Dictionary<IState, IState>();
 				PrintMessage("Enumeration started. Problem: " + problem.GetProblemName(), quiet);
@@ -639,7 +652,7 @@ namespace PADD
 					foreach (var item in getAllGoalStates())
 					{
 						openNodes.insert(0, item);
-						gValues.Add(item, new StateInformation());
+						gValues.Add((SASState)item, new StateInformation());
 						if (openNodes.size() > maxGoalStates)
 						{
 							PrintMessage("Couldn't generate all goal states.", quiet);
@@ -724,7 +737,6 @@ namespace PADD
 							setSearchResults();
 							yield break;
 						}
-
 					}
 				}
 				PrintMessage("All states has been enumerated.", quiet);
@@ -770,7 +782,9 @@ namespace PADD
 				this.problem = d;
 				this.heuristic = h;
 				this.searchStatus = SearchStatus.NotStarted;
-				this.gValues = new Dictionary<IState, StateInformation>();
+				//this.gValues = new Dictionary<IState, StateInformation>();
+				this.gValues = new SASStatePiecewiseDictionary<StateInformation>();
+
 				//this.openNodes = new Heaps.LeftistHeap<State>();
 				this.openNodes = new SimpleQueue();
 				//this.openNodes = new Heaps.BinomialHeap<State>();
@@ -807,6 +821,432 @@ namespace PADD
 			public override int Search(bool quiet = false)
 			{
 				throw new NotImplementedException();
+			}
+		}
+
+		private class SASStatePiecewiseDictionary<T>
+		{
+			TreeInnerNode<T> treeRoot;
+			int size;
+			List<KeyValuePair<SASState, T>> resultsPlaceholder = new List<KeyValuePair<SASState, T>>();
+
+			public T this[IState key]
+			{
+				get
+				{
+					SASState key2 = (SASState)key;
+					if (treeRoot.containsKey(key2, out T val))
+						return val;
+					throw new KeyNotFoundException();
+				}
+				set
+				{
+					SASState key2 = (SASState)key;
+					if (!treeRoot.setValue(key2, value))
+						throw new KeyNotFoundException();
+				}
+			}
+			/// <summary>
+			/// You CANNOT manipulate ICollection of keys on this dictionary implementaion since it would be totally inefficient. If you just want to iterate throught it, use "EnumerateKeys" instead which returns IEnumerable.
+			/// </summary>
+			public ICollection<SASState> Keys => throw new InvalidOperationException();
+
+			/// <summary>
+			/// You CANNOT manipulate ICollection of values on this dictionary implementaion since it would be totally inefficient. If you just want to iterate throught it, use "EnumerateValues" instead which returns IEnumerable. 
+			/// Remember that dictionary may contain the same value multiple times. 
+			/// The "EnumerateValues" will return all stored values, some of them may be the same (i.e. may return the same value several times). To avoid this use "EnumerateValues().Dictinct()".
+			/// </summary>
+			public ICollection<T> Values => throw new InvalidOperationException();
+
+			public IEnumerable<SASState> EnumerateKeys
+			{
+				get
+				{
+					if (treeRoot == null)
+						yield break;
+					foreach (var item in treeRoot.enumerateKeys())
+					{
+						yield return item;
+					}
+				}
+			}
+
+			public int Count => size;
+
+			public bool IsReadOnly => false;
+
+			public void Add(SASState key, T value)
+			{
+				Add(new KeyValuePair<SASState, T>(key, value));
+			}
+
+			public void Add(KeyValuePair<SASState, T> item)
+			{
+				if (treeRoot == null)
+				{
+					treeRoot = TreeNode<T>.createRoot(item.Key.GetVariablesRanges()[0]);
+					TreeNode<T>.variablesCount = item.Key.GetAllValues().Length;
+				}
+
+				treeRoot.add(item);
+				size++;
+			}
+
+			public void Clear()
+			{
+				this.treeRoot = null;
+				size = 0;
+				TreeNode<T>.variablesCount = 0;
+			}
+
+			public bool Contains(KeyValuePair<SASState, T> item)
+			{
+				if (treeRoot == null)
+					return false;
+
+				if (treeRoot.containsKey(item.Key, out T val))
+					if (val.Equals(item.Value))
+						return true;
+				return false;
+			}
+
+			public bool ContainsKey(SASState key)
+			{
+				if (treeRoot == null)
+					return false;
+				return treeRoot.containsKey(key, out T val);
+			}
+
+			/// <summary>
+			/// Returns true if the structure contains any key K1 such that "key" matches K1, e.i. K1 is more general (contains more wildcards).
+			/// </summary>
+			/// <param name="key"></param>
+			/// <returns></returns>
+			public bool ContainsMatchingState(SASState key)
+			{
+				if (treeRoot == null)
+					return false;
+				return treeRoot.containsMatchingState(key);
+			}
+
+			/// <summary>
+			/// Returns a set of states such that 
+			/// </summary>
+			/// <param name="key"></param>
+			/// <returns></returns>
+			public List<KeyValuePair<SASState, T>> GetAllMatchingStates(SASState key)
+			{
+				resultsPlaceholder.Clear();
+				if (treeRoot != null)
+					treeRoot.addMatchingStates(key, resultsPlaceholder);
+				return resultsPlaceholder;
+			}
+
+			public void CopyTo(KeyValuePair<SASState, T>[] array, int arrayIndex)
+			{
+				throw new NotImplementedException();
+			}
+
+			public IEnumerator<KeyValuePair<SASState, T>> GetEnumerator()
+			{
+				throw new NotImplementedException();
+			}
+
+			/// <summary>
+			/// This implementation of dictionary allows only to ADD new (key, values) and modify values for already stored (key, values). You cannot remove values.
+			/// </summary>
+			/// <param name="key"></param>
+			/// <returns></returns>
+			public bool Remove(SASState key)
+			{
+				throw new InvalidOperationException();
+			}
+
+			/// <summary>
+			/// This implementation of dictionary allows only to ADD new (key, values) and modify values for already stored (key, values). You cannot remove values.
+			/// </summary>
+			/// <param name="key"></param>
+			/// <returns></returns>
+			public bool Remove(KeyValuePair<SASState, T> item)
+			{
+				throw new InvalidOperationException();
+			}
+
+			public bool TryGetValue(SASState key, out T value)
+			{
+				if (treeRoot == null)
+				{
+					value = default(T);
+					return false;
+				}
+				return treeRoot.containsKey(key, out value);
+			}
+
+			public SASStatePiecewiseDictionary()
+			{
+			}
+
+			abstract class TreeNode<M>
+			{
+				public int decisionVariableIndex;
+				public static int variablesCount = 0;
+				public const int wildcard = -1;
+
+				protected TreeNode<M> createLeaf(int variableIndex)
+				{
+					TreeNode<M> t = new TreeLeaf<M>();
+					t.decisionVariableIndex = variableIndex;
+					return t;
+				}
+
+				public static TreeInnerNode<M> createRoot(int firstVariableRange)
+				{
+					TreeInnerNode<M> n = new TreeInnerNode<M>(0, firstVariableRange);
+					n.decisionVariableIndex = 0;
+					return n;
+				}
+
+				/// <summary>
+				/// Creates a new innerNode and inserts given value into it.
+				/// </summary>
+				/// <param name="variableIndex"></param>
+				/// <param name="value"></param>
+				/// <returns></returns>
+				protected TreeNode<M> createInnerNode(int variableIndex, KeyValuePair<SASState, M>? value)
+				{
+					TreeInnerNode<M> n = new TreeInnerNode<M>(variableIndex, value.Value.Key.GetVariablesRanges()[variableIndex]);
+					n.decisionVariableIndex = variableIndex;
+					n.add(value.Value);
+					return n;
+				}
+
+				public abstract void add(KeyValuePair<SASState, M> value);
+
+				public abstract bool containsKey(SASState key, out M value);
+
+				public abstract bool containsMatchingState(SASState key);
+
+				public abstract void addMatchingStates(SASState key, List<KeyValuePair<SASState, M>> result);
+
+				/// <summary>
+				/// TreeLeaf can hold only one value and will return true if it already has one. Inner nodes are never full.
+				/// </summary>
+				/// <returns></returns>
+				public abstract bool isFull();
+
+				/// <summary>
+				/// Gets stored value in the object. Only leaves may store values.
+				/// </summary>
+				/// <returns></returns>
+				public abstract KeyValuePair<SASState, M>? getStoredValue();
+
+				public abstract bool remove(SASState key);
+
+				/// <summary>
+				/// Sets value for a key that is already present in the dictionary. Returns false if the key was not found.
+				/// </summary>
+				/// <param name="key"></param>
+				/// <param name="value"></param>
+				/// <returns></returns>
+				public abstract bool setValue(SASState key, M value);
+
+				public abstract IEnumerable<SASState> enumerateKeys();
+
+				public abstract IEnumerable<M> enumerateValues();
+			}
+
+			class TreeInnerNode<M> : TreeNode<M>
+			{
+				Dictionary<int, TreeNode<M>> successors;
+
+				public override void add(KeyValuePair<SASState, M> value)
+				{
+					int succIndex = value.Key.GetAllValues()[decisionVariableIndex];
+					TreeNode<M> succ = successors[succIndex];
+					if (succ.isFull())
+						promoteSuccessor(succIndex);
+					successors[succIndex].add(value);
+				}
+
+				public TreeInnerNode(int variableIndex, int variableRange)
+				{
+					this.successors = new Dictionary<int, TreeNode<M>>();
+					//starts at -1 because it is a wildcard symbol.
+					for (int i = -1; i < variableRange; i++)
+					{
+						successors.Add(i, createLeaf(variableIndex + 1));
+					}
+				}
+
+				/// <summary>
+				/// Replaces a treeLeaf by TreeInnerNode so that it can hold more than one value. Keeps the currently stored value in the new structure.
+				/// </summary>
+				/// <param name="index"></param>
+				protected void promoteSuccessor(int index)
+				{
+					if (successors[index].decisionVariableIndex <= variablesCount - 1)
+						successors[index] = createInnerNode(successors[index].decisionVariableIndex, successors[index].getStoredValue());
+				}
+
+				public override bool isFull()
+				{
+					//inner nodes are never full
+					return false;
+				}
+
+				public override KeyValuePair<SASState, M>? getStoredValue()
+				{
+					//only leaves may hold values
+					return null;
+				}
+
+				public override bool containsKey(SASState key, out M value)
+				{
+					return successors[key.GetAllValues()[decisionVariableIndex]].containsKey(key, out value);
+				}
+
+				public override bool remove(SASState key)
+				{
+					throw new NotImplementedException();
+				}
+
+				public override bool setValue(SASState key, M value)
+				{
+					return successors[key.GetAllValues()[decisionVariableIndex]].setValue(key, value);
+				}
+
+				public override IEnumerable<SASState> enumerateKeys()
+				{
+					foreach (var succ in successors.Values)
+					{
+						IEnumerable<SASState> succKeys = succ.enumerateKeys();
+						foreach (var key in succKeys)
+							yield return key;
+					}
+				}
+
+				public override IEnumerable<M> enumerateValues()
+				{
+					foreach (var succ in successors.Values)
+					{
+						var succVales = succ.enumerateValues();
+						foreach (var val in succVales)
+							yield return val;
+					}
+				}
+
+				public override bool containsMatchingState(SASState key)
+				{
+					return successors[wildcard].containsMatchingState(key) ||
+						successors[key.GetAllValues()[decisionVariableIndex]].containsMatchingState(key);
+				}
+
+				public override void addMatchingStates(SASState key, List<KeyValuePair<SASState, M>> result)
+				{
+					successors[key.GetAllValues()[decisionVariableIndex]].addMatchingStates(key, result);
+					successors[wildcard].addMatchingStates(key, result);
+				}
+			}
+
+			class TreeLeaf<M> : TreeNode<M>
+			{
+				KeyValuePair<SASState, M>? storedState;
+
+				public override void add(KeyValuePair<SASState, M> value)
+				{
+					//#if DEBUG
+					if (storedState != null)
+						throw new ArgumentException();  //item with the same key already present in the dictionary
+														//#endif
+					storedState = value;
+				}
+
+				public override void addMatchingStates(SASState key, List<KeyValuePair<SASState, M>> result)
+				{
+					if (storedState == null)
+						return;
+
+					for (int i = decisionVariableIndex; i < key.GetAllValues().Length; i++)
+					{
+						if (storedState.Value.Key.GetAllValues()[i] != wildcard && storedState.Value.Key.GetAllValues()[i] != key.GetAllValues()[i])
+							return;
+					}
+					result.Add(storedState.Value);
+				}
+
+				public override bool containsKey(SASState key, out M value)
+				{
+					if (storedState == null)
+					{
+						value = default(M);
+						return false;
+					}
+					for (int i = decisionVariableIndex; i < key.GetAllValues().Length; i++)
+					{
+						if (storedState.Value.Key.GetAllValues()[i] != key.GetAllValues()[i])
+						{
+							value = default(M);
+							return false;
+						}
+					}
+					value = storedState.Value.Value;
+					return true;
+				}
+
+				public override bool containsMatchingState(SASState key)
+				{
+					if (storedState == null)
+						return false;
+
+					for (int i = decisionVariableIndex; i < key.GetAllValues().Length; i++)
+					{
+						if (storedState.Value.Key.GetAllValues()[i] != wildcard && storedState.Value.Key.GetAllValues()[i] != key.GetAllValues()[i])
+							return false;
+					}
+					return true;
+				}
+
+				public override IEnumerable<SASState> enumerateKeys()
+				{
+					if (storedState != null)
+						yield return storedState.Value.Key;
+				}
+
+				public override IEnumerable<M> enumerateValues()
+				{
+					if (storedState != null)
+						yield return storedState.Value.Value;
+				}
+
+				public override KeyValuePair<SASState, M>? getStoredValue()
+				{
+					return storedState;
+				}
+
+				public override bool isFull()
+				{
+					//is full if it already hold some value
+					return storedState != null;
+				}
+
+				public override bool remove(SASState key)
+				{
+					throw new NotImplementedException();
+				}
+
+				public override bool setValue(SASState key, M value)
+				{
+					if (storedState == null)
+						return false;
+
+					for (int i = decisionVariableIndex; i < key.GetAllValues().Length; i++)
+					{
+						if (storedState.Value.Key.GetAllValues()[i] != key.GetAllValues()[i])
+							return false;
+					}
+					storedState = new KeyValuePair<SASState, M>(this.storedState.Value.Key, value);
+					return true;
+				}
 			}
 		}
 	}
