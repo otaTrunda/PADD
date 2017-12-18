@@ -410,8 +410,9 @@ namespace PADD
 				double samplesPerNode = 1;
 				for (int i = 0; i < ((SASProblem)problem).GetVariablesRanges().Length; i++)
 				{
-					samplesPerNode *= ((SASProblem)problem).GetVariablesRanges()[i] * 0.51;	//51% from every variable's range
+					samplesPerNode *= ((SASProblem)problem).GetVariablesRanges()[i] * 0.5;	//50% from every variable's range
 				}
+				samplesPerNode = Math.Max(samplesPerNode, 1);
 				PrintMessage("Samples per node: " + samplesPerNode);
 				samplesPerNode = Math.Round(Math.Min(samplesPerNode * gValues.Count, memoryLimit / 10)); //ideally there will be "samplesPerNode * gValues.Count" samples, but no more than "memoryLimit / 10"
 				PrintMessage("Number of samples: " + samplesPerNode);

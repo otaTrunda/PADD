@@ -4,6 +4,8 @@ for i in `seq 1 20`; do echo $i; ssh u-pl$i "killall screen"; done
 for i in `seq 1 20`; do echo $i; ssh u-pl$i "./spust.sh"; done
 for i in `seq 1 20`; do echo $i; ssh u-pl$i "./spust.sh $i"; done
 
+for i in `seq 1 8`; do echo $i; ssh u-pl$i "./spust.sh $i"; done
+
 for i in `seq 1 20`; do echo $i; ssh u-pl$i "./spust.sh $((i+20))"; done
 
 

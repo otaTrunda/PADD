@@ -1,0 +1,3 @@
+histograms created by backwards planning using approximation (i.e. when state is grounded, the gVal of its lifted version is used instead of enumerating all lifted states that can be predecessors and taking minimum)
+only small+medium problems are used
+
