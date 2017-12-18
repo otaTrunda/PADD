@@ -624,15 +624,20 @@ namespace PADD
 		/// </summary>
 		static void createHeuristic2distanceStatictics(string domainFolder, int param, bool reWrite)
         {
+			logger.Log("Param is " + param);
             var files = Directory.EnumerateFiles(domainFolder).ToList();
 			foreach (var item in files)
 			{
 				//if (files.IndexOf(item) < 20)
 				//	continue;
 				if (files.IndexOf(item) % 20 != param)
+				{
+					logger.Log("Skipping file " + item + " whose index is " + files.IndexOf(item));
 					continue;
+				}
 
 				string problemFile = item;
+				logger.Log("Processing file " + item);
 
 				var d = SASProblem.CreateFromFile(problemFile);
 				List<Heuristic> heuristics = new List<Heuristic>() { new FFHeuristic(d) };
