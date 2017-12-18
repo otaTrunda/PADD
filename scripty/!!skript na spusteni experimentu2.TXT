@@ -26,6 +26,10 @@ pocitace lab:
 u-pl1 — u-pl20 - silne
 u-pl21 — u-pl37 - trochu slabsi
 
+for i in `seq 18 37`; do echo $i; ssh u-pl$i "./spust.sh $((i-17))"; done
+for i in `seq 18 37`; do echo $i; ssh u-pl$i "killall screen"; done
+
+
 u2-0 — u2-25 - silne, ucebna SU2
 u1-0 — u1-14 - trochu slabsi, ucebna SU1
 
