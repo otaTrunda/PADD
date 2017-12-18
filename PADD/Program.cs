@@ -60,8 +60,8 @@ namespace PADD
 
 			foreach (var domain in Directory.EnumerateDirectories(domainsFolder))
 			{
-				int problemNumber = 16;
-				//int problemNumber = int.Parse(args[0]) - 1;
+				//int problemNumber = 16;
+				int problemNumber = int.Parse(args[0]) - 1;
 
 				createHeuristic2distanceStatictics(domain, problemNumber, reWrite);
 			}

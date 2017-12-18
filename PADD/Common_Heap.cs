@@ -1593,9 +1593,9 @@ namespace PADD.Heaps
 
     public class FibonacciHeap2<T> : IHeap<double, T>
     {
-        public class FibonacciHeapNode<T>
+        public class FibonacciHeapNode<R>
         {
-            public FibonacciHeapNode(T data, double key)
+            public FibonacciHeapNode(R data, double key)
             {
                 Right = this;
                 Left = this;
@@ -1603,11 +1603,11 @@ namespace PADD.Heaps
                 Key = key;
             }
 
-            public T Data { get; private set; }
-            public FibonacciHeapNode<T> Child { get; set; }
-            public FibonacciHeapNode<T> Left { get; set; }
-            public FibonacciHeapNode<T> Parent { get; set; }
-            public FibonacciHeapNode<T> Right { get; set; }
+            public R Data { get; private set; }
+            public FibonacciHeapNode<R> Child { get; set; }
+            public FibonacciHeapNode<R> Left { get; set; }
+            public FibonacciHeapNode<R> Parent { get; set; }
+            public FibonacciHeapNode<R> Right { get; set; }
             public bool Mark { get; set; }
             public double Key { get; set; }
             public int Degree { get; set; }
