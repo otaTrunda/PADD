@@ -1,0 +1,5 @@
+0;0;airport;p06-airport2-p2.sas;Multiple open lists A*+Wintelect Red-Black Tree Heap;Fast Forward heuristic;0;366;True;41;0;19.5714285714286;
+0;0;blocks;probBLOCKS-5-1.sas;Multiple open lists A*+Wintelect Red-Black Tree Heap;Fast Forward heuristic;0;398;True;10;0;19.6111111111111;
+0;0;driverlog;pfile3.sas;Multiple open lists A*+Wintelect Red-Black Tree Heap;Fast Forward heuristic;0;804;True;12;0;10.3941441441441;
+0;0;elevators-opt08-strips;p06.sas;Multiple open lists A*+Wintelect Red-Black Tree Heap;Fast Forward heuristic;960;1516793;True;87;0;370.247808558096;
+0;0;freecell;probfreecell-2-2.sas;Multiple open lists A*+Wintelect Red-Black Tree Heap;Fast Forward heuristic;1;307;True;8;0;1228.0875;

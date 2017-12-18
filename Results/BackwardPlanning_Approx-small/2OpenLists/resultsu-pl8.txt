@@ -1,0 +1,1 @@
+0;0;freecell;probfreecell-2-4.sas;Multiple open lists A*+Wintelect Red-Black Tree Heap;Fast Forward heuristic;0;258;True;8;0;230.684210526316;

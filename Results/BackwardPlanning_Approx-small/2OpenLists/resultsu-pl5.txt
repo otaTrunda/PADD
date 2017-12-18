@@ -1,0 +1,3 @@
+0;0;airport;p13-airport3-p2.sas;Multiple open lists A*+Wintelect Red-Black Tree Heap;Fast Forward heuristic;0;280;True;37;0;11.8053097345133;
+0;0;freecell;probfreecell-2-1.sas;Multiple open lists A*+Wintelect Red-Black Tree Heap;Fast Forward heuristic;9;529;True;11;0;949.86925795053;
+0;0;freecell;probfreecell-3-4.sas;Multiple open lists A*+Wintelect Red-Black Tree Heap;Fast Forward heuristic;5;2401;True;17;0;5716.06899350649;

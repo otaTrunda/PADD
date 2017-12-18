@@ -1,0 +1,11 @@
+0;0;ZZdepot;pfile1.sas;Multiple open lists A*+Wintelect Red-Black Tree Heap;Fast Forward heuristic;0;155;True;11;0;12.1176470588235;
+0;0;airport;p01-airport1-p1.sas;Multiple open lists A*+Wintelect Red-Black Tree Heap;Fast Forward heuristic;0;14;True;8;0;8;
+0;0;airport;p36-airport5MUC-p2.sas;Multiple open lists A*+Wintelect Red-Black Tree Heap;Fast Forward heuristic;1800;11453;False;-1;0;287758390.527059;
+0;0;blocks;probBLOCKS-10-0.sas;Multiple open lists A*+Wintelect Red-Black Tree Heap;Fast Forward heuristic;1800;2599905;False;-1;11;57.1293938894853;
+0;0;blocks;probBLOCKS-9-1.sas;Multiple open lists A*+Wintelect Red-Black Tree Heap;Fast Forward heuristic;1340;2297162;True;28;0;41.772446088878;
+0;0;driverlog;pfile1.sas;Multiple open lists A*+Wintelect Red-Black Tree Heap;Fast Forward heuristic;0;95;True;7;0;5.28846153846154;
+0;0;elevators-opt08-strips;p01.sas;Multiple open lists A*+Wintelect Red-Black Tree Heap;Fast Forward heuristic;2;10796;True;51;0;45.0697517311265;
+0;0;elevators-opt11-strips;p01.sas;Multiple open lists A*+Wintelect Red-Black Tree Heap;Fast Forward heuristic;17;52063;True;75;0;58.2367486093666;
+0;0;elevators-sat08-strips;p01.sas;Multiple open lists A*+Wintelect Red-Black Tree Heap;Fast Forward heuristic;14;37738;True;66;0;45.4260483423323;
+0;0;freecell;pfile1.sas;Multiple open lists A*+Wintelect Red-Black Tree Heap;Fast Forward heuristic;0;277;True;12;0;165.938775510204;
+0;0;freecell;probfreecell-2-5.sas;Multiple open lists A*+Wintelect Red-Black Tree Heap;Fast Forward heuristic;1;393;True;10;0;935.254901960784;
