@@ -1,0 +1,18 @@
+Param is 6
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/ZZdepot/pfile1.sas whose index is 0
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/ZZdepot/pfile10.sas whose index is 1
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/ZZdepot/pfile13.sas whose index is 2
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/ZZdepot/pfile2.sas whose index is 3
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/ZZdepot/pfile3.sas whose index is 4
+Param is 6
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p01-airport1-p1.sas whose index is 0
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p02-airport1-p1.sas whose index is 1
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p03-airport1-p2.sas whose index is 2
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p04-airport2-p1.sas whose index is 3
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p05-airport2-p1.sas whose index is 4
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p06-airport2-p2.sas whose index is 5
+Processing file ./../tests/benchmarksSAS_ALL - small+medium/airport/p07-airport2-p2.sas
+Processing domain airport , file p07-airport2-p2.sas
+Computing g-Values
+Enumeration started. Problem: p07-airport2-p2
+Closed nodes: 1	Open nodes: 1

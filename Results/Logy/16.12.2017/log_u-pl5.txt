@@ -1,0 +1,49 @@
+Param is 4
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/ZZdepot/pfile1.sas whose index is 0
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/ZZdepot/pfile10.sas whose index is 1
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/ZZdepot/pfile13.sas whose index is 2
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/ZZdepot/pfile2.sas whose index is 3
+Processing file ./../tests/benchmarksSAS_ALL - small+medium/ZZdepot/pfile3.sas
+Processing domain ZZdepot , file pfile3.sas
+Computing g-Values
+Enumeration started. Problem: pfile3
+Closed nodes: 1	Open nodes: 1
+Enumeration ended - time limit exceeded.
+enumeration ended in 3600.0077212 seconds
+Closed nodes: 273335	Open nodes: 220421
+DONE Computing g-Values
+Sampling from g-Values
+Samples per node: 10860320.25
+Number of samples: 2000000
+Enumerating by random walks
+Estimating shortening coeficient
+DONE Estimating shortening coeficient
+DONE Enumeratin by random walks
+Param is 4
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p01-airport1-p1.sas whose index is 0
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p02-airport1-p1.sas whose index is 1
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p03-airport1-p2.sas whose index is 2
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p04-airport2-p1.sas whose index is 3
+Processing file ./../tests/benchmarksSAS_ALL - small+medium/airport/p05-airport2-p1.sas
+Processing domain airport , file p05-airport2-p1.sas
+Computing g-Values
+Enumeration started. Problem: p05-airport2-p1
+Closed nodes: 1	Open nodes: 1
+All states has been enumerated.
+Closed nodes: 40	Open nodes: 0
+DONE Computing g-Values
+Sampling from g-Values
+Samples per node: 47.5
+Number of samples: 1900
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p06-airport2-p2.sas whose index is 5
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p07-airport2-p2.sas whose index is 6
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p08-airport2-p3.sas whose index is 7
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p09-airport2-p4.sas whose index is 8
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p10-airport3-p1.sas whose index is 9
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p11-airport3-p1.sas whose index is 10
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p12-airport3-p2.sas whose index is 11
+Processing file ./../tests/benchmarksSAS_ALL - small+medium/airport/p13-airport3-p2.sas
+Processing domain airport , file p13-airport3-p2.sas
+Computing g-Values
+Enumeration started. Problem: p13-airport3-p2
+Closed nodes: 1	Open nodes: 1

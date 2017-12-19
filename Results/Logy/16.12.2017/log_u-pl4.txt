@@ -1,0 +1,36 @@
+Param is 3
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/ZZdepot/pfile1.sas whose index is 0
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/ZZdepot/pfile10.sas whose index is 1
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/ZZdepot/pfile13.sas whose index is 2
+Processing file ./../tests/benchmarksSAS_ALL - small+medium/ZZdepot/pfile2.sas
+Processing domain ZZdepot , file pfile2.sas
+Computing g-Values
+Enumeration started. Problem: pfile2
+Closed nodes: 1	Open nodes: 1
+Closed nodes: 219772	Open nodes: 119772
+Closed nodes: 385083	Open nodes: 185083
+Closed nodes: 573999	Open nodes: 273999
+Closed nodes: 698586	Open nodes: 298586
+Closed nodes: 860322	Open nodes: 360322
+Closed nodes: 997589	Open nodes: 397589
+Closed nodes: 1136409	Open nodes: 436409
+Closed nodes: 1241958	Open nodes: 441958
+Closed nodes: 1389172	Open nodes: 489172
+Closed nodes: 1504564	Open nodes: 504564
+Closed nodes: 1599243	Open nodes: 499243
+Closed nodes: 1751168	Open nodes: 551168
+Closed nodes: 1931701	Open nodes: 631701
+Closed nodes: 2056813	Open nodes: 656813
+Closed nodes: 2159621	Open nodes: 659621
+Closed nodes: 2247022	Open nodes: 647022
+Closed nodes: 2338404	Open nodes: 638404
+Closed nodes: 2431054	Open nodes: 631054
+Enumeration ended - time limit exceeded.
+enumeration ended in 3600.0005436 seconds
+Closed nodes: 2470574	Open nodes: 627024
+DONE Computing g-Values
+Sampling from g-Values
+Samples per node: 32942.25
+Number of samples: 2000000
+Enumerating by random walks
+Estimating shortening coeficient

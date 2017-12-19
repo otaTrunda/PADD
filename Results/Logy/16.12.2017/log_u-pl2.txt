@@ -1,0 +1,328 @@
+Param is 1
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/ZZdepot/pfile1.sas whose index is 0
+Processing file ./../tests/benchmarksSAS_ALL - small+medium/ZZdepot/pfile10.sas
+Processing domain ZZdepot , file pfile10.sas
+Computing g-Values
+Enumeration started. Problem: pfile10
+Closed nodes: 1	Open nodes: 1
+Enumeration ended - time limit exceeded.
+enumeration ended in 3600.6079181 seconds
+Closed nodes: 5945	Open nodes: 5700
+DONE Computing g-Values
+Sampling from g-Values
+Samples per node: 12161647383.7698
+Number of samples: 2000000
+Enumerating by random walks
+Estimating shortening coeficient
+DONE Estimating shortening coeficient
+DONE Enumeratin by random walks
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/ZZdepot/pfile13.sas whose index is 2
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/ZZdepot/pfile2.sas whose index is 3
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/ZZdepot/pfile3.sas whose index is 4
+Param is 1
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p01-airport1-p1.sas whose index is 0
+Processing file ./../tests/benchmarksSAS_ALL - small+medium/airport/p02-airport1-p1.sas
+Processing domain airport , file p02-airport1-p1.sas
+Computing g-Values
+Enumeration started. Problem: p02-airport1-p1
+Closed nodes: 1	Open nodes: 1
+All states has been enumerated.
+Closed nodes: 22	Open nodes: 0
+DONE Computing g-Values
+Sampling from g-Values
+Samples per node: 15
+Number of samples: 330
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p03-airport1-p2.sas whose index is 2
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p04-airport2-p1.sas whose index is 3
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p05-airport2-p1.sas whose index is 4
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p06-airport2-p2.sas whose index is 5
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p07-airport2-p2.sas whose index is 6
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p08-airport2-p3.sas whose index is 7
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p09-airport2-p4.sas whose index is 8
+Processing file ./../tests/benchmarksSAS_ALL - small+medium/airport/p10-airport3-p1.sas
+Processing domain airport , file p10-airport3-p1.sas
+Computing g-Values
+Enumeration started. Problem: p10-airport3-p1
+Closed nodes: 1	Open nodes: 1
+All states has been enumerated.
+Closed nodes: 39	Open nodes: 0
+DONE Computing g-Values
+Sampling from g-Values
+Samples per node: 63
+Number of samples: 2457
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p11-airport3-p1.sas whose index is 10
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p12-airport3-p2.sas whose index is 11
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p13-airport3-p2.sas whose index is 12
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p14-airport3-p3.sas whose index is 13
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p15-airport3-p3.sas whose index is 14
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p21-airport4halfMUC-p2.sas whose index is 15
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p36-airport5MUC-p2.sas whose index is 16
+Param is 1
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/blocks/probBLOCKS-10-0.sas whose index is 0
+Processing file ./../tests/benchmarksSAS_ALL - small+medium/blocks/probBLOCKS-4-0.sas
+Processing domain blocks , file probBLOCKS-4-0.sas
+Computing g-Values
+Enumeration started. Problem: probBLOCKS-4-0
+Closed nodes: 1	Open nodes: 1
+All states has been enumerated.
+Closed nodes: 1517	Open nodes: 0
+DONE Computing g-Values
+Sampling from g-Values
+Samples per node: 39.0625
+Number of samples: 59258
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/blocks/probBLOCKS-4-1.sas whose index is 2
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/blocks/probBLOCKS-4-2.sas whose index is 3
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/blocks/probBLOCKS-5-0.sas whose index is 4
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/blocks/probBLOCKS-5-1.sas whose index is 5
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/blocks/probBLOCKS-5-2.sas whose index is 6
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/blocks/probBLOCKS-6-0.sas whose index is 7
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/blocks/probBLOCKS-6-1.sas whose index is 8
+Processing file ./../tests/benchmarksSAS_ALL - small+medium/blocks/probBLOCKS-6-2.sas
+Processing domain blocks , file probBLOCKS-6-2.sas
+Computing g-Values
+Enumeration started. Problem: probBLOCKS-6-2
+Closed nodes: 1	Open nodes: 1
+Closed nodes: 173624	Open nodes: 73624
+Closed nodes: 285875	Open nodes: 85875
+Closed nodes: 376819	Open nodes: 76819
+Closed nodes: 450703	Open nodes: 50703
+Closed nodes: 518365	Open nodes: 18365
+All states has been enumerated.
+Closed nodes: 538010	Open nodes: 0
+DONE Computing g-Values
+Sampling from g-Values
+Samples per node: 1838.265625
+Number of samples: 2000000
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/blocks/probBLOCKS-7-0.sas whose index is 10
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/blocks/probBLOCKS-7-1.sas whose index is 11
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/blocks/probBLOCKS-7-2.sas whose index is 12
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/blocks/probBLOCKS-8-0.sas whose index is 13
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/blocks/probBLOCKS-8-1.sas whose index is 14
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/blocks/probBLOCKS-8-2.sas whose index is 15
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/blocks/probBLOCKS-9-1.sas whose index is 16
+Processing file ./../tests/benchmarksSAS_ALL - small+medium/blocks/probBLOCKS-9-2.sas
+Processing domain blocks , file probBLOCKS-9-2.sas
+Computing g-Values
+Enumeration started. Problem: probBLOCKS-9-2
+Closed nodes: 1	Open nodes: 1
+Closed nodes: 501150	Open nodes: 401150
+Closed nodes: 969579	Open nodes: 769579
+Closed nodes: 1396246	Open nodes: 1096246
+Closed nodes: 1784132	Open nodes: 1384132
+Closed nodes: 2144286	Open nodes: 1644286
+Closed nodes: 2597106	Open nodes: 1997106
+Closed nodes: 2939197	Open nodes: 2239197
+Closed nodes: 3338468	Open nodes: 2538468
+Closed nodes: 3756782	Open nodes: 2856782
+Closed nodes: 4112373	Open nodes: 3112373
+Closed nodes: 4524707	Open nodes: 3424707
+Closed nodes: 4894489	Open nodes: 3694489
+Closed nodes: 5288503	Open nodes: 3988503
+Closed nodes: 5691454	Open nodes: 4291454
+Enumeration ended - time limit exceeded.
+Enumeration ended in 3600.0001774 seconds
+Closed nodes: 5811140	Open nodes: 4365914
+DONE Computing g-Values
+Sampling from g-Values
+Samples per node: 1953125
+Number of samples: 2000000
+Enumerating by random walks
+Estimating shortening coeficient
+DONE Estimating shortening coeficient
+DONE Enumeratin by random walks
+Param is 1
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/driverlog/pfile1.sas whose index is 0
+Processing file ./../tests/benchmarksSAS_ALL - small+medium/driverlog/pfile10.sas
+Processing domain driverlog , file pfile10.sas
+Computing g-Values
+Enumeration started. Problem: pfile10
+Closed nodes: 1	Open nodes: 1
+Closed nodes: 311947	Open nodes: 211947
+Closed nodes: 613574	Open nodes: 413574
+Closed nodes: 931994	Open nodes: 631994
+Closed nodes: 1200775	Open nodes: 800775
+Closed nodes: 1498515	Open nodes: 998515
+Closed nodes: 1794667	Open nodes: 1194667
+Closed nodes: 2089861	Open nodes: 1389861
+Closed nodes: 2388599	Open nodes: 1588599
+Closed nodes: 2681886	Open nodes: 1781886
+Closed nodes: 2935534	Open nodes: 1935534
+Closed nodes: 3216099	Open nodes: 2116099
+Closed nodes: 3498284	Open nodes: 2298284
+Closed nodes: 3762187	Open nodes: 2462187
+Closed nodes: 4043108	Open nodes: 2643108
+Closed nodes: 4321885	Open nodes: 2821885
+Closed nodes: 4601154	Open nodes: 3001154
+Closed nodes: 4866382	Open nodes: 3166382
+Closed nodes: 5145724	Open nodes: 3345724
+Closed nodes: 5418203	Open nodes: 3518203
+Closed nodes: 5691431	Open nodes: 3691431
+Closed nodes: 5959402	Open nodes: 3859402
+Closed nodes: 6227856	Open nodes: 4027856
+Closed nodes: 6504337	Open nodes: 4204337
+Closed nodes: 6771667	Open nodes: 4371667
+Closed nodes: 7034050	Open nodes: 4534050
+Closed nodes: 7311734	Open nodes: 4711734
+Closed nodes: 7569908	Open nodes: 4869908
+Closed nodes: 7846621	Open nodes: 5046621
+Closed nodes: 8070593	Open nodes: 5170593
+Closed nodes: 8334152	Open nodes: 5334152
+Closed nodes: 8612810	Open nodes: 5512810
+Closed nodes: 8868140	Open nodes: 5668140
+Closed nodes: 9135169	Open nodes: 5835169
+Closed nodes: 9399439	Open nodes: 5999439
+Closed nodes: 9659370	Open nodes: 6159370
+Closed nodes: 9907760	Open nodes: 6307760
+Closed nodes: 10147996	Open nodes: 6447996
+Closed nodes: 10391136	Open nodes: 6591136
+Closed nodes: 10650277	Open nodes: 6750277
+Closed nodes: 10926146	Open nodes: 6926146
+Closed nodes: 11169593	Open nodes: 7069593
+Closed nodes: 11439749	Open nodes: 7239749
+Closed nodes: 11702594	Open nodes: 7402594
+Closed nodes: 11953564	Open nodes: 7553564
+Closed nodes: 12217835	Open nodes: 7717835
+Closed nodes: 12481744	Open nodes: 7881744
+Closed nodes: 12730004	Open nodes: 8030004
+Closed nodes: 12976341	Open nodes: 8176341
+Closed nodes: 13220893	Open nodes: 8320893
+Closed nodes: 13463164	Open nodes: 8463164
+Closed nodes: 13722616	Open nodes: 8622616
+Closed nodes: 13983604	Open nodes: 8783604
+Closed nodes: 14238633	Open nodes: 8938633
+Closed nodes: 14503390	Open nodes: 9103390
+Closed nodes: 14758127	Open nodes: 9258127
+Closed nodes: 15022301	Open nodes: 9422301
+Closed nodes: 15273821	Open nodes: 9573821
+Closed nodes: 15529057	Open nodes: 9729057
+Closed nodes: 15774508	Open nodes: 9874508
+Closed nodes: 16013337	Open nodes: 10013337
+Closed nodes: 16249414	Open nodes: 10149414
+Closed nodes: 16503278	Open nodes: 10303278
+Closed nodes: 16768510	Open nodes: 10468510
+Closed nodes: 17021769	Open nodes: 10621769
+Closed nodes: 17288627	Open nodes: 10788627
+Closed nodes: 17551095	Open nodes: 10951095
+Closed nodes: 17813314	Open nodes: 11113314
+Closed nodes: 18048000	Open nodes: 11248000
+Closed nodes: 18301367	Open nodes: 11401367
+Closed nodes: 18539243	Open nodes: 11539243
+Closed nodes: 18809219	Open nodes: 11709219
+Closed nodes: 19066783	Open nodes: 11866783
+Closed nodes: 19319643	Open nodes: 12019643
+Closed nodes: 19546464	Open nodes: 12146464
+Closed nodes: 19796480	Open nodes: 12296480
+Enumeration ended - memory limit exceeded.
+Enumeration ended in 1262.1250384 seconds
+Closed nodes: 20000003	Open nodes: 12415804
+DONE Computing g-Values
+Sampling from g-Values
+Samples per node: 18160335.421875
+Number of samples: 2000000
+Enumerating by random walks
+Estimating shortening coeficient
+DONE Estimating shortening coeficient
+DONE Enumeratin by random walks
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/driverlog/pfile11.sas whose index is 2
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/driverlog/pfile14.sas whose index is 3
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/driverlog/pfile2.sas whose index is 4
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/driverlog/pfile3.sas whose index is 5
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/driverlog/pfile4.sas whose index is 6
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/driverlog/pfile5.sas whose index is 7
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/driverlog/pfile6.sas whose index is 8
+Processing file ./../tests/benchmarksSAS_ALL - small+medium/driverlog/pfile7.sas
+Processing domain driverlog , file pfile7.sas
+Computing g-Values
+Enumeration started. Problem: pfile7
+Closed nodes: 1	Open nodes: 1
+Closed nodes: 363526	Open nodes: 263526
+Closed nodes: 665993	Open nodes: 465993
+Closed nodes: 976337	Open nodes: 676337
+Closed nodes: 1274821	Open nodes: 874821
+Closed nodes: 1531010	Open nodes: 1031010
+Closed nodes: 1795784	Open nodes: 1195784
+Closed nodes: 2084420	Open nodes: 1384420
+Closed nodes: 2367286	Open nodes: 1567286
+Closed nodes: 2646476	Open nodes: 1746476
+Closed nodes: 2912884	Open nodes: 1912884
+Closed nodes: 3184634	Open nodes: 2084634
+Closed nodes: 3445217	Open nodes: 2245217
+Closed nodes: 3700178	Open nodes: 2400178
+Closed nodes: 3927813	Open nodes: 2527813
+Closed nodes: 4165241	Open nodes: 2665241
+Closed nodes: 4418188	Open nodes: 2818188
+Closed nodes: 4640717	Open nodes: 2940717
+Closed nodes: 4889105	Open nodes: 3089105
+Closed nodes: 5162408	Open nodes: 3262408
+Closed nodes: 5417776	Open nodes: 3417776
+Closed nodes: 5663811	Open nodes: 3563811
+Closed nodes: 5909980	Open nodes: 3709980
+Closed nodes: 6174000	Open nodes: 3874000
+Closed nodes: 6419848	Open nodes: 4019848
+Closed nodes: 6684457	Open nodes: 4184457
+Closed nodes: 6938544	Open nodes: 4338544
+Closed nodes: 7163029	Open nodes: 4463029
+Closed nodes: 7401323	Open nodes: 4601323
+Closed nodes: 7647075	Open nodes: 4747075
+Closed nodes: 7882541	Open nodes: 4882541
+Closed nodes: 8119100	Open nodes: 5019100
+Closed nodes: 8378111	Open nodes: 5178111
+Closed nodes: 8620600	Open nodes: 5320600
+Closed nodes: 8843883	Open nodes: 5443883
+Closed nodes: 9067998	Open nodes: 5567998
+Closed nodes: 9312240	Open nodes: 5712240
+Closed nodes: 9531242	Open nodes: 5831242
+Closed nodes: 9747426	Open nodes: 5947426
+Closed nodes: 9955811	Open nodes: 6055811
+Closed nodes: 10164638	Open nodes: 6164638
+Closed nodes: 10388642	Open nodes: 6288642
+Closed nodes: 10604165	Open nodes: 6404165
+Closed nodes: 10817096	Open nodes: 6517096
+Closed nodes: 11063505	Open nodes: 6663505
+Closed nodes: 11265750	Open nodes: 6765750
+Closed nodes: 11475186	Open nodes: 6875186
+Closed nodes: 11668531	Open nodes: 6968531
+Closed nodes: 11895232	Open nodes: 7095232
+Closed nodes: 12135754	Open nodes: 7235754
+Closed nodes: 12372360	Open nodes: 7372360
+Closed nodes: 12623895	Open nodes: 7523895
+Closed nodes: 12870055	Open nodes: 7670055
+Closed nodes: 13102547	Open nodes: 7802547
+Closed nodes: 13322128	Open nodes: 7922128
+Closed nodes: 13539116	Open nodes: 8039116
+Closed nodes: 13764482	Open nodes: 8164482
+Closed nodes: 13991222	Open nodes: 8291222
+Closed nodes: 14210101	Open nodes: 8410101
+Closed nodes: 14432997	Open nodes: 8532997
+Closed nodes: 14677366	Open nodes: 8677366
+Closed nodes: 14925895	Open nodes: 8825895
+Closed nodes: 15147536	Open nodes: 8947536
+Closed nodes: 15373957	Open nodes: 9073957
+Closed nodes: 15591686	Open nodes: 9191686
+Closed nodes: 15812794	Open nodes: 9312794
+Closed nodes: 16048901	Open nodes: 9448901
+Closed nodes: 16293301	Open nodes: 9593301
+Closed nodes: 16514309	Open nodes: 9714309
+Closed nodes: 16739042	Open nodes: 9839042
+Closed nodes: 16953859	Open nodes: 9953859
+Closed nodes: 17153642	Open nodes: 10053642
+Closed nodes: 17360895	Open nodes: 10160895
+Closed nodes: 17566066	Open nodes: 10266066
+Closed nodes: 17787863	Open nodes: 10387863
+Closed nodes: 18017964	Open nodes: 10517964
+Closed nodes: 18222883	Open nodes: 10622883
+Closed nodes: 18444947	Open nodes: 10744947
+Closed nodes: 18659265	Open nodes: 10859265
+Closed nodes: 18867990	Open nodes: 10967990
+Closed nodes: 19085604	Open nodes: 11085604
+Closed nodes: 19299633	Open nodes: 11199633
+Closed nodes: 19510862	Open nodes: 11310862
+Closed nodes: 19747283	Open nodes: 11447283
+Closed nodes: 19981873	Open nodes: 11581873
+Enumeration ended - memory limit exceeded.
+Enumeration ended in 1396.600476 seconds
+Closed nodes: 20000003	Open nodes: 11590436
+DONE Computing g-Values
+Sampling from g-Values
+Samples per node: 224201.671875
+Number of samples: 2000000

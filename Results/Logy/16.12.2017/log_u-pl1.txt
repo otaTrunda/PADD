@@ -1,0 +1,40 @@
+Param is 0
+Processing file ./../tests/benchmarksSAS_ALL - small+medium/ZZdepot/pfile1.sas
+Processing domain ZZdepot , file pfile1.sas
+Computing g-Values
+Enumeration started. Problem: pfile1
+Closed nodes: 1	Open nodes: 1
+All states has been enumerated.
+Closed nodes: 1639	Open nodes: 0
+DONE Computing g-Values
+Sampling from g-Values
+Samples per node: 182.25
+Number of samples: 298708
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/ZZdepot/pfile10.sas whose index is 1
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/ZZdepot/pfile13.sas whose index is 2
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/ZZdepot/pfile2.sas whose index is 3
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/ZZdepot/pfile3.sas whose index is 4
+Param is 0
+Processing file ./../tests/benchmarksSAS_ALL - small+medium/airport/p01-airport1-p1.sas
+Processing domain airport , file p01-airport1-p1.sas
+Computing g-Values
+Enumeration started. Problem: p01-airport1-p1
+Closed nodes: 1	Open nodes: 1
+All states has been enumerated.
+Closed nodes: 25	Open nodes: 0
+DONE Computing g-Values
+Sampling from g-Values
+Samples per node: 11.25
+Number of samples: 281
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p02-airport1-p1.sas whose index is 1
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p03-airport1-p2.sas whose index is 2
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p04-airport2-p1.sas whose index is 3
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p05-airport2-p1.sas whose index is 4
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p06-airport2-p2.sas whose index is 5
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p07-airport2-p2.sas whose index is 6
+Skipping file ./../tests/benchmarksSAS_ALL - small+medium/airport/p08-airport2-p3.sas whose index is 7
+Processing file ./../tests/benchmarksSAS_ALL - small+medium/airport/p09-airport2-p4.sas
+Processing domain airport , file p09-airport2-p4.sas
+Computing g-Values
+Enumeration started. Problem: p09-airport2-p4
+Closed nodes: 1	Open nodes: 1
