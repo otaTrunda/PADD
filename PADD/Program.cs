@@ -56,7 +56,7 @@ namespace PADD
 		{
 			//string blocksDomainFolder = @"./../tests/benchmarksSAS_ALL/blocks";
 			string domainsFolder = small_and_mediumDomainsFolder;
-			bool reWrite = true;
+			bool reWrite = false;
 
 			foreach (var domain in Directory.EnumerateDirectories(domainsFolder))
 			{
