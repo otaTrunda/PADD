@@ -1139,6 +1139,8 @@ namespace PADD
 
 				public override bool containsMatchingState(SASState key)
 				{
+					if (key.GetAllValues()[decisionVariableIndex] == wildcard)
+						return successors[wildcard].containsMatchingState(key);
 					return successors[wildcard].containsMatchingState(key) ||
 						successors[key.GetAllValues()[decisionVariableIndex]].containsMatchingState(key);
 				}
