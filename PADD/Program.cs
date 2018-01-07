@@ -54,15 +54,20 @@ namespace PADD
 		/// <param name="args"></param>
 		static void Main(string[] args)
 		{
-			//string blocksDomainFolder = @"./../tests/benchmarksSAS_ALL/blocks";
+			/*
+			//string Domain = small_and_mediumDomainsFolder + "/airport";
+			string Domain = small_and_mediumDomainsFolder + "/logistics00";
+			int problemNum = 1;
+			createHeuristic2distanceStatictics(Domain, problemNum, true);
+			return;
+			*/
+
 			string domainsFolder = small_and_mediumDomainsFolder;
 			bool reWrite = false;
 
 			foreach (var domain in Directory.EnumerateDirectories(domainsFolder))
 			{
-				//int problemNumber = 16;
 				int problemNumber = int.Parse(args[0]) - 1;
-
 				createHeuristic2distanceStatictics(domain, problemNumber, reWrite);
 			}
 			return;
@@ -626,11 +631,10 @@ namespace PADD
         {
 			logger.Log("Param is " + param);
             var files = Directory.EnumerateFiles(domainFolder).ToList();
+			int numberOfComputers = 20;
 			foreach (var item in files)
 			{
-				//if (files.IndexOf(item) < 20)
-				//	continue;
-				if (files.IndexOf(item) % 20 != param)
+				if (files.IndexOf(item) % numberOfComputers != param)
 				{
 					logger.Log("Skipping file " + item + " whose index is " + files.IndexOf(item));
 					continue;
@@ -677,13 +681,6 @@ namespace PADD
 					logger.Log("Skipping domain " + domainName + " , file " + probleName + " - histogram already exists");
 					continue;
 				}
-
-				/*
-				StreamWriter w = new StreamWriter(Path.Combine(resultsPath, Path.ChangeExtension(probleName, "txt")));
-				w.WriteLine("testing");
-				w.Close();
-				return;
-				*/
 
 				logger.Log("Processing domain " + domainName + " , file " + probleName);
 
@@ -1470,6 +1467,8 @@ namespace PADD
 		{
 			if (quiet)
 				return;
+
+			Console.WriteLine(MSG);
 			string LogFileFullPath_Name = Path.Combine(logFolder, "log_" + Environment.MachineName + ".txt");
 			if (!Directory.Exists(logFolder))
 				Directory.CreateDirectory(logFolder);

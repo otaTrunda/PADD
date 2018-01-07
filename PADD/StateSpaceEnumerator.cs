@@ -87,7 +87,7 @@ namespace PADD
 			protected double lengthShorteningCoeficient;
 
 			public TimeSpan searchTime;
-			public TimeSpan timeLimit = TimeSpan.FromHours(1);
+			public TimeSpan timeLimit = TimeSpan.FromHours(5);
 
 			//protected const long memoryLimit = 5000;
             protected const long memoryLimit = 20000000;
@@ -376,6 +376,7 @@ namespace PADD
 			{
 				PrintMessage("Computing g-Values");
 				fillGvalues(quiet);
+				this.openNodes.clear();	//clearing memory. Open list will no longer be required now.
 				PrintMessage("DONE Computing g-Values");
 				/*
 				var initialS = gValues.Keys.Where(state => ((SASState)state).GetAllValues().Zip(((SASState)(problem.GetInitialState())).GetAllValues(), (f, s) => f == s || f == -1 ? true : false).All(x => x));
@@ -501,6 +502,7 @@ namespace PADD
 						}
 						catch (OutOfMemoryException)
 						{
+							this.openNodes.clear();
 							PrintMessage("Enumeration ended - memory limit exceeded.", quiet);
 							stopwatch.Stop();
 							searchTime = stopwatch.Elapsed;
@@ -536,6 +538,7 @@ namespace PADD
 			/// <returns></returns>
 			private IEnumerable<StateDistanceResult> sampleFromGValues(long numberOfSamples, bool useApproximation, bool quiet = false)
 			{
+				PrintMessage("Total samples to be generated: " + numberOfSamples);
 				Random r = new Random();
 				SASProblem sASProblem = (SASProblem)problem;
 				SASState initialState = (SASState)problem.GetInitialState();
@@ -545,16 +548,32 @@ namespace PADD
 
 				foreach (var relativeState in gValues.EnumerateKeys)
 				{
+					if (stopwatch.Elapsed > this.timeLimit)
+					{
+						PrintMessage("Sampling canceled - time limit reached. Total samples generated " + samplesGenerated + " out of " + numberOfSamples);
+							yield break;
+					}
+					if (samplesGenerated > numberOfSamples)
+						yield break;
+
 					samplesToGenerate += samplesPerRelativeState;
 					RelativeState s = (RelativeState)relativeState;
 					int gVal = gValues[relativeState].gValue;
 
 					yield return generateSample(s, gVal, r, sASProblem, initialState, useApproximation);
 					samplesGenerated++;
+					if (samplesGenerated % 10000 == 0)
+					{
+						PrintMessage("generated samples: " + samplesGenerated + ", " + (100 * samplesGenerated / (double)numberOfSamples).ToString("0.##") + " %" + "\ttotal time elapsed: " + stopwatch.Elapsed.TotalSeconds + " sec");
+					}
 					while(samplesToGenerate > samplesGenerated)
 					{
 						yield return generateSample(s, gVal, r, sASProblem, initialState, useApproximation);
 						samplesGenerated++;
+						if (samplesGenerated % 10000 == 0)
+						{
+							PrintMessage("generated samples: " + samplesGenerated + ", " + (100 * samplesGenerated / (double)numberOfSamples).ToString("0.##") + " %" + "\ttotal time elapsed: " + stopwatch.Elapsed.TotalSeconds + " sec");
+						}
 					}
 				}
 			}
@@ -808,7 +827,8 @@ namespace PADD
 			protected void printSearchStats(bool quiet)
 			{
 				PrintMessage("Closed nodes: " + (gValues.Count) +
-							"\tOpen nodes: " + openNodes.size()
+							"\tOpen nodes: " + openNodes.size() +
+							"\tTime elapsed: " + stopwatch.Elapsed.TotalMinutes + " minutes"
 							//"\tHeuristic calls: " + heuristic.heuristicCalls +
 							//"\tMin heuristic: " + heuristic.statistics.bestHeuristicValue +
 							//"\tAvg heuristic: " + heuristic.statistics.getAverageHeurValue().ToString("0.###")

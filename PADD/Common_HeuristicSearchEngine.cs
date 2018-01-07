@@ -89,7 +89,7 @@ namespace PADD
         {
 			if (!quiet)
 			{
-				Console.WriteLine(message);
+				//Console.WriteLine(message);	//not necessary anymore since the logger writes to console on its own
 				Program.logger.Log(message);
 			}
         }
