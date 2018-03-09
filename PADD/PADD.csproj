@@ -40,6 +40,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <PlatformTarget>x64</PlatformTarget>
@@ -51,6 +52,7 @@
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject>PADD.Program</StartupObject>
@@ -90,9 +92,6 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
-    <Reference Include="System.ValueTuple, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.ValueTuple.4.4.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
-    </Reference>
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -180,11 +179,11 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\brightwire\BrightWire.CUDA.Net4.x64\BrightWire.CUDA.Net4.x64.csproj">
+    <ProjectReference Include="..\..\..\brightwire\BrightWire.CUDA.Net4.x64\BrightWire.CUDA.Net4.x64.csproj">
       <Project>{50bcb2ab-e8ca-4974-b136-49a98d5e34cb}</Project>
       <Name>BrightWire.CUDA.Net4.x64</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\BrightWire\brightwire\BrightWire.Net4\BrightWire.Net4.csproj">
+    <ProjectReference Include="..\..\..\brightwire\BrightWire.Net4\BrightWire.Net4.csproj">
       <Project>{fd8aaef6-2edb-446c-bb19-5ebee5cde982}</Project>
       <Name>BrightWire.Net4</Name>
     </ProjectReference>

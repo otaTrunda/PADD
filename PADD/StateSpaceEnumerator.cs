@@ -16,11 +16,13 @@ namespace PADD
 	{
 		public IState state;
 		public double realDistance;
+		public bool isSurelyCorrect;
 
-		public StateDistanceResult(IState state, double currentGValue)
+		public StateDistanceResult(IState state, double currentGValue, bool isSurelyCorrect = true)
 		{
 			this.state = state;
 			this.realDistance = currentGValue;
+			this.isSurelyCorrect = isSurelyCorrect;
 		}
 	}
 
@@ -49,10 +51,16 @@ namespace PADD
 				}
 
 				if (e.searchStatus == SearchStatus.MemoryLimitExceeded || e.searchStatus == SearchStatus.TimeLimitExceeded)
+				{
 					foreach (var item in e.enumerateByRandomWalks(randomWalksCount, randomWalksMaxLength, true))
 					{
 						yield return item;
 					}
+					foreach (var item in e.enumerateByRandomWalksFromInitial(randomWalksCount, randomWalksMaxLength))
+					{
+						yield return item;
+					}
+				}
 			}
 			else
 			{
@@ -77,20 +85,33 @@ namespace PADD
 
 		private class StateSpaceEnumeratorInternal : HeuristicSearchEngine
 		{
-			public Stopwatch stopwatch = new Stopwatch();
+			protected List<SASState> allGoalRelativeStates;
+
+			protected List<SASState> getAllGoalRelativeStates()
+			{
+				if (allGoalRelativeStates == null)
+					allGoalRelativeStates = gValues.EnumerateKeys.Where(k => gValues[k].gValue == 0).ToList();
+				return allGoalRelativeStates;
+			}
+
+			public Stopwatch stopwatch = new Stopwatch(),
+				statsIntervalWatch = new Stopwatch();
 			public SearchResults results;
 			public IHeap<double, IState> openNodes;
 			protected SASStatePiecewiseDictionary<StateInformation> gValues;
 			protected Dictionary<IState, IState> predecessor;
 			protected Dictionary<IState, IOperator> predOperator = new Dictionary<IState, IOperator>();
+			protected double branchingSum = 1,
+				branchingCount = 1;
 
 			protected double lengthShorteningCoeficient;
 
 			public TimeSpan searchTime;
-			public TimeSpan timeLimit = TimeSpan.FromHours(1);
+			public TimeSpan timeLimit = TimeSpan.FromHours(2);
+			public TimeSpan statsPrintingInterval = TimeSpan.FromMinutes(5);
 
 			//protected const long memoryLimit = 5000;
-            protected const long memoryLimit = 20000000;
+            protected long memoryLimit = 300000000;
 
             protected void addToClosedList(IState state)
 			{
@@ -279,8 +300,20 @@ namespace PADD
 				{
 					IState currentState = initialStates[r.Next(initialStates.Count)];
 					double walkLength = 0;
+
+					if (statsIntervalWatch.Elapsed >= statsPrintingInterval)
+					{
+						Console.WriteLine("Elapsed minutes: " + statsIntervalWatch.Elapsed.TotalMinutes + " " + i * 100 / numberOfSamples + " %");
+					}
+					Stopwatch w = Stopwatch.StartNew();
 					while (true)
 					{
+						if (w.Elapsed > TimeSpan.FromMinutes(2))
+						{
+							Console.WriteLine("Inside while cycle for more than 2 minutes. Breaking.."); ;
+							break;
+						}
+
 						predecessors = problem.GetAllPredecessors(currentState).Select(p => p.GetPredecessorState()).ToList();
 						if (predecessors.Count == 0)
 							break;
@@ -297,6 +330,8 @@ namespace PADD
 						coeffsSum += coeffSample;
 						coeffsCount++;
 					}
+					if (stopwatch.Elapsed > timeLimit)
+						break;
 				}
 				lengthShorteningCoeficient = coeffsSum / coeffsCount;
 				PrintMessage("DONE Estimating shortening coeficient");
@@ -309,10 +344,18 @@ namespace PADD
 			/// <returns></returns>
 			public IEnumerable<StateDistanceResult> enumerateByRandomWalks(int randomWalksCount, int walkMaxLength, bool relativeStatesUsed = false)
 			{
-				PrintMessage("Enumerating by random walks");
+				double walksLengthsSum = 1;
+				int walksCount = 1,
+					walksDiscarted = 0;
+				Heuristic newHeur = new FFHeuristic((SASProblem)problem);
+
+				stopwatch.Restart();
+				statsIntervalWatch.Restart();
+				PrintMessage("Enumerating by random walks from the goal state. Total count = " + randomWalksCount);
 				SASProblem sasProblem = (SASProblem)problem;
 				SASState initialState = (SASState)sasProblem.GetInitialState();
 				estimateShorteningCoeficient(randomWalksCount);
+				stopwatch.Restart();
 				//List<IState> initialStates = gValues.Where(kw => kw.Value.gValue == 0).Select(kw => kw.Key).ToList(),
 				List<SASState> initialStates = gValues.EnumerateKeys.Where(k => gValues[k].gValue == 0).ToList();
 
@@ -325,7 +368,17 @@ namespace PADD
 
 				for (int i = 0; i < randomWalksCount; i++)
 				{
-					int walkLength = r.Next(walkMaxLength - maxVisitedGVal) + maxVisitedGVal;
+					if (statsIntervalWatch.Elapsed > statsPrintingInterval)
+					{
+						PrintMessage("Walks generated: " + walksCount + " (" + ((double)walksCount * 100 / randomWalksCount).ToString("0.##") + 
+							" %,\tAverage length: " + (walksLengthsSum / walksCount).ToString("0.##"));
+						statsIntervalWatch.Restart();
+					}
+					int walkLength = 0;
+					if (walkMaxLength > maxVisitedGVal)
+						walkLength = r.Next(walkMaxLength - maxVisitedGVal) + maxVisitedGVal;
+					else
+						walkLength = walkLength = r.Next(walkMaxLength) + maxVisitedGVal;
 					IState currentState = initialStates[r.Next(initialStates.Count)];
 					visitedStates.Clear();
 					int realWalkLength = 0;
@@ -333,12 +386,18 @@ namespace PADD
 					for (realWalkLength = 0; realWalkLength < walkLength; realWalkLength++)
 					{
 						visitedStates.Add(currentState);
-						predecessors = problem.GetAllPredecessors(currentState).Select(p => p.GetPredecessorState()).Where(p => problem.GetAllPredecessors(p).Count > 0).ToList();
+						predecessors = problem.GetAllPredecessors(currentState).Select(p => p.GetPredecessorState()).Where(p => problem.GetAllPredecessors(p).Count > 0).Distinct().ToList();
 						IState selectedPred = null;
 						bool visitedByThisWalk = false,
 							visitedBefore = false;
+						Stopwatch ww = Stopwatch.StartNew();
 						while (predecessors.Count > 0)
 						{
+							if (ww.Elapsed > TimeSpan.FromMinutes(2))
+							{
+								Console.WriteLine("Inside while cycle for more than 2 minutes. Breaking..");
+								break;
+							}
 							int selectedIndex = r.Next(predecessors.Count);
 							selectedPred = predecessors[selectedIndex];
 							visitedByThisWalk = visitedStates.Contains(selectedPred);
@@ -359,12 +418,170 @@ namespace PADD
 					}
 					if (realWalkLength >= maxVisitedGVal)
 					{
-						if (!relativeStatesUsed)
-							yield return new StateDistanceResult(currentState, realWalkLength * lengthShorteningCoeficient);
-						yield return generateSample((RelativeState)currentState, realWalkLength * lengthShorteningCoeficient, r, sasProblem, initialState, true);
+						walksCount++;
+
+						SASState endState = (SASState)generateSample((RelativeState)currentState, 0, r, sasProblem, initialState, true).state;
+						double realDistance = trySearchForShortestPathIntoVisitedTeritory(endState, newHeur, sasProblem);
+						if (realDistance == -1)	//could not find the real distance, using aproximation
+						{
+							walksLengthsSum += realWalkLength;
+							if (!relativeStatesUsed)
+								yield return new StateDistanceResult(currentState, realWalkLength * lengthShorteningCoeficient);
+							var sample = generateSample((RelativeState)currentState, realWalkLength * lengthShorteningCoeficient, r, sasProblem, initialState, false);
+							sample.isSurelyCorrect = false;
+							yield return sample;
+						}
+						else
+						{
+							walksLengthsSum += realDistance;
+							StateDistanceResult sample = new StateDistanceResult(endState, realDistance, true);
+							yield return sample;
+						}
+					}
+					else
+						walksDiscarted++;
+					if (stopwatch.Elapsed > timeLimit)
+					{
+						PrintMessage("canceling.. time limit reached");
+						yield break;
 					}
 				}
-				PrintMessage("DONE Enumeratin by random walks");
+				PrintMessage("DONE Enumerating by random walks. Total walks generated: " + walksCount +  
+					", walks discarted: " + walksDiscarted + ", average length: " + (walksLengthsSum / walksCount).ToString("0.##"));
+			}
+
+			/// <summary>
+			/// To be called only AFTER the Enumerate method. (Gvals have to be computed!).
+			/// </summary>
+			/// <param name="randomWalksCount"></param>
+			/// <returns></returns>
+			public IEnumerable<StateDistanceResult> enumerateByRandomWalksFromInitial(int randomWalksCount, int walkMaxLength)
+			{
+				double walksLengthsToGoalSum = 1;
+				int walksCount = 1,
+					walksDiscarted = 0;
+				Heuristic newHeur = new FFHeuristic((SASProblem)problem);
+
+				stopwatch.Restart();
+				statsIntervalWatch.Restart();
+				PrintMessage("Enumerating by random walks from the initial state. Total count = " + randomWalksCount);
+				SASProblem sasProblem = (SASProblem)problem;
+				SASState initialState = (SASState)sasProblem.GetInitialState();
+
+				stopwatch.Restart();
+				List<IState> successors = new List<IState>();
+				Random r = new Random();
+
+				List<IState> visitedStates = new List<IState>();
+
+				for (int i = 0; i < randomWalksCount; i++)
+				{
+					if (statsIntervalWatch.Elapsed > statsPrintingInterval)
+					{
+						PrintMessage("Walks generated: " + walksCount + " (" + ((double)walksCount * 100 / randomWalksCount).ToString("0.##") +
+							" %,\tAverage length: " + (walksLengthsToGoalSum / walksCount).ToString("0.##"));
+						statsIntervalWatch.Restart();
+					}
+					int walkLength = 0;
+
+					IState currentState = initialState;
+					visitedStates.Clear();
+					int currentWalkLength = 0;
+
+					for (currentWalkLength = 0; currentWalkLength < walkLength; currentWalkLength++)
+					{
+						visitedStates.Add(currentState);
+						successors = problem.GetAllSuccessors(currentState).Select(p => p.GetSuccessorState()).Where(p => problem.GetAllSuccessors(p).Count > 0).Distinct().ToList();
+						if (successors.Count == 0)
+							break;
+						IState selectedSucc = successors[r.Next(successors.Count)];
+						currentState = selectedSucc;
+					}
+
+					walksCount++;
+					SASState endState = (SASState)currentState;
+					double realDistanceToGoal = trySearchForShortestPathIntoVisitedTeritory(endState, newHeur, sasProblem);
+					if (realDistanceToGoal == -1) //could not find the real distance, discarting
+					{
+						walksDiscarted++;
+					}
+					else
+					{
+						walksLengthsToGoalSum += realDistanceToGoal;
+						StateDistanceResult sample = new StateDistanceResult(endState, realDistanceToGoal, true);
+						yield return sample;
+					}
+
+					if (stopwatch.Elapsed > timeLimit)
+					{
+						PrintMessage("canceling.. time limit reached");
+						yield break;
+					}
+				}
+				PrintMessage("DONE Enumerating by random walks from the initial state. Total walks generated: " + walksCount +
+					", walks discarted: " + walksDiscarted + ", average length to goal: " + (walksLengthsToGoalSum / (walksCount - walksDiscarted)).ToString("0.##"));
+			}
+
+			/// <summary>
+			/// Tries to find a path from given state to some states that was visited by the backwards planning. It is used to compute a distance-estimate of the last state of a random walk.
+			/// It returns -1 if it was not able to find any path to previously visited state, or returns the total length of the path (from given node to goal).
+			/// </summary>
+			/// <param name="state"></param>
+			protected double trySearchForShortestPathIntoVisitedTeritory(IState state, Heuristic h, SASProblem prob)
+			{
+				Stopwatch newWatch = Stopwatch.StartNew();
+				TimeSpan newLimit = TimeSpan.FromMinutes(1);
+
+				Dictionary<IState, StateInformation> newClosedList = new Dictionary<IState, StateInformation>();
+				IHeap<double, IState> newOpenList = new Heaps.FibonacciHeap1<IState>();
+				newOpenList.insert(0, state);
+				newClosedList.Add(state, new StateInformation(0));
+
+				while(newOpenList.size() > 0)
+				{
+					if (newWatch.Elapsed > newLimit)
+						return -1;
+
+					SASState newCurrentState = (SASState)newOpenList.removeMin();
+					StateInformation currentStateInfo = newClosedList[newCurrentState];
+					if (currentStateInfo.isClosed)
+						continue;
+					currentStateInfo.isClosed = true;
+					newClosedList[newCurrentState] = currentStateInfo;
+
+					var matchingStates = gValues.GetAllMatchingStates(newCurrentState, 10);
+					if (matchingStates.Any())
+					{
+						int goalDistance = matchingStates.Min(s => s.Value.gValue);
+						if (newClosedList[newCurrentState].gValue > 0)
+						{
+
+						}
+						return newClosedList[newCurrentState].gValue + goalDistance;
+					}
+					int newCurrentGVal = currentStateInfo.gValue;
+					var successors = prob.GetAllSuccessors(newCurrentState);
+					foreach (var item in successors)
+					{
+						if (newWatch.Elapsed > newLimit)
+							return -1;
+						int successorsGVal = newCurrentGVal + item.GetOperator().GetCost();
+						if (newClosedList.ContainsKey(item.GetSuccessorState()))
+						{
+							var info = newClosedList[item.GetSuccessorState()];
+							if (info.gValue > successorsGVal)
+							{
+								info.gValue = successorsGVal;
+								info.isClosed = false;
+								newClosedList[item.GetSuccessorState()] = info;
+							}
+						}
+						newClosedList.Add(item.GetSuccessorState(), new StateInformation(successorsGVal));
+						double hVal = h.getValue(item.GetSuccessorState());
+						newOpenList.insert(successorsGVal + hVal + hVal / 1000, item.GetSuccessorState());
+					}
+				}
+				return -1;
 			}
 
 			/// <summary>
@@ -374,9 +591,12 @@ namespace PADD
 			/// <returns></returns>
 			public IEnumerable<StateDistanceResult> EnumerateNEW(bool useApproximation, bool quiet = false)
 			{
+				stopwatch.Restart();
 				PrintMessage("Computing g-Values");
 				fillGvalues(quiet);
+				this.openNodes.clear();	//clearing memory. Open list will no longer be required now.
 				PrintMessage("DONE Computing g-Values");
+				stopwatch.Restart();
 				/*
 				var initialS = gValues.Keys.Where(state => ((SASState)state).GetAllValues().Zip(((SASState)(problem.GetInitialState())).GetAllValues(), (f, s) => f == s || f == -1 ? true : false).All(x => x));
 				if (initialS.Any())
@@ -427,7 +647,11 @@ namespace PADD
 				/// <returns></returns>
 			private void fillGvalues(bool quiet = false)
 			{
+				statsIntervalWatch.Start();
 				var sasProblem = (SASProblem)this.problem;
+				this.memoryLimit = memoryLimit / sasProblem.GetVariablesCount();
+
+
 				gValues = new SASStatePiecewiseDictionary<StateInformation>();
 				searchStatus = SearchStatus.InProgress;
 				predecessor = new Dictionary<IState, IState>();
@@ -444,8 +668,11 @@ namespace PADD
 				while (openNodes.size() > 0)
 				{
 					steps++;
-					if (steps % 100000 == 0)
+					if (statsIntervalWatch.Elapsed > statsPrintingInterval)
+					{
 						printSearchStats(quiet);
+						statsIntervalWatch.Restart();
+					}
 
 					if (stopwatch.Elapsed > timeLimit)
 					{
@@ -459,7 +686,7 @@ namespace PADD
 						return;
 					}
 
-					if (gValues.Count > memoryLimit)
+					if (gValues.Count + openNodes.size() > memoryLimit)
 					{
 						PrintMessage("Enumeration ended - memory limit exceeded.", quiet);
 						stopwatch.Stop();
@@ -478,6 +705,9 @@ namespace PADD
 					int currentGValue = gValues[currentState].gValue;
 
 					var backwardSuccessors = sasProblem.GetPredecessorsRelative(currentState);
+					branchingCount++;
+					branchingSum += backwardSuccessors.Count;
+
 					foreach (var succ in backwardSuccessors)
 					{
 						if (stopwatch.Elapsed > timeLimit)
@@ -501,6 +731,7 @@ namespace PADD
 						}
 						catch (OutOfMemoryException)
 						{
+							this.openNodes.clear();
 							PrintMessage("Enumeration ended - memory limit exceeded.", quiet);
 							stopwatch.Stop();
 							searchTime = stopwatch.Elapsed;
@@ -536,6 +767,10 @@ namespace PADD
 			/// <returns></returns>
 			private IEnumerable<StateDistanceResult> sampleFromGValues(long numberOfSamples, bool useApproximation, bool quiet = false)
 			{
+				if (!statsIntervalWatch.IsRunning)
+					statsIntervalWatch.Start();
+
+				PrintMessage("Total samples to be generated: " + numberOfSamples);
 				Random r = new Random();
 				SASProblem sASProblem = (SASProblem)problem;
 				SASState initialState = (SASState)problem.GetInitialState();
@@ -545,16 +780,36 @@ namespace PADD
 
 				foreach (var relativeState in gValues.EnumerateKeys)
 				{
+					if (stopwatch.Elapsed > this.timeLimit)
+					{
+						PrintMessage("Sampling canceled - time limit reached. Total samples generated " + samplesGenerated + " out of " + numberOfSamples);
+							yield break;
+					}
+					if (samplesGenerated > numberOfSamples)
+					{
+						PrintMessage("DONE. Required number of samples have been generated.");
+						yield break;
+					}
+
 					samplesToGenerate += samplesPerRelativeState;
 					RelativeState s = (RelativeState)relativeState;
 					int gVal = gValues[relativeState].gValue;
 
 					yield return generateSample(s, gVal, r, sASProblem, initialState, useApproximation);
 					samplesGenerated++;
+					if (statsIntervalWatch.Elapsed > statsPrintingInterval)
+					{
+						PrintMessage("generated samples: " + samplesGenerated + ", " + (100 * samplesGenerated / (double)numberOfSamples).ToString("0.##") + " %" + "\ttime elapsed: " + stopwatch.Elapsed.TotalMinutes + " min");
+						statsIntervalWatch.Restart();
+					}
 					while(samplesToGenerate > samplesGenerated)
 					{
 						yield return generateSample(s, gVal, r, sASProblem, initialState, useApproximation);
 						samplesGenerated++;
+						if (samplesGenerated % 10000 == 0)
+						{
+							PrintMessage("generated samples: " + samplesGenerated + ", " + (100 * samplesGenerated / (double)numberOfSamples).ToString("0.##") + " %" + "\ttotal time elapsed: " + stopwatch.Elapsed.TotalMinutes + " min");
+						}
 					}
 				}
 			}
@@ -605,7 +860,7 @@ namespace PADD
 					//this finds all matching relative states and takes minimum of their gvalues. This will return the REAL GoalDistance, but is quite costly.
 					//var matchingStates = gValues.Keys.Where(key => canMatch((RelativeState)key, fixedState));
 
-					var matchingStates = gValues.GetAllMatchingStates(fixedState);
+					var matchingStates = gValues.GetAllMatchingStates(fixedState, 10000);	//returns at most 10000 relative
 					double realGVal = gVal;
 					if (matchingStates.Any())	//sometimes this is called on a state generated by a randomWalk such that the result is not in the gVals.
 						realGVal = matchingStates.Min(kw => kw.Value.gValue);
@@ -686,7 +941,7 @@ namespace PADD
 						yield break;
 					}
 
-					if (gValues.Count > memoryLimit)
+					if (gValues.Count + openNodes.size()> memoryLimit)
 					{
 						PrintMessage("Enumeration ended - memory limit exceeded.", quiet);
 						stopwatch.Stop();
@@ -808,7 +1063,10 @@ namespace PADD
 			protected void printSearchStats(bool quiet)
 			{
 				PrintMessage("Closed nodes: " + (gValues.Count) +
-							"\tOpen nodes: " + openNodes.size()
+							"\tOpen nodes: " + openNodes.size() +
+							"\tTime elapsed: " + stopwatch.Elapsed.TotalMinutes + " minutes" +
+							"\tAverage branching: " + (branchingSum / branchingCount).ToString("0.##") +
+							"\tExpanded nodes per sec: " + (gValues.Count / stopwatch.Elapsed.TotalSeconds).ToString("0.##")
 							//"\tHeuristic calls: " + heuristic.heuristicCalls +
 							//"\tMin heuristic: " + heuristic.statistics.bestHeuristicValue +
 							//"\tAvg heuristic: " + heuristic.statistics.getAverageHeurValue().ToString("0.###")
@@ -836,8 +1094,9 @@ namespace PADD
 			{
 				get
 				{
+					System.Diagnostics.Stopwatch watch = System.Diagnostics.Stopwatch.StartNew();
 					SASState key2 = (SASState)key;
-					if (treeRoot.containsKey(key2, out T val))
+					if (treeRoot.containsKey(key2, watch, out T val))
 						return val;
 					throw new KeyNotFoundException();
 				}
@@ -905,8 +1164,8 @@ namespace PADD
 			{
 				if (treeRoot == null)
 					return false;
-
-				if (treeRoot.containsKey(item.Key, out T val))
+				System.Diagnostics.Stopwatch w = Stopwatch.StartNew();
+				if (treeRoot.containsKey(item.Key, w, out T val))
 					if (val.Equals(item.Value))
 						return true;
 				return false;
@@ -914,9 +1173,10 @@ namespace PADD
 
 			public bool ContainsKey(SASState key)
 			{
+				Stopwatch watch = Stopwatch.StartNew();
 				if (treeRoot == null)
 					return false;
-				return treeRoot.containsKey(key, out T val);
+				return treeRoot.containsKey(key, watch, out T val);
 			}
 
 			/// <summary>
@@ -926,9 +1186,11 @@ namespace PADD
 			/// <returns></returns>
 			public bool ContainsMatchingState(SASState key)
 			{
+				//this method can be VERY time demanding! There is therefore a stopwatch added that keeps the time in a reasonable limit.
+				Stopwatch watch = Stopwatch.StartNew();
 				if (treeRoot == null)
 					return false;
-				return treeRoot.containsMatchingState(key);
+				return treeRoot.containsMatchingState(key, watch);
 			}
 
 			/// <summary>
@@ -936,11 +1198,13 @@ namespace PADD
 			/// </summary>
 			/// <param name="key"></param>
 			/// <returns></returns>
-			public List<KeyValuePair<SASState, T>> GetAllMatchingStates(SASState key)
+			public List<KeyValuePair<SASState, T>> GetAllMatchingStates(SASState key, int maxItems)
 			{
+				//this method can be VERY time demanding! There is therefore a stopwatch added that keeps the time in a reasonable limit.
+				Stopwatch watch = Stopwatch.StartNew();
 				resultsPlaceholder.Clear();
 				if (treeRoot != null)
-					treeRoot.addMatchingStates(key, resultsPlaceholder);
+					treeRoot.addMatchingStates(key, resultsPlaceholder, maxItems, watch);
 				return resultsPlaceholder;
 			}
 
@@ -981,7 +1245,8 @@ namespace PADD
 					value = default(T);
 					return false;
 				}
-				return treeRoot.containsKey(key, out value);
+				Stopwatch w = Stopwatch.StartNew();
+				return treeRoot.containsKey(key, w, out value);
 			}
 
 			public SASStatePiecewiseDictionary()
@@ -993,6 +1258,8 @@ namespace PADD
 				public int decisionVariableIndex;
 				public static int variablesCount = 0;
 				public const int wildcard = -1;
+				protected TimeSpan timeLimit = TimeSpan.FromSeconds(10);
+				protected static Random r = new Random();
 
 				protected TreeNode<M> createLeaf(int variableIndex)
 				{
@@ -1024,11 +1291,11 @@ namespace PADD
 
 				public abstract void add(KeyValuePair<SASState, M> value);
 
-				public abstract bool containsKey(SASState key, out M value);
+				public abstract bool containsKey(SASState key, Stopwatch w, out M value);
 
-				public abstract bool containsMatchingState(SASState key);
+				public abstract bool containsMatchingState(SASState key, Stopwatch w);
 
-				public abstract void addMatchingStates(SASState key, List<KeyValuePair<SASState, M>> result);
+				public abstract void addMatchingStates(SASState key, List<KeyValuePair<SASState, M>> result, int maxItems, Stopwatch w);
 
 				/// <summary>
 				/// TreeLeaf can hold only one value and will return true if it already has one. Inner nodes are never full.
@@ -1102,9 +1369,15 @@ namespace PADD
 					return null;
 				}
 
-				public override bool containsKey(SASState key, out M value)
+				public override bool containsKey(SASState key, Stopwatch w, out M value)
 				{
-					return successors[key.GetAllValues()[decisionVariableIndex]].containsKey(key, out value);
+					if (w.Elapsed > this.timeLimit)
+					{
+						Program.logger.Log("containsKey: time limit elapsed!!");
+						value = default(M);
+						return false;
+					}
+					return successors[key.GetAllValues()[decisionVariableIndex]].containsKey(key, w, out value);
 				}
 
 				public override bool remove(SASState key)
@@ -1137,16 +1410,43 @@ namespace PADD
 					}
 				}
 
-				public override bool containsMatchingState(SASState key)
+				public override bool containsMatchingState(SASState key, Stopwatch w)
 				{
-					return successors[wildcard].containsMatchingState(key) ||
-						successors[key.GetAllValues()[decisionVariableIndex]].containsMatchingState(key);
+					if (w.Elapsed > timeLimit)
+						return false;
+
+					if (key.GetAllValues()[decisionVariableIndex] == wildcard)
+						return successors[wildcard].containsMatchingState(key, w);
+
+					if (r.Next() < 0.5)
+						return successors[wildcard].containsMatchingState(key, w) ||
+							successors[key.GetAllValues()[decisionVariableIndex]].containsMatchingState(key, w);
+
+					return successors[key.GetAllValues()[decisionVariableIndex]].containsMatchingState(key, w) ||
+						successors[wildcard].containsMatchingState(key, w);
 				}
 
-				public override void addMatchingStates(SASState key, List<KeyValuePair<SASState, M>> result)
+				public override void addMatchingStates(SASState key, List<KeyValuePair<SASState, M>> result, int maxItems, Stopwatch w)
 				{
-					successors[key.GetAllValues()[decisionVariableIndex]].addMatchingStates(key, result);
-					successors[wildcard].addMatchingStates(key, result);
+					if (w.Elapsed > timeLimit)
+					{
+						Program.logger.Log("addMatchingStates: time limit elapsed!!");
+						return;
+					}
+
+					if (result.Count >= maxItems)
+						return;
+
+					if (r.NextDouble() < 0.5)
+					{
+						successors[key.GetAllValues()[decisionVariableIndex]].addMatchingStates(key, result, maxItems, w);
+						successors[wildcard].addMatchingStates(key, result, maxItems, w);
+					}
+					else
+					{
+						successors[wildcard].addMatchingStates(key, result, maxItems, w);
+						successors[key.GetAllValues()[decisionVariableIndex]].addMatchingStates(key, result, maxItems, w);
+					}
 				}
 			}
 
@@ -1163,7 +1463,7 @@ namespace PADD
 					storedState = value;
 				}
 
-				public override void addMatchingStates(SASState key, List<KeyValuePair<SASState, M>> result)
+				public override void addMatchingStates(SASState key, List<KeyValuePair<SASState, M>> result, int maxItems, Stopwatch w)
 				{
 					if (storedState == null)
 						return;
@@ -1176,7 +1476,7 @@ namespace PADD
 					result.Add(storedState.Value);
 				}
 
-				public override bool containsKey(SASState key, out M value)
+				public override bool containsKey(SASState key, Stopwatch w, out M value)
 				{
 					if (storedState == null)
 					{
@@ -1195,7 +1495,7 @@ namespace PADD
 					return true;
 				}
 
-				public override bool containsMatchingState(SASState key)
+				public override bool containsMatchingState(SASState key, Stopwatch w)
 				{
 					if (storedState == null)
 						return false;
@@ -1253,6 +1553,49 @@ namespace PADD
 		}
 	}
 
+	/// <summary>
+	/// Holds database of state from the state-space of some problem together with their goal-distances. Distances are either exact or approximative.
+	/// </summary>
+	class StatesDistanceDatabase
+	{
+		protected string problemFilePath;
+		protected string savedResultsFilePath;
+
+		protected string resultsFolderName = "_problemInfo";
+		protected string resultsFileNamePrefix = "statesDB_";
+
+		protected List<StateDistanceResult> newItems;
+
+		public StatesDistanceDatabase(string problemFilePath)
+		{
+			this.problemFilePath = problemFilePath;
+			this.savedResultsFilePath = Path.Combine(Directory.GetParent(problemFilePath).FullName, resultsFolderName, resultsFileNamePrefix + Path.GetFileNameWithoutExtension(problemFilePath) + ".tsv");
+			this.newItems = new List<StateDistanceResult>();
+
+			if (!Directory.Exists(Directory.GetParent(savedResultsFilePath).FullName))
+				Directory.CreateDirectory(Directory.GetParent(savedResultsFilePath).FullName);
+			if (!File.Exists(savedResultsFilePath))
+				File.Create(savedResultsFilePath);
+		}
+
+		public void addEntry(StateDistanceResult r)
+		{
+			newItems.Add(r);
+		}
+
+		public void save()
+		{
+			File.AppendAllLines(savedResultsFilePath, newItems.Select(item => itemToString(item)));
+			newItems.Clear();
+		}
+
+		protected string itemToString(StateDistanceResult item)
+		{
+			return item.state.ToString() + "\t" + item.realDistance + "\t" + item.isSurelyCorrect;
+		}
+
+	}
+
 	class StateSpaceHistogramCalculator
 	{
 		public static List<Dictionary<double, Dictionary<int,int>>> getHistogram(string problemFile, List<Heuristic> heurs)
@@ -1262,6 +1605,7 @@ namespace PADD
             List<Dictionary<double, Dictionary<int, int>>> result = new List<Dictionary<double, Dictionary<int, int>>>();
 
 			var d = SASProblem.CreateFromFile(problemFile);
+			var statesDB = new StatesDistanceDatabase(problemFile);
 
             foreach (var item in heurs)
             {
@@ -1270,12 +1614,13 @@ namespace PADD
 
 			foreach (var item in StateSpaceEnumerator.enumerateAllStatesWithDistances(d))
 			{
+				statesDB.addEntry(item);
                 for (int i = 0; i < heurs.Count; i++)
                 {
                     addEntry(result[i], item.realDistance, (int)(heurs[i].getValue(item.state)));
                 }
-			} 
-
+			}
+			statesDB.save();
 			return result;
 		}
 
@@ -1360,7 +1705,8 @@ namespace PADD
 	class FeaturesCalculator
 	{
 		/// <summary>
-		/// Currently it computes four features: number of variables, number of operators, average of variables' ranges, median of variables' ranges
+		/// Currently it computes these features: number of variables, number of operators, average of variables' ranges, median of variables' ranges,
+		/// Value of FFheuristic for the initial state.
 		/// </summary>
 		/// <param name="p"></param>
 		/// <returns></returns>
@@ -1376,25 +1722,67 @@ namespace PADD
 			result.Add(domainRanges.Average());
 			domainRanges.Sort();
 			result.Add(domainRanges[domainRanges.Count / 2]);
+			result.Add(p.getFFHeuristicEstimateOfInitialState());
 
 			return result;
 		}
 
-		public static List<PredictionTuple> generatePredictions(List<HistogramTriplet> data)
+		/// <summary>
+		/// Looks at all records with the same heuristicVal and averages their realVal.
+		/// </summary>
+		/// <param name="data"></param>
+		/// <param name="useMean">If set to true, it will compute weighted average of the results, otherwise it produces median.</param>
+		/// <returns></returns>
+		public static List<PredictionTuple> generatePredictions(List<HistogramTriplet> data, StatesHistogramType type)
 		{
 			List<PredictionTuple> result = new List<PredictionTuple>();
-			foreach (var heurVal in data.Select(t => t.heurDistance).Distinct())
+			if (type == StatesHistogramType.heurFF_Mean)
 			{
-				int sumCount = data.Where(t => t.heurDistance == heurVal).Sum(t => t.count);
-				double prediction = data.Where(t => t.heurDistance == heurVal).Select(t => (double)t.realDistance * t.count / sumCount).Sum();
-				result.Add(new PredictionTuple(heurVal, prediction));
+				foreach (var heurVal in data.Select(t => t.heurDistance).Distinct())
+				{
+					int sumCount = data.Where(t => t.heurDistance == heurVal).Sum(t => t.count);
+					double prediction = data.Where(t => t.heurDistance == heurVal).Select(t => (double)t.realDistance * t.count / sumCount).Sum();
+					result.Add(new PredictionTuple(heurVal, prediction));
+				}
+				return result;
 			}
-			return result;
+			if (type == StatesHistogramType.heurFF_Median)
+			{
+				foreach (var heurVal in data.Select(t => t.heurDistance).Distinct())
+				{
+					int sumCount = data.Where(t => t.heurDistance == heurVal).Sum(t => t.count);
+					int desiredIndex = (sumCount + 1) / 2;	//index of the median
+					var sortedSamples = data.Where(t => t.heurDistance == heurVal).OrderBy(t => t.realDistance).ToList();
+					if (sortedSamples.Count == 1)
+					{
+						result.Add(new PredictionTuple(heurVal, sortedSamples.First().realDistance));
+						continue;
+					}
+					int currentCount = 0;
+					int currentIndex = 0;
+					double currentRes = sortedSamples[0].realDistance;
+					while (currentCount < desiredIndex)
+					{
+						currentCount += sortedSamples[currentIndex].count;
+						currentRes = sortedSamples[currentIndex].realDistance;
+						currentIndex++;
+					}
+					result.Add(new PredictionTuple(heurVal, currentRes));
+				}
+				return result;
+			}
+			throw new Exception();  //it should never get here (it would mean that new item was added to StatesHistogramType but can't be processed here.)
 		}
 
-		public static List<PredictionTuple> generatePredictions(string fileWithData)
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="fileWithData"></param>
+		/// <param name="useMean">If set to true, results will be averaged, if false, it will take a median of results</param>
+		/// <returns></returns>
+		public static List<PredictionTuple> generatePredictions(string fileWithData, StatesHistogramType type)
 		{
-			return generatePredictions(loadHistogramData(fileWithData));
+			return generatePredictions(loadHistogramData(fileWithData), type);
 		}
 
 		/// <summary>
@@ -1427,9 +1815,17 @@ namespace PADD
 		/// (I.e. weighted sum of real values on which the heuristic returns the given heurVal, weights are the number of accurences where it happens.)
 		/// </summary>
 		/// <param name="folderPath"></param>
-		public static void processHistogramsFolder(string folderPath)
+		public static void processHistogramsFolder(string folderPath, DateTime reWriteIfOlderThan, StatesHistogramType type)
 		{
-			string resultFileName = "dataToLearn.tsv";
+			string resultFileName = "dataToLearn_" + type.ToString() + ".tsv";
+			Console.WriteLine("Processing folder: " + folderPath + " will create file " + resultFileName);
+
+			if (File.Exists(resultFileName) && File.GetCreationTime(resultFileName) >= reWriteIfOlderThan)
+			{
+				Console.WriteLine("Skipping. File already exists and is up to date (" + File.GetCreationTime(resultFileName).ToShortDateString() + ")");
+				return;
+			}
+
 			List<List<double>> resultFeatures = new List<List<double>>();
 			foreach (var file in Directory.EnumerateFiles(folderPath))
 			{
@@ -1437,7 +1833,9 @@ namespace PADD
 				if (Path.GetExtension(file) != ".txt" || !Directory.GetParent(Directory.GetParent(file).FullName).EnumerateFiles().Any(f => Path.ChangeExtension(f.Name, "txt") == Path.GetFileName(file)))
 					continue;
 
-				var predictions = generatePredictions(file);
+				Console.WriteLine("\t\tfile: " + file);
+
+				var predictions = generatePredictions(file, type);
 				var problemFeatures = generateFeaturesFromProblem(readProblemFromFileName(file));
 				foreach (var pred in predictions)
 				{
@@ -1450,25 +1848,6 @@ namespace PADD
 			System.IO.File.WriteAllLines(Path.Combine(folderPath, resultFileName), resultFeatures.Select(t => ListToString(t, "\t")));
 		}
 
-		/// <summary>
-		/// writes a single number on a standard output that corresponds to total number of computed histograms for all domains in a given folder
-		/// </summary>
-		/// <param name="domainsFolder"></param>
-		public static void countHistograms(string domainsFolder)
-		{
-			int totalCount = 0;
-			foreach (var domainFolder in Directory.EnumerateDirectories(domainsFolder))
-			{
-				foreach (var problemFile in Directory.EnumerateFiles(domainFolder))
-				{
-					if (Path.GetExtension(problemFile) != ".sas")
-						continue;
-					if (Program.IsHistogramComputed(domainFolder, problemFile))
-						totalCount++;
-				}
-			}
-			Console.WriteLine(totalCount);
-		}
 
 		private static string ListToString<T>(List<T> list, string separator)
 		{
@@ -1773,9 +2152,9 @@ namespace PADD
 			{
 				if (mapping.ContainsKey(t))
 					return mapping[t];
-				t[inputs.Count - 1]--;
+				t[inputs.Count - 1]++;
 			}
-			return 0;
+			return inputs[inputs.Count - 1];
 		}
 
 		public double eval2(List<float> inputs)

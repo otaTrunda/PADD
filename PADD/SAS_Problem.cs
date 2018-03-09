@@ -76,6 +76,43 @@ namespace PADD
     public class SASProblem : IPlanningProblem
     {
 		/// <summary>
+		/// Returns a hFF_val of the initial state of this problem. When this information is first requested, it is computed and stored in a file in the same directory as the .sas file. Next time it is requested, the stored value is returned.
+		/// </summary>
+		/// <returns></returns>
+		public double getFFHeuristicEstimateOfInitialState()
+		{
+			string infoName = "hFF_ofInitialState";
+			string infoFolderName = "_problemInfo";
+			string infoFolderPath = Path.Combine(Directory.GetParent(this.inputFilePath).FullName, infoFolderName);
+			if (!Directory.Exists(infoFolderPath))
+				Directory.CreateDirectory(infoFolderPath);
+
+			string infoFilePath = Path.Combine(infoFolderPath, Path.GetFileName(Path.ChangeExtension(inputFilePath, "txt")));
+			if (File.Exists(infoFilePath))
+			{
+				var lines = File.ReadAllLines(infoFilePath);
+				var splittedLines = lines.Select(l => l.Split(new string[] { "\t" }, StringSplitOptions.RemoveEmptyEntries));
+				var infoINeed = splittedLines.Where(s => s[0] == infoName);
+				if (infoINeed.Any())
+					return double.Parse(infoINeed.First()[1]);
+				else
+				{
+					double heurVal = new FFHeuristic(this).getValue(this.initialState);
+					string lineToAppend = infoName + "\t" + heurVal.ToString();
+					File.AppendAllLines(infoFilePath, new List<string>() { lineToAppend });
+					return heurVal;
+				}
+			}
+			else
+			{
+				double heurVal = new FFHeuristic(this).getValue(this.initialState);
+				string lineToAppend = infoName + "\t" + heurVal.ToString();
+				File.WriteAllLines(infoFilePath, new List<string>() { lineToAppend });
+				return heurVal;
+			}
+		}
+
+		/// <summary>
 		/// Is used as a return object of some methods so that the mothods don't need to create new list object every time.
 		/// </summary>
 		private List<SASOperator> operatorsPlaceholder = new List<SASOperator>();

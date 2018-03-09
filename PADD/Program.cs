@@ -12,16 +12,18 @@ namespace PADD
 		public static Logger logger = new Logger();
 
 		private static string SAS_allFolder = "./../tests/benchmarksSAS_ALL";
+		private static string SAS_all_WithoutAxioms = "./../tests/benchmarksSAS_ALL_withoutAxioms";
 		private static string mediumDomainsFolder = "./../tests/benchmarksSAS_ALL - medium";
         private static string mediumDomainsFolderFirstHalf = "./../tests/benchmarksSAS_ALL - medium1";
         private static string mediumDomainsFolderSecondHalf = "./../tests/benchmarksSAS_ALL - medium2";
         private static string small_and_mediumDomainsFolder = "./../tests/benchmarksSAS_ALL - small+medium";
         private static string freeLunchSmall = "../tests/FreeLunchBenchmarks - small";
+
         private static string testFilesFolder = "../tests/test";
 		private static string test2FilesFolder = "../tests/test2";
 
 		/// <summary>
-		/// Main function for creating statistics of heuristic values compared to real goal-distances.
+		/// Main function for creating statistics of heuristic values compared to real goal-distances. I.e. for creating "dataToLearn.tsv" file by combining existing histograms.
 		/// </summary>
 		/// <param name="args"></param>
 		static void Main3(string[] args)
@@ -45,25 +47,55 @@ namespace PADD
             }
 			return;
 			*/
-			processAllHistogramFolders(small_and_mediumDomainsFolder);
+			//processAllHistogramFolders(testFilesFolder);
+
+			DateTime reWriteIfOlderThan = DateTime.Now;
+			processAllHistogramFolders(SAS_all_WithoutAxioms, reWriteIfOlderThan);
 		}
 
 		/// <summary>
-		/// Main function for creating heuristic-distance histograms.
+		/// This function combines all computed resultFiles into a single file.
+		/// </summary>
+		/// <param name="args"></param>
+		static void Main9(string[] args)
+		{
+			string domainsFolder = SAS_all_WithoutAxioms;
+			//string domainsFolder = "../tests/test2";
+			gatherResultsFile(domainsFolder);
+		}
+
+		/// <summary>
+		/// Main function for creating heuristic-distance histograms OR planners results statistics
 		/// </summary>
 		/// <param name="args"></param>
 		static void Main(string[] args)
 		{
-			//string blocksDomainFolder = @"./../tests/benchmarksSAS_ALL/blocks";
-			string domainsFolder = small_and_mediumDomainsFolder;
-			bool reWrite = false;
+			string Domain = SAS_all_WithoutAxioms + "/logistics00";
+			//string Domain = small_and_mediumDomainsFolder + "/tidybotFL";
+			int problemNum = 22;
+			createHeuristic2distanceStatictics(Domain, problemNum, computers: 1, reWriteIfOlderThan: DateTime.Now);
+			//createPlannerResultsStatistics(Domain, problemNum, numberOfComputersUsed: 1, reWriteIfOlderThan: DateTime.Now, timeLimit: TimeSpan.FromMinutes(15));
+			return;
+			
 
-			foreach (var domain in Directory.EnumerateDirectories(domainsFolder))
+			string domainsFolder = SAS_all_WithoutAxioms;
+			//string domainsFolder = "./../tests/test2";
+
+			DateTime reWriteIfOlderThan = new DateTime(2018, 2, 15);
+
+			int problemNumber = int.Parse(args[0]) - 1;
+			int numberOfComputers = int.Parse(args[1]);
+			//int problemNumber = 1;
+
+			//foreach (var domain in Directory.EnumerateDirectories(domainsFolder))
+			//foreach (var domain in Directory.EnumerateDirectories(domainsFolder).Reverse()) //reverse the order of domains in order to skip some problematic instances
+			//var domainFolders = shuffleList(Directory.EnumerateDirectories(domainsFolder).ToList(), new Random(problemNumber));
+			var domainFolders = shuffleList(Directory.EnumerateDirectories(domainsFolder).ToList(), new Random());
+
+			foreach (var domain in domainFolders)
 			{
-				//int problemNumber = 16;
-				int problemNumber = int.Parse(args[0]) - 1;
-
-				createHeuristic2distanceStatictics(domain, problemNumber, reWrite);
+				//createHeuristic2distanceStatictics(domain, problemNumber, numberOfComputers, reWrite);
+				createPlannerResultsStatistics(domain, problemNumber, numberOfComputers, reWriteIfOlderThan, TimeSpan.FromMinutes(30));
 			}
 			return;
 		}
@@ -79,7 +111,7 @@ namespace PADD
 			//runPlanningExperiments(mediumDomainsFolderFirstHalf, TimeSpan.FromMinutes(15), int.Parse(args[0]));
 			//runPlanningExperiments(mediumDomainsFolderSecondHalf, TimeSpan.FromMinutes(15), int.Parse(args[0]));
 
-			runPlanningExperiments(small_and_mediumDomainsFolder, TimeSpan.FromMinutes(30), int.Parse(args[0]) - 1);
+			runPlanningExperiments(SAS_all_WithoutAxioms, TimeSpan.FromMinutes(30), int.Parse(args[0]) - 1);
 
 			//runPlanningExperiments(test2FilesFolder, TimeSpan.FromMinutes(30), int.Parse(args[0]) - 1);
 
@@ -140,6 +172,205 @@ namespace PADD
 			}
 		}
 
+		/// <summary>
+		/// Main function for counting number of computed histograms or searchFile results
+		/// </summary>
+		/// <param name="args"></param>
+		static void Main4(string[] args)
+		{
+			string domainsFolder = SAS_all_WithoutAxioms;
+
+			var resultsFilesPrefixes = Enum.GetNames(typeof(SearchAlgorithmType)).Select(p => p + "_").ToList();
+			var counts = resultsFilesPrefixes.Select(pre => countResultsFiles(domainsFolder, pre));
+			
+			int totalCount = countAllProblemFiles(domainsFolder);
+
+			foreach (var item in resultsFilesPrefixes.Zip(counts, (pref, count) => (pref, count)))
+			{
+				Console.WriteLine(item.pref + " results: " + item.count + " computed out of " + totalCount);
+			}
+
+			//countFF = countHistograms(domainsFolder);
+			//Console.WriteLine("Histograms: " + countFF + " computed out of " + totalCount);
+		}
+
+		/// <summary>
+		/// The function processes all result files found in subfolders of given folder and merges them into a single file.
+		/// </summary>
+		/// <param name="domainsFolder"></param>
+		static void gatherResultsFile(string domainsFolder)
+		{
+			string combinedResultsFile = "allResults.tsv";
+
+			var prefixes = Enum.GetNames(typeof(SearchAlgorithmType)).ToList();
+
+			//List<string> resultsFilesPrefixes = new List<string>() { "HeurFF_", "HeurFile_" };
+			List<string> resultsFilesPrefixes = prefixes.Select(p => p + "_").ToList();
+
+			int numerOfParamsInEachFile = 6;
+			using (var writer = new StreamWriter(combinedResultsFile))
+			{
+				writer.Write("domainFile\tproblemFile\t");
+				foreach (var prefix in resultsFilesPrefixes)
+				{
+					writer.Write(prefix + "totalTime(sec)\t");
+					writer.Write(prefix + "expandedNodes\t");
+					writer.Write(prefix + "solved?\t");
+					writer.Write(prefix + "planLength\t");
+					writer.Write(prefix + "minHeurValue\t");
+					writer.Write(prefix + "avgHeurValue\t");
+				}
+				writer.WriteLine();
+
+				foreach (var domainFolder in Directory.EnumerateDirectories(domainsFolder))
+				{
+					foreach (var problemFile in Directory.EnumerateFiles(domainFolder))
+					{
+						if (Path.GetExtension(problemFile) != ".sas")
+							continue;   //not a planning problem file
+						writer.Write(Path.GetFileName(domainFolder) + "\t");
+						writer.Write(Path.GetFileNameWithoutExtension(problemFile) + "\t");
+						foreach (var prefix in resultsFilesPrefixes)
+						{
+							string resultFile = Path.Combine(new FileInfo(problemFile).Directory.FullName, "results", prefix + Path.GetFileNameWithoutExtension(problemFile) + ".txt");
+							if (!File.Exists(resultFile))
+							{
+								for (int i = 0; i < numerOfParamsInEachFile; i++)
+								{
+									writer.Write("\t");
+								}
+							}
+							else
+							{
+								string[] splittedFileData = File.ReadAllText(resultFile).Split(new string[] { ";", "\n", "\r" }, StringSplitOptions.RemoveEmptyEntries);
+								foreach (var item in splittedFileData.Skip(splittedFileData.Length - numerOfParamsInEachFile))
+								{
+									writer.Write(item + "\t");
+								}
+							}
+						}
+						writer.WriteLine();
+					}
+				}
+			}
+		}
+
+		/// <summary>
+		/// Returns a number that corresponds to total number of computed histograms for all domains in a given folder
+		/// </summary>
+		/// <param name="domainsFolder"></param>
+		public static int countHistograms(string domainsFolder)
+		{
+			int totalCount = 0;
+			foreach (var domainFolder in Directory.EnumerateDirectories(domainsFolder))
+			{
+				foreach (var problemFile in Directory.EnumerateFiles(domainFolder))
+				{
+					if (Path.GetExtension(problemFile) != ".sas")
+						continue;
+					if (Program.IsHistogramComputed(domainFolder, problemFile))
+						totalCount++;
+				}
+			}
+			return totalCount;
+		}
+
+		public static int countAllProblemFiles(string domainsFolder)
+		{
+			int totalCount = 0;
+			foreach (var domainFolder in Directory.EnumerateDirectories(domainsFolder))
+			{
+				foreach (var problemFile in Directory.EnumerateFiles(domainFolder))
+				{
+					if (Path.GetExtension(problemFile) == ".sas")
+						totalCount++;
+				}
+			}
+			return totalCount;
+		}
+
+		public static int countResultsFiles(string domainsFolder, string filePrefix)
+		{
+			int totalCount = 0;
+			foreach (var domainFolder in Directory.EnumerateDirectories(domainsFolder))
+			{
+				foreach (var problemFile in Directory.EnumerateFiles(domainFolder))
+				{
+					if (Path.GetExtension(problemFile) != ".sas")
+						continue;
+					if (!Directory.Exists(Path.Combine(domainFolder, "results")))
+						continue;
+					string fileToFind = Path.Combine(domainFolder, "results", filePrefix + Path.GetFileName(Path.ChangeExtension(problemFile, ".txt")));
+					if (Directory.EnumerateFiles(Path.Combine(domainFolder, "results")).Any(f => f == fileToFind))
+						totalCount++;
+				}
+			}
+			return totalCount;
+		}
+
+		/// <summary>
+		/// This function copies results (as well as computed histograms) from one tests folder to another, such that the results are on the right place in the second folder.
+		/// </summary>
+		/// <param name="args"></param>
+		public static void copyResultFiles(string folderWithResults, string folderToCopyResultsTo)
+		{
+			List<string> namesOfFoldersToCopy = new List<string>() { "results", "histograms" };
+
+			var domainsWithResults = new HashSet<string>(Directory.EnumerateDirectories(folderWithResults).Select(dir => Path.GetFileName(dir)));
+
+			foreach (var domainFolderName in Directory.EnumerateDirectories(folderToCopyResultsTo).Select(dir => Path.GetFileName(dir)))
+			{
+				if (domainsWithResults.Contains(domainFolderName))
+				{
+					var folderNamesInSource = Directory.EnumerateDirectories(Path.Combine(folderWithResults, domainFolderName)).Select(dir => Path.GetFileName(dir));
+					foreach (var folderToCopy in namesOfFoldersToCopy)
+					{
+						if (folderNamesInSource.Contains(folderToCopy))
+						{
+							DirectoryCopy(Path.Combine(folderWithResults, domainFolderName, folderToCopy), Path.Combine(folderToCopyResultsTo, domainFolderName, folderToCopy), true);
+						}
+					}
+				}
+			}
+		}
+
+		private static void DirectoryCopy(string sourceDirPath, string destDirPath, bool copySubDirs)
+		{
+			// Get the subdirectories for the specified directory.
+			DirectoryInfo dir = new DirectoryInfo(sourceDirPath);
+
+			if (!dir.Exists)
+			{
+				throw new DirectoryNotFoundException(
+					"Source directory does not exist or could not be found: "
+					+ sourceDirPath);
+			}
+
+			DirectoryInfo[] dirs = dir.GetDirectories();
+			// If the destination directory doesn't exist, create it.
+			if (!Directory.Exists(destDirPath))
+			{
+				Directory.CreateDirectory(destDirPath);
+			}
+
+			// Get the files in the directory and copy them to the new location.
+			FileInfo[] files = dir.GetFiles();
+			foreach (FileInfo file in files)
+			{
+				string temppath = Path.Combine(destDirPath, file.Name);
+				file.CopyTo(temppath, false);
+			}
+
+			// If copying subdirectories, copy them and their contents to new location.
+			if (copySubDirs)
+			{
+				foreach (DirectoryInfo subdir in dirs)
+				{
+					string temppath = Path.Combine(destDirPath, subdir.Name);
+					DirectoryCopy(subdir.FullName, temppath, copySubDirs);
+				}
+			}
+		}
 
 		[STAThread]
         static void Main_OLD(string[] args)
@@ -488,10 +719,10 @@ namespace PADD
 			//{
 
 			//the number of computes that participate on this job. Computation is distributed among them.
-			int numberOfComputes = 20;
+			int numberOfComputes = 2;
 
 			//if set to true, problem file that don't have histogram computed will be skipped. Otherwise all problems will be processed.
-			bool onlyWhenHistogramExists = true;
+			bool onlyWhenHistogramExists = false;
 
 			SASProblem d;
 			AStarSearch ast;
@@ -514,7 +745,7 @@ namespace PADD
 
 					d = SASProblem.CreateFromFile(SASFile);
 
-					//Heuristic h = new FFHeuristic(d);
+					Heuristic h = new FFHeuristic(d);
 
 					/*
 					string histogramFolder = @"C:\Users\Ota\Documents\Visual Studio 2017\Projects\PADD\heuristicStats";
@@ -529,12 +760,12 @@ namespace PADD
 					//string trainedNetworkFile = Path.Combine("..", "trainedNetwork.bin");
 					//Heuristic h = new NNHeuristic(d, trainedNetworkFile);
 
-					string dataFile = Path.Combine(directory, "histograms", "dataToLearn.tsv");
+					//string dataFile = Path.Combine(directory, "histograms", "dataToLearn.tsv");
 					//Heuristic h = new FileBasedHeuristic(d, dataFile, false);
 
 					//Heuristic h = new FFHeuristic(d);
 					//Heuristic h = new RegHeuristic(new FFHeuristic(d));
-					Heuristic h = new FileBasedHeuristic(d, dataFile, false);
+					//Heuristic h = new FileBasedHeuristic(d, dataFile, false);
 
 					//h = getHeuristicByParam(param, d);
 					//h = getHeuristicByParam(6, d);
@@ -622,15 +853,20 @@ namespace PADD
 		/// The method takes the given problem and enumerates its state-space.
 		/// If rewrite is set to true, new histograms will be created even if they already exist, is it is set to false, domains, where there already are histograms, will be skipped.
 		/// </summary>
-		static void createHeuristic2distanceStatictics(string domainFolder, int param, bool reWrite)
+		static void createHeuristic2distanceStatictics(string domainFolder, int param, int computers, DateTime reWriteIfOlderThan)
         {
 			logger.Log("Param is " + param);
-            var files = Directory.EnumerateFiles(domainFolder).ToList();
+			var files = Directory.EnumerateFiles(domainFolder).ToList();
+			int numberOfComputers = computers;
 			foreach (var item in files)
 			{
-				//if (files.IndexOf(item) < 20)
-				//	continue;
-				if (files.IndexOf(item) % 20 != param)
+				if (numberOfComputers == 1 && files.IndexOf(item) != param)
+				{
+					logger.Log("Skipping file " + item + " whose index is " + files.IndexOf(item));
+					continue;
+				}
+
+				if (numberOfComputers > 1 && files.IndexOf(item) % numberOfComputers != param)
 				{
 					logger.Log("Skipping file " + item + " whose index is " + files.IndexOf(item));
 					continue;
@@ -672,34 +908,152 @@ namespace PADD
 					Directory.CreateDirectory(resultsPath);
 
 				string resultFile = Path.Combine(resultsPath, Path.ChangeExtension(probleName, "txt"));
-				if(!reWrite && File.Exists(resultFile))
+				if(File.Exists(resultFile) && File.GetCreationTime(resultFile) >= reWriteIfOlderThan)
 				{
-					logger.Log("Skipping domain " + domainName + " , file " + probleName + " - histogram already exists");
+					logger.Log("Skipping domain " + domainName + " , file " + probleName + " - histogram already exists and it's up to date (" + File.GetCreationTime(resultFile).ToLongDateString() + ")");
 					continue;
 				}
 
-				/*
-				StreamWriter w = new StreamWriter(Path.Combine(resultsPath, Path.ChangeExtension(probleName, "txt")));
-				w.WriteLine("testing");
-				w.Close();
-				return;
-				*/
-
-				logger.Log("Processing domain " + domainName + " , file " + probleName);
+				logger.Log("Processing domain " + domainName + " , file " + probleName + (File.Exists(resultFile) ? "\tfile exists but it's old (" + File.GetCreationTime(resultFile).ToLongDateString() + ")" : ""));
 
 				var histogram = StateSpaceHistogramCalculator.getHistogram(problemFile, heuristics);
 
 				StateSpaceHistogramCalculator.writeHistograms(resultFile, histogram);
-				
+				logger.Log("Histogram successfully written to " + resultFile);
 				//StateSpaceHistogramCalculator.writeHistograms(domainName + "_" + Path.ChangeExtension(probleName, "txt"), histogram);
 			}
         }
 
 		/// <summary>
-		/// Reads all folders in given folder, searches for folders named "histograms". Inside these folders it finds all histogram files and merges them into a "dataToLearn.tsv" file that can then be used for training a ML model.
-		/// These files will be created in every respective directory. If the ".tsv" file already exists, it will be rewritten.
+		/// Runs planner on the set of problems creating a file with results. Separate results file is created for every input problem.
 		/// </summary>
-		static void processAllHistogramFolders(string domainsFolderPath)
+		/// <param name="domainFolder"></param>
+		/// <param name="problemNumber"></param>
+		/// <param name="reWrite"></param>
+		/// <param name="timeLimit"></param>
+		static void createPlannerResultsStatistics(string domainFolder, int problemNumber, int numberOfComputersUsed, DateTime reWriteIfOlderThan, TimeSpan timeLimit)
+		{
+			logger.Log("Param is " + problemNumber);
+			var files = Directory.EnumerateFiles(domainFolder).ToList();
+			int numberOfComputers = numberOfComputersUsed;
+			SearchAlgorithmType type = SearchAlgorithmType.heurFile_Median;
+
+			Console.WriteLine("Number of computers: " + numberOfComputers);
+			foreach (var item in files)
+			{
+#if DEBUG
+				if (numberOfComputersUsed == 1 && files.IndexOf(item) != problemNumber)
+					continue;
+#endif
+
+				if (numberOfComputersUsed > 1 && files.IndexOf(item) % numberOfComputers != problemNumber)
+				{
+					logger.Log("Skipping file " + item + " whose index is " + files.IndexOf(item));
+					continue;
+				}
+
+				string problemFile = item;
+				logger.Log("Processing file " + item);
+
+				var d = SASProblem.CreateFromFile(problemFile);
+
+				string domainName = Path.GetFileName(domainFolder);
+				string probleName = Path.GetFileName(item);
+				string resultsPath = Path.Combine(domainFolder, "results");
+
+				if (!Directory.Exists(resultsPath))
+					Directory.CreateDirectory(resultsPath);
+
+				string resultFile = Path.Combine(resultsPath, type.ToString() + Path.GetFileNameWithoutExtension(probleName) + ".txt");
+	
+				if (File.Exists(resultFile) && File.GetCreationTime(resultFile) >= reWriteIfOlderThan)
+				{
+					logger.Log("Skipping domain " + domainName + " , file " + probleName + " - resultsFile already exists and is up to date (" + File.GetCreationTime(resultFile).ToLongDateString() + ")");
+					continue;
+				}
+
+				logger.Log("Processing domain " + domainName + " , file " + probleName + (File.Exists(resultFile) ? "\tresultsFile exists but it's old (" + File.GetCreationTime(resultFile).ToLongDateString() + ")" : ""));
+
+				string dataFile = "";
+				switch (type)
+				{
+					case SearchAlgorithmType.doubleListFF_FileMean:
+					case SearchAlgorithmType.heurFile_Mean:
+						dataFile = Path.Combine(domainFolder, "histograms", "dataToLearn_Mean.tsv");
+						break;
+					case SearchAlgorithmType.doubleListFF_FileMedian:
+					case SearchAlgorithmType.heurFile_Median:
+						dataFile = Path.Combine(domainFolder, "histograms", "dataToLearn_Median.tsv");
+						break;
+				}
+
+				Heuristic h = null;
+
+				switch(type)
+				{
+					case SearchAlgorithmType.heurFF:
+						h = new FFHeuristic(d);
+						break;
+					case SearchAlgorithmType.doubleListFF_FileMean:
+					case SearchAlgorithmType.doubleListFF_FileMedian:
+					case SearchAlgorithmType.heurFile_Mean:
+					case SearchAlgorithmType.heurFile_Median:
+						h = new FileBasedHeuristic(d, dataFile, false);
+						break;
+				}
+
+				AStarSearch ast = null;
+
+				switch (type)
+				{
+					case SearchAlgorithmType.heurFF:
+					case SearchAlgorithmType.heurFile_Mean:
+					case SearchAlgorithmType.heurFile_Median:
+						ast = new AStarSearch(d, h);
+						break;
+					case SearchAlgorithmType.doubleListFF_FileMean:
+					case SearchAlgorithmType.doubleListFF_FileMedian:
+						ast = new MultipleOpenListsAStar(d, new List<Heuristic>() { h, new FFHeuristic(d) });
+						break;
+				}
+
+				ast.timeLimit = timeLimit;
+				ast.results.domainName = domainName;
+				ast.results.problemName = probleName;
+				ast.results.heuristicName = h.getDescription();
+				ast.results.algorithm = ast.getDescription() + "+" + ast.openNodes.getName();
+
+				ast.Search();
+				ast.results.bestHeuristicValue = h.statistics.bestHeuristicValue;
+				ast.results.avgHeuristicValue = h.statistics.getAverageHeurValue();
+
+#if DEBUG
+				bool printPlan = true;
+				if (printPlan)
+				{
+					Console.WriteLine("Plan:");
+					var state = d.GetInitialState();
+					Console.WriteLine(state.ToString());
+					foreach (var opIndex in ast.GetSolution().GetOperatorSeqIndices())
+					{
+						var op = d.GetOperators()[opIndex];
+						state = op.Apply(state);
+						Console.WriteLine(state.ToString() + "\toperator aplied: " + op.ToString());
+					}
+				}
+#endif
+				using (var writer = new System.IO.StreamWriter(resultFile))
+					writer.WriteLine(ast.results.ToString());
+				
+				logger.Log("Results successfully written to " + resultFile);
+			}
+		}
+
+		/// <summary>
+		/// Reads all folders in given folder, searches for folders named "histograms". Inside these folders it finds all histogram files and merges them into a "dataToLearn.tsv" file that can then be used for training a ML model.
+		/// These files will be created in every respective directory. If the ".tsv" file already exists, it will be rewritten only if it is older than <paramref name="reWriteIfOlderThan"/>.
+		/// </summary>
+		static void processAllHistogramFolders(string domainsFolderPath, DateTime reWriteIfOlderThan)
 		{
 			foreach (var domainFolder in Directory.EnumerateDirectories(domainsFolderPath))
 			{
@@ -707,7 +1061,10 @@ namespace PADD
 				if (Directory.Exists(histogramFolder))
 				{
 					logger.Log("processing folder " + histogramFolder);
-					FeaturesCalculator.processHistogramsFolder(histogramFolder);
+					foreach (StatesHistogramType item in Enum.GetValues(typeof(StatesHistogramType)))
+					{
+						FeaturesCalculator.processHistogramsFolder(histogramFolder, reWriteIfOlderThan, item);
+					}
 					logger.Log("done");
 				}
 			}
@@ -1011,6 +1368,24 @@ namespace PADD
 				logger.Log(" ----- new domain ----- ");
 			}
 
+		}
+
+		static List<T> shuffleList<T>(List<T> inputList, Random r)
+		{
+			List<int> allIndices = new List<int>(inputList.Count);
+			foreach (var item in Enumerable.Range(0, inputList.Count))
+				allIndices.Add(item);
+			
+			List<T> result = new List<T>(inputList.Count);
+			while(allIndices.Count > 0)
+			{
+				int rand = r.Next(allIndices.Count);
+				int selected = allIndices[rand];
+				allIndices.RemoveAt(rand);
+				result.Add(inputList[selected]);
+			}
+
+			return result;
 		}
 
 		#region Patterns methods
@@ -1470,6 +1845,8 @@ namespace PADD
 		{
 			if (quiet)
 				return;
+
+			Console.WriteLine(MSG);
 			string LogFileFullPath_Name = Path.Combine(logFolder, "log_" + Environment.MachineName + ".txt");
 			if (!Directory.Exists(logFolder))
 				Directory.CreateDirectory(logFolder);
@@ -1545,4 +1922,20 @@ namespace PADD
 		}
 
 	}
+
+	public enum SearchAlgorithmType
+	{
+		heurFF,
+		heurFile_Median,
+		heurFile_Mean,
+		doubleListFF_FileMedian,
+		doubleListFF_FileMean,
+	}
+
+	public enum StatesHistogramType
+	{
+		heurFF_Median,
+		heurFF_Mean,
+	}
+
 }
