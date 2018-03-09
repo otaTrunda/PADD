@@ -148,7 +148,8 @@ namespace PADD
                 double hValue = heuristic.getValue(s);
                 gValues.Add(s, new StateInformation(gValue));
                 predecessor.Add(s, pred);
-                openNodes.insert(gValue + hValue, s);
+				if (!double.IsInfinity(hValue))	//infinity heuristic indicates dead-end
+					openNodes.insert(gValue + hValue + hValue / 10000, s);	//breaking ties in favor of nodes that have lesser heuristic estimates. Heuristic value should always be less than 10000 (!!!)
                 return true;
             }
             if (gValues[s].gValue > gValue)
@@ -160,7 +161,8 @@ namespace PADD
 				if (!f.isClosed)
 				{
 					double hValue = heuristic.getValue(s);
-					openNodes.insert(gValue + hValue, s);
+					if (!double.IsInfinity(hValue)) //infinity heuristic indicates dead-end
+						openNodes.insert(gValue + hValue + hValue / 10000, s);	//breaking ties in favor of nodes that have lesser heuristic estimates
 					return true;
 				}
             }
@@ -196,6 +198,11 @@ namespace PADD
 
         public override int Search(bool quiet = false)
         {
+			Stopwatch loggingWatch = Stopwatch.StartNew();
+			TimeSpan loggingInterval = TimeSpan.FromMinutes(5);
+
+			bool printHeapContent = true;
+
             gValues = new Dictionary<IState, StateInformation>();
             searchStatus = SearchStatus.InProgress;
             predecessor = new Dictionary<IState, IState>();
@@ -209,6 +216,12 @@ namespace PADD
             while (!isOpenListEmpty())
 			{
                 steps++;
+				if (loggingWatch.Elapsed > loggingInterval)
+				{
+					printSearchStats(quiet);
+					PrintMessage("Time elapsed: " + stopwatch.Elapsed.TotalMinutes + " minutes");
+					loggingWatch.Restart();
+				}
 
                 if (stopwatch.Elapsed > timeLimit)
                 {
@@ -234,10 +247,28 @@ namespace PADD
                     return -1;
                 }
 
-                IState currentState = popFromOpenList();
+#if DEBUG
+				double HeurValOfexpandedNode = openNodes.size() > 0 ? openNodes.getMinKey() : 0;
+#endif
+
+				IState currentState = popFromOpenList();
                 if (gValues[currentState].isClosed)
                     continue;
-                addToClosedList(currentState);
+#if DEBUG
+				if (printHeapContent)
+				{
+					Console.WriteLine("Current heap content: (" + (openNodes.size() + 1) + ")");
+					Console.WriteLine(HeurValOfexpandedNode + "\t" + currentState.ToString());
+					foreach (var item in openNodes.getAllElements().OrderBy(item => item.k))
+					{
+						Console.WriteLine(item.k + "\t" + item.v.ToString());
+					}
+					Console.WriteLine("expanded node:\t" + currentState.ToString());
+					Console.WriteLine("heuristic calls:\t" + heuristic.statistics.heuristicCalls + "\tsumValue:\t" + heuristic.statistics.sumOfHeuristicVals + "\tavgValue:\t" + heuristic.statistics.getAverageHeurValue());
+				}		
+#endif
+
+				addToClosedList(currentState);
                 if (problem.IsGoalState(currentState))
                 {
                     stopwatch.Stop();
@@ -285,7 +316,6 @@ namespace PADD
                         setSearchResults();
                         return -1;
                     }
-
                 }
             }
             PrintMessage("No solution exists.", quiet);
@@ -334,7 +364,8 @@ namespace PADD
             this.gValues = new Dictionary<IState, StateInformation>();
 			//this.openNodes = new Heaps.LeftistHeap<State>();
 			//this.openNodes = new Heaps.RegularBinaryHeap<IState>();
-			this.openNodes = new Heaps.RedBlackTreeHeap<IState>();
+			//this.openNodes = new Heaps.RedBlackTreeHeap<IState>();
+			this.openNodes = new Heaps.FibonacciHeap1<IState>();
 			//this.openNodes = new Heaps.BinomialHeap<State>();
 			//this.openNodes = new Heaps.SingleBucket<State>(200000);
 			//this.openNodes = new Heaps.SingleBucket<State>(200*h.getValue(d.initialState));
@@ -353,7 +384,7 @@ namespace PADD
 
         protected virtual void printSearchStats(bool quiet)
         {
-            PrintMessage("Closed nodes: " + (gValues.Count) +
+            PrintMessage("Closed nodes: " + (gValues.Where(item => item.Value.isClosed).Count()) +
                         "\tOpen nodes: " + openNodes.size() +
                         //"\tHeuristic calls: " + heuristic.heuristicCalls +
                         "\tMin heuristic: " + heuristic.statistics.bestHeuristicValue +
@@ -384,7 +415,8 @@ namespace PADD
 			openLists = new List<IHeap<double, IState>>();
 			foreach (var item in heurs)
 			{
-				openLists.Add(new Heaps.RedBlackTreeHeap<IState>());
+				//openLists.Add(new Heaps.RedBlackTreeHeap<IState>());
+				openLists.Add(new Heaps.FibonacciHeap1<IState>());
 			}
 		}
 
@@ -396,7 +428,8 @@ namespace PADD
 			openLists = new List<IHeap<double, IState>>();
 			foreach (var item in heurs)
 			{
-				openLists.Add(new Heaps.RedBlackTreeHeap<IState>());
+				//openLists.Add(new Heaps.RedBlackTreeHeap<IState>());
+				openLists.Add(new Heaps.FibonacciHeap1<IState>());
 			}
 		}
 
@@ -406,13 +439,18 @@ namespace PADD
 			{
 				gValues.Add(s, new StateInformation(gValue));
 				predecessor.Add(s, pred);
+				double hFFValue = heurs[1].getValue(s);
 				for (int i = 0; i < numberOfOpenLists; i++)
 				{
 					heuristic = heurs[i];
 					openNodes = openLists[i];
+					heuristic.sethFFValueForNextState(hFFValue);
 					double hValue = heuristic.getValue(s);
-					openNodes.insert(gValue + hValue, s);
-					openListsSize++;
+					if (!double.IsInfinity(hValue)) //infinity heuristic indicates dead-end
+					{
+						openNodes.insert(gValue + hValue + hValue / 10000, s);  //breaking ties
+						openListsSize++;
+					}
 				}
 				return true;
 			}
@@ -423,14 +461,21 @@ namespace PADD
 				gValues[s] = f;
 				predecessor[s] = pred;
 				if (!f.isClosed)
+				{
+					double hFFValue = heurs[1].getValue(s);
 					for (int i = 0; i < numberOfOpenLists; i++)
 					{
 						heuristic = heurs[i];
 						openNodes = openLists[i];
+						heuristic.sethFFValueForNextState(hFFValue);
 						double hValue = heuristic.getValue(s);
-						openNodes.insert(gValue + hValue, s);
-						openListsSize++;
+						if (!double.IsInfinity(hValue)) //infinity heuristic indicates dead-end
+						{
+							openNodes.insert(gValue + hValue + hValue / 10000, s); //breaking ties
+							openListsSize++;
+						}
 					}
+				}
 				return true;
 			}
 			return false;
@@ -678,7 +723,12 @@ namespace PADD
         {
             return "Simple stack";
         }
-    }
+
+		public IEnumerable<(double k, IState v)> getAllElements()
+		{
+			throw new NotImplementedException();
+		}
+	}
 
 	class SimpleQueue : IHeap<double, IState>
 	{
@@ -734,6 +784,11 @@ namespace PADD
 		string IHeap<double, IState>.getName()
 		{
 			return "Simple queue";
+		}
+
+		public IEnumerable<(double k, IState v)> getAllElements()
+		{
+			throw new NotImplementedException();
 		}
 	}
 

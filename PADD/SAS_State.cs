@@ -158,12 +158,38 @@ namespace PADD
         /// <returns>String representation of the state.</returns>
         public override string ToString()
         {
-            string result = "";
-            result += "[";
-            for (int i = 0; i < stateValues.Length; i++)
-                result += (stateValues[i] + " ");
-            result += "]";
-            return result;
+			bool useCompressedFormat = true;
+			if (useCompressedFormat)
+			{
+				StringBuilder result = new StringBuilder();
+				result.Append("[");
+				for (int i = 0; i < stateValues.Length; i++)
+				{
+					int currentVal = stateValues[i];
+					int j = 1;
+					while (i + j < stateValues.Length && stateValues[i + j] == currentVal)
+						j++;
+					if (j > 1)
+						result.Append(j + "x" + currentVal + " ");
+					else
+						result.Append(currentVal + " ");
+					i = j + i - 1;
+				}
+				result.Append("]");
+				return result.ToString();
+			}
+			else
+			{
+				StringBuilder result = new StringBuilder();
+				result.Append("[");
+				for (int i = 0; i < stateValues.Length; i++)
+				{
+					result.Append(stateValues[i]);
+					result.Append(" ");
+				}
+				result.Append("]");
+				return result.ToString();
+			}
         }
     }
 

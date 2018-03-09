@@ -45,15 +45,25 @@ namespace PADD
             if (doMeasures)
             {
                 double val = evaluate(state);
-                statistics.heuristicCalls++;
-                statistics.sumOfHeuristicVals += val;
-                if (val < statistics.bestHeuristicValue)
-                    statistics.bestHeuristicValue = val;
+				if (!double.IsInfinity(val))	//infinity heuristic indicates dead-end. we don't want those included in computation of average heuristic value
+				{   
+					statistics.heuristicCalls++;
+					statistics.sumOfHeuristicVals += val;
+					if (val < statistics.bestHeuristicValue)
+						statistics.bestHeuristicValue = val;
+				}
                 return val;
             }
             else return evaluate(state);
         }
-    }
+
+		/// <summary>
+		/// Sets the value of FF heuristic for the state on which the next "getValue" will be called.
+		/// </summary>
+		public virtual void sethFFValueForNextState(double heurVal)
+		{
+		}
+	}
 
     public class HeuristicStatistics
     {
@@ -231,7 +241,7 @@ namespace PADD
 
         /// <summary>
         /// Returns list of indices of all operators that can accomplish the given fact in the given fact-layer. 
-        /// Operators are described by their indices in the privious op-layer.
+        /// Operators are described by their indices in the previous op-layer.
         /// If the fact is already present in the previous fact-layer, this method returns null.
         /// </summary>
         /// <param name="layer"></param>
@@ -300,8 +310,11 @@ namespace PADD
 
                 OpsLayers.Add(newOpLayer);
                 stateLayers.Add(s);
-                if (!addedSomething)
-                    break;
+				if (!addedSomething)
+				{
+					isCutOff = true;
+					break;
+				}
                 if (stateLayers.Count > cutOffLimit)
                 {
                     isCutOff = true;
@@ -335,6 +348,8 @@ namespace PADD
 
     class FFHeuristic : Heuristic
     {
+		private double hint = -1;
+
         private PlanningGraphComputation PG;
         //private Red_BlackDomain rbDom;
 
@@ -424,11 +439,18 @@ namespace PADD
 
         protected override double evaluate(IState state)
         {
+			if (hint != -1)
+			{
+				double res = hint;
+				hint = -1;
+				return res;
+			}
+
             PG.computePlanningGraph(state);
             int result = 0;
 
-            if (PG.isCutOff)
-                return int.MaxValue/2;
+			if (PG.isCutOff)
+				return double.PositiveInfinity;
 
             notAchievedGoals.Clear();
             notAchievedGoalsNew.Clear();
@@ -495,7 +517,12 @@ namespace PADD
             //rbDom.makeAllAbstracted();
             this.PG = new PlanningGraphComputation(d);
         }
-    }
+
+		public override void sethFFValueForNextState(double ffHeurVal)
+		{
+			this.hint = ffHeurVal;
+		}
+	}
 
     class RBHeuristic : Heuristic
     {
@@ -1045,6 +1072,7 @@ namespace PADD
 		public BrightWireNN network;
 		FFHeuristic heur;
 		List<float> nnInputs;
+		double nextFFHeurResult = -1;
 
 		public override string getDescription()
 		{
@@ -1053,11 +1081,11 @@ namespace PADD
 
 		protected override double evaluate(IState state)
 		{
-			float heurVal = (float)heur.getValue(state);
+			float heurVal = nextFFHeurResult == -1 ? (float)heur.getValue(state) : (float)nextFFHeurResult;
+			nextFFHeurResult = -1;
 			nnInputs[nnInputs.Count - 1] = heurVal;
 			double networkVal = network.eval(nnInputs);
-			return networkVal >= 0 ? networkVal : heurVal;
-
+			return networkVal >= 0 ? networkVal + (double)heurVal / 10000 : heurVal;    //breaking ties in this heuristic values by values of the inner heuristic 
 		}
 
 		public NNHeuristic(SASProblem p)
@@ -1073,6 +1101,11 @@ namespace PADD
 		{
 			if (useNetwork)
 				this.network = BrightWireNN.load(trainedNetworkFile);
+		}
+
+		public override void sethFFValueForNextState(double heurVal)
+		{
+			this.nextFFHeurResult = heurVal;
 		}
 	}
 

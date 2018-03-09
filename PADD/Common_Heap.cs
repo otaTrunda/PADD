@@ -20,6 +20,8 @@ namespace PADD
         void clear();
 
         string getName();
+
+		IEnumerable<(Key k, Value v)> getAllElements();
     }
 }
 
@@ -192,8 +194,13 @@ namespace PADD.Heaps
             this.tree = new List<TreeNode<double, Value>>();
         }
 
-        #endregion
-    }
+		public IEnumerable<(double k, Value v)> getAllElements()
+		{
+			throw new NotImplementedException();
+		}
+
+		#endregion
+	}
 
     public class RegularTernaryHeap<Value> : IHeap<double, Value>
     {
@@ -366,8 +373,13 @@ namespace PADD.Heaps
             this.tree = new List<TreeNode<double, Value>>();
         }
 
-        #endregion
-    }
+		public IEnumerable<(double k, Value v)> getAllElements()
+		{
+			throw new NotImplementedException();
+		}
+
+		#endregion
+	}
 
     public class LeftistHeap<Value> : IHeap<double, Value>
     {
@@ -487,11 +499,16 @@ namespace PADD.Heaps
             this.count = 0;
         }
 
-        #endregion
+		public IEnumerable<(double k, Value v)> getAllElements()
+		{
+			throw new NotImplementedException();
+		}
 
-        #region Constructors
+		#endregion
 
-        public LeftistHeap()
+		#region Constructors
+
+		public LeftistHeap()
         {
             this.root = null;
             this.count = 0;
@@ -676,9 +693,14 @@ namespace PADD.Heaps
             this.trees = new LinkedList<BinomialHeap<Value>.TreeNode<double, Value>>();
         }
 
-        #endregion
+		public IEnumerable<(double k, Value v)> getAllElements()
+		{
+			throw new NotImplementedException();
+		}
 
-    }
+		#endregion
+
+	}
 
     public class SortedSetHeap<Value> : IHeap<double, Value>
     {
@@ -756,9 +778,14 @@ namespace PADD.Heaps
             return "Sorted Set Heap";
         }
 
-        #endregion
+		public IEnumerable<(double k, Value v)> getAllElements()
+		{
+			throw new NotImplementedException();
+		}
 
-        public SortedSetHeap()
+		#endregion
+
+		public SortedSetHeap()
         {
             _sortedSet = new SortedSet<KeyValuePair<Pair, Value>>(new KeyValueComparer<Value>());
         }
@@ -862,9 +889,14 @@ namespace PADD.Heaps
             items.Clear();
         }
 
-        #endregion
+		public IEnumerable<(int k, Value v)> getAllElements()
+		{
+			throw new NotImplementedException();
+		}
 
-        public SortedDictionaryHeap()
+		#endregion
+
+		public SortedDictionaryHeap()
         {
             items = new SortedDictionary<Pair, Value>(new PairComparer());
         }
@@ -1095,8 +1127,12 @@ namespace PADD.Heaps
             }
             return min;
         }
-    
-    }
+
+		public IEnumerable<(int k, Value v)> getAllElements()
+		{
+			throw new NotImplementedException();
+		}
+	}
 
     public class RedBlackTreeHeap<Value> : IHeap<double, Value>
     {
@@ -1114,7 +1150,7 @@ namespace PADD.Heaps
 
         public double getMinKey()
         {
-            throw new NotImplementedException();
+			return structure.First().First;
         }
 
         public Value removeMin()
@@ -1145,7 +1181,15 @@ namespace PADD.Heaps
             this.structure.Clear();
         }
 
-        public RedBlackTreeHeap()
+		public IEnumerable<(double k, Value v)> getAllElements()
+		{
+			foreach (var item in structure)
+			{
+				yield return (item.First, item.Second);
+			}
+		}
+
+		public RedBlackTreeHeap()
         {
             this.structure = new Wintellect.PowerCollections.OrderedBag<Wintellect.PowerCollections.Pair<double, Value>>((a, b) => (int)(a.First - b.First));
         }
@@ -1334,7 +1378,30 @@ namespace PADD.Heaps
         {
             return "Fibbonaci heap-1";
         }
-    }
+
+		public IEnumerable<(double k, TValue v)> getAllElements()
+		{
+			foreach (var r in _root)
+			{
+				foreach (var item in enumerateChildrenRecur(r))
+				{
+					yield return item;
+				}
+			} 
+		}
+
+		private IEnumerable<(double k, TValue v)> enumerateChildrenRecur(Node n)
+		{
+			yield return (n.Key, n.Value);
+			foreach (var ch in n.Children)
+			{
+				foreach (var item in enumerateChildrenRecur(ch))
+				{
+					yield return item;
+				}
+			}
+		}
+	}
 
     public class RadixHeap<Value> : IHeap<int, Value>
     {
@@ -1474,7 +1541,12 @@ namespace PADD.Heaps
             return n;
         }
 
-        public RadixHeap(int range)
+		public IEnumerable<(int k, Value v)> getAllElements()
+		{
+			throw new NotImplementedException();
+		}
+
+		public RadixHeap(int range)
         {
             this.C = range;
             this.B = (int)Math.Ceiling(Math.Log(C + 1, 2) + 2);
@@ -2062,7 +2134,12 @@ namespace PADD.Heaps
         {
             return "Fibonacci heap by sqeezy";
         }
-    }
+
+		public IEnumerable<(double k, T v)> getAllElements()
+		{
+			throw new NotImplementedException();
+		}
+	}
   
     public class OrderedMutliDictionaryHeap<Value> : IHeap<int, Value>
     {
@@ -2122,7 +2199,12 @@ namespace PADD.Heaps
             structure.Clear();
         }
 
-        public OrderedMutliDictionaryHeap()
+		public IEnumerable<(int k, Value v)> getAllElements()
+		{
+			throw new NotImplementedException();
+		}
+
+		public OrderedMutliDictionaryHeap()
         {
             this.structure = new Wintellect.PowerCollections.OrderedMultiDictionary<int, Value>(true, (a, b) => a - b, (a,b) => 0);
         }
@@ -2406,8 +2488,13 @@ namespace PADD.Heaps
             return "Measured heap - NOT TO BE USED IN PRACTICE";
         }
 
-        #endregion
-    }
+		public IEnumerable<(int k, Value v)> getAllElements()
+		{
+			throw new NotImplementedException();
+		}
+
+		#endregion
+	}
 
         
 }
