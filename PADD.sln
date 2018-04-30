@@ -1,20 +1,21 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.27004.2005
+VisualStudioVersion = 15.0.27130.2036
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PADD", "PADD\PADD.csproj", "{F420BDD3-CE9C-4424-B5E1-8AD0F4143A02}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BrightWire.CUDA.Net4.x64", "..\..\brightwire\BrightWire.CUDA.Net4.x64\BrightWire.CUDA.Net4.x64.csproj", "{50BCB2AB-E8CA-4974-B136-49A98D5E34CB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BrightWire.CUDA.Net4.x64", "..\..\GIT_REPOS\brightwire\BrightWire.CUDA.Net4.x64\BrightWire.CUDA.Net4.x64.csproj", "{50BCB2AB-E8CA-4974-B136-49A98D5E34CB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BrightWire.Net4", "..\..\brightwire\BrightWire.Net4\BrightWire.Net4.csproj", "{FD8AAEF6-2EDB-446C-BB19-5EBEE5CDE982}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BrightWire.Net4", "..\..\GIT_REPOS\brightwire\BrightWire.Net4\BrightWire.Net4.csproj", "{FD8AAEF6-2EDB-446C-BB19-5EBEE5CDE982}"
 EndProject
-Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "BrightWire.Source", "..\..\brightwire\BrightWire.Source\BrightWire.Source.shproj", "{8EE466C6-A1DA-4C24-AE39-F82559BE16E9}"
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "BrightWire.Source", "..\..\GIT_REPOS\brightwire\BrightWire.Source\BrightWire.Source.shproj", "{8EE466C6-A1DA-4C24-AE39-F82559BE16E9}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
-		..\..\brightwire\BrightWire.Source\BrightWire.Source.projitems*{8ee466c6-a1da-4c24-ae39-f82559be16e9}*SharedItemsImports = 13
-		..\..\brightwire\BrightWire.Source\BrightWire.Source.projitems*{fd8aaef6-2edb-446c-bb19-5ebee5cde982}*SharedItemsImports = 4
+		..\..\GIT_REPOS\brightwire\BrightWire.CUDA.Source\BrightWire.CUDA.Source.projitems*{50bcb2ab-e8ca-4974-b136-49a98d5e34cb}*SharedItemsImports = 4
+		..\..\GIT_REPOS\brightwire\BrightWire.Source\BrightWire.Source.projitems*{8ee466c6-a1da-4c24-ae39-f82559be16e9}*SharedItemsImports = 13
+		..\..\GIT_REPOS\brightwire\BrightWire.Source\BrightWire.Source.projitems*{fd8aaef6-2edb-446c-bb19-5ebee5cde982}*SharedItemsImports = 4
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

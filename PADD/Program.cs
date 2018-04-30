@@ -57,7 +57,7 @@ namespace PADD
 		/// This function combines all computed resultFiles into a single file.
 		/// </summary>
 		/// <param name="args"></param>
-		static void Main9(string[] args)
+		static void Main(string[] args)
 		{
 			string domainsFolder = SAS_all_WithoutAxioms;
 			//string domainsFolder = "../tests/test2";
@@ -68,20 +68,22 @@ namespace PADD
 		/// Main function for creating heuristic-distance histograms OR planners results statistics
 		/// </summary>
 		/// <param name="args"></param>
-		static void Main(string[] args)
+		static void Main4(string[] args)
 		{
+			/*
 			string Domain = SAS_all_WithoutAxioms + "/logistics00";
 			//string Domain = small_and_mediumDomainsFolder + "/tidybotFL";
 			int problemNum = 22;
 			createHeuristic2distanceStatictics(Domain, problemNum, computers: 1, reWriteIfOlderThan: DateTime.Now);
 			//createPlannerResultsStatistics(Domain, problemNum, numberOfComputersUsed: 1, reWriteIfOlderThan: DateTime.Now, timeLimit: TimeSpan.FromMinutes(15));
 			return;
-			
+			*/
 
 			string domainsFolder = SAS_all_WithoutAxioms;
 			//string domainsFolder = "./../tests/test2";
 
-			DateTime reWriteIfOlderThan = new DateTime(2018, 2, 15);
+			DateTime reWriteIfOlderThan = new DateTime(2018, 3, 9);
+			//DateTime reWriteIfOlderThan = DateTime.Now;
 
 			int problemNumber = int.Parse(args[0]) - 1;
 			int numberOfComputers = int.Parse(args[1]);
@@ -176,18 +178,18 @@ namespace PADD
 		/// Main function for counting number of computed histograms or searchFile results
 		/// </summary>
 		/// <param name="args"></param>
-		static void Main4(string[] args)
+		static void Main9(string[] args)
 		{
 			string domainsFolder = SAS_all_WithoutAxioms;
 
-			var resultsFilesPrefixes = Enum.GetNames(typeof(SearchAlgorithmType)).Select(p => p + "_").ToList();
+			var resultsFilesPrefixes = Enum.GetNames(typeof(SearchAlgorithmType)).Select(p => p + "").ToList();
 			var counts = resultsFilesPrefixes.Select(pre => countResultsFiles(domainsFolder, pre));
 			
 			int totalCount = countAllProblemFiles(domainsFolder);
 
 			foreach (var item in resultsFilesPrefixes.Zip(counts, (pref, count) => (pref, count)))
 			{
-				Console.WriteLine(item.pref + " results: " + item.count + " computed out of " + totalCount);
+				Console.WriteLine(item.pref + " results:\t" + item.count + " computed out of " + totalCount);
 			}
 
 			//countFF = countHistograms(domainsFolder);
@@ -205,7 +207,7 @@ namespace PADD
 			var prefixes = Enum.GetNames(typeof(SearchAlgorithmType)).ToList();
 
 			//List<string> resultsFilesPrefixes = new List<string>() { "HeurFF_", "HeurFile_" };
-			List<string> resultsFilesPrefixes = prefixes.Select(p => p + "_").ToList();
+			List<string> resultsFilesPrefixes = prefixes.Select(p => p + "").ToList();
 
 			int numerOfParamsInEachFile = 6;
 			using (var writer = new StreamWriter(combinedResultsFile))
@@ -259,7 +261,7 @@ namespace PADD
 		/// Returns a number that corresponds to total number of computed histograms for all domains in a given folder
 		/// </summary>
 		/// <param name="domainsFolder"></param>
-		public static int countHistograms(string domainsFolder)
+		public static int countHistograms(string domainsFolder, string histogramPrefix)
 		{
 			int totalCount = 0;
 			foreach (var domainFolder in Directory.EnumerateDirectories(domainsFolder))
@@ -936,116 +938,123 @@ namespace PADD
 			logger.Log("Param is " + problemNumber);
 			var files = Directory.EnumerateFiles(domainFolder).ToList();
 			int numberOfComputers = numberOfComputersUsed;
-			SearchAlgorithmType type = SearchAlgorithmType.heurFile_Median;
 
-			Console.WriteLine("Number of computers: " + numberOfComputers);
-			foreach (var item in files)
+			var types = Enum.GetValues(typeof(SearchAlgorithmType));
+
+			foreach (SearchAlgorithmType typeItem in types)
 			{
+				SearchAlgorithmType type = typeItem;
+				//SearchAlgorithmType type = SearchAlgorithmType.heurFile_Median;
+
+				Console.WriteLine("Number of computers: " + numberOfComputers);
+				foreach (var item in files)
+				{
 #if DEBUG
-				if (numberOfComputersUsed == 1 && files.IndexOf(item) != problemNumber)
-					continue;
+					if (numberOfComputersUsed == 1 && files.IndexOf(item) != problemNumber)
+						continue;
 #endif
 
-				if (numberOfComputersUsed > 1 && files.IndexOf(item) % numberOfComputers != problemNumber)
-				{
-					logger.Log("Skipping file " + item + " whose index is " + files.IndexOf(item));
-					continue;
-				}
-
-				string problemFile = item;
-				logger.Log("Processing file " + item);
-
-				var d = SASProblem.CreateFromFile(problemFile);
-
-				string domainName = Path.GetFileName(domainFolder);
-				string probleName = Path.GetFileName(item);
-				string resultsPath = Path.Combine(domainFolder, "results");
-
-				if (!Directory.Exists(resultsPath))
-					Directory.CreateDirectory(resultsPath);
-
-				string resultFile = Path.Combine(resultsPath, type.ToString() + Path.GetFileNameWithoutExtension(probleName) + ".txt");
-	
-				if (File.Exists(resultFile) && File.GetCreationTime(resultFile) >= reWriteIfOlderThan)
-				{
-					logger.Log("Skipping domain " + domainName + " , file " + probleName + " - resultsFile already exists and is up to date (" + File.GetCreationTime(resultFile).ToLongDateString() + ")");
-					continue;
-				}
-
-				logger.Log("Processing domain " + domainName + " , file " + probleName + (File.Exists(resultFile) ? "\tresultsFile exists but it's old (" + File.GetCreationTime(resultFile).ToLongDateString() + ")" : ""));
-
-				string dataFile = "";
-				switch (type)
-				{
-					case SearchAlgorithmType.doubleListFF_FileMean:
-					case SearchAlgorithmType.heurFile_Mean:
-						dataFile = Path.Combine(domainFolder, "histograms", "dataToLearn_Mean.tsv");
-						break;
-					case SearchAlgorithmType.doubleListFF_FileMedian:
-					case SearchAlgorithmType.heurFile_Median:
-						dataFile = Path.Combine(domainFolder, "histograms", "dataToLearn_Median.tsv");
-						break;
-				}
-
-				Heuristic h = null;
-
-				switch(type)
-				{
-					case SearchAlgorithmType.heurFF:
-						h = new FFHeuristic(d);
-						break;
-					case SearchAlgorithmType.doubleListFF_FileMean:
-					case SearchAlgorithmType.doubleListFF_FileMedian:
-					case SearchAlgorithmType.heurFile_Mean:
-					case SearchAlgorithmType.heurFile_Median:
-						h = new FileBasedHeuristic(d, dataFile, false);
-						break;
-				}
-
-				AStarSearch ast = null;
-
-				switch (type)
-				{
-					case SearchAlgorithmType.heurFF:
-					case SearchAlgorithmType.heurFile_Mean:
-					case SearchAlgorithmType.heurFile_Median:
-						ast = new AStarSearch(d, h);
-						break;
-					case SearchAlgorithmType.doubleListFF_FileMean:
-					case SearchAlgorithmType.doubleListFF_FileMedian:
-						ast = new MultipleOpenListsAStar(d, new List<Heuristic>() { h, new FFHeuristic(d) });
-						break;
-				}
-
-				ast.timeLimit = timeLimit;
-				ast.results.domainName = domainName;
-				ast.results.problemName = probleName;
-				ast.results.heuristicName = h.getDescription();
-				ast.results.algorithm = ast.getDescription() + "+" + ast.openNodes.getName();
-
-				ast.Search();
-				ast.results.bestHeuristicValue = h.statistics.bestHeuristicValue;
-				ast.results.avgHeuristicValue = h.statistics.getAverageHeurValue();
-
-#if DEBUG
-				bool printPlan = true;
-				if (printPlan)
-				{
-					Console.WriteLine("Plan:");
-					var state = d.GetInitialState();
-					Console.WriteLine(state.ToString());
-					foreach (var opIndex in ast.GetSolution().GetOperatorSeqIndices())
+					if (numberOfComputersUsed > 1 && files.IndexOf(item) % numberOfComputers != problemNumber)
 					{
-						var op = d.GetOperators()[opIndex];
-						state = op.Apply(state);
-						Console.WriteLine(state.ToString() + "\toperator aplied: " + op.ToString());
+						logger.Log("Skipping file " + item + " whose index is " + files.IndexOf(item));
+						continue;
 					}
-				}
+
+					string problemFile = item;
+					logger.Log("Processing file " + item);
+
+					var d = SASProblem.CreateFromFile(problemFile);
+
+					string domainName = Path.GetFileName(domainFolder);
+					string probleName = Path.GetFileName(item);
+					string resultsPath = Path.Combine(domainFolder, "results");
+
+					if (!Directory.Exists(resultsPath))
+						Directory.CreateDirectory(resultsPath);
+
+					string resultFile = Path.Combine(resultsPath, type.ToString() + Path.GetFileNameWithoutExtension(probleName) + ".txt");
+
+					if (File.Exists(resultFile) && File.GetCreationTime(resultFile) >= reWriteIfOlderThan)
+					{
+						logger.Log("Skipping domain " + domainName + " , file " + probleName + " - resultsFile already exists and is up to date (" + File.GetCreationTime(resultFile).ToLongDateString() + ")");
+						continue;
+					}
+
+					logger.Log("Processing domain " + domainName + " , file " + probleName + (File.Exists(resultFile) ? "\tresultsFile exists but it's old (" + File.GetCreationTime(resultFile).ToLongDateString() + ")" : ""));
+
+					string dataFile = "";
+					switch (type)
+					{
+						case SearchAlgorithmType.doubleListFF_FileMean:
+						case SearchAlgorithmType.heurFile_Mean:
+							dataFile = Path.Combine(domainFolder, "histograms", "dataToLearn_Mean.tsv");
+							break;
+						case SearchAlgorithmType.doubleListFF_FileMedian:
+						case SearchAlgorithmType.heurFile_Median:
+							dataFile = Path.Combine(domainFolder, "histograms", "dataToLearn_Median.tsv");
+							break;
+					}
+
+					Heuristic h = null;
+
+					switch (type)
+					{
+						case SearchAlgorithmType.heurFF:
+							h = new FFHeuristic(d);
+							break;
+						case SearchAlgorithmType.doubleListFF_FileMean:
+						case SearchAlgorithmType.doubleListFF_FileMedian:
+						case SearchAlgorithmType.heurFile_Mean:
+						case SearchAlgorithmType.heurFile_Median:
+							h = new FileBasedHeuristic(d, dataFile, false);
+							break;
+					}
+
+					AStarSearch ast = null;
+
+					switch (type)
+					{
+						case SearchAlgorithmType.heurFF:
+						case SearchAlgorithmType.heurFile_Mean:
+						case SearchAlgorithmType.heurFile_Median:
+							ast = new AStarSearch(d, h);
+							break;
+						case SearchAlgorithmType.doubleListFF_FileMean:
+						case SearchAlgorithmType.doubleListFF_FileMedian:
+							ast = new MultipleOpenListsAStar(d, new List<Heuristic>() { h, new FFHeuristic(d) });
+							break;
+					}
+
+					ast.timeLimit = timeLimit;
+					ast.results.domainName = domainName;
+					ast.results.problemName = probleName;
+					ast.results.heuristicName = h.getDescription();
+					ast.results.algorithm = ast.getDescription() + "+" + ast.openNodes.getName();
+
+					ast.Search();
+					ast.results.bestHeuristicValue = h.statistics.bestHeuristicValue;
+					ast.results.avgHeuristicValue = h.statistics.getAverageHeurValue();
+
+#if DEBUG
+					bool printPlan = true;
+					if (printPlan)
+					{
+						Console.WriteLine("Plan:");
+						var state = d.GetInitialState();
+						Console.WriteLine(state.ToString());
+						foreach (var opIndex in ast.GetSolution().GetOperatorSeqIndices())
+						{
+							var op = d.GetOperators()[opIndex];
+							state = op.Apply(state);
+							Console.WriteLine(state.ToString() + "\toperator aplied: " + op.ToString());
+						}
+					}
 #endif
-				using (var writer = new System.IO.StreamWriter(resultFile))
-					writer.WriteLine(ast.results.ToString());
-				
-				logger.Log("Results successfully written to " + resultFile);
+					using (var writer = new System.IO.StreamWriter(resultFile))
+						writer.WriteLine(ast.results.ToString());
+
+					logger.Log("Results successfully written to " + resultFile);
+				}
 			}
 		}
 
