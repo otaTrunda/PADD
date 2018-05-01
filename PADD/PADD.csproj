@@ -92,6 +92,9 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.ValueTuple, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.ValueTuple.4.4.0\lib\net47\System.ValueTuple.dll</HintPath>
+    </Reference>
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -102,6 +105,7 @@
   <ItemGroup>
     <Compile Include="Common_AStarSearch.cs" />
     <Compile Include="Common_BeamStackSearch.cs" />
+    <Compile Include="DomainDependentSolvers\GripperSolver.cs" />
     <Compile Include="IFace_Problem.cs" />
     <Compile Include="Common_Transitions.cs" />
     <Compile Include="PDDL_IDMapping.cs" />
@@ -156,6 +160,8 @@
     <Compile Include="IFace_State.cs" />
     <Compile Include="Common_TestResult.cs" />
     <Compile Include="SAS_Variables.cs" />
+    <Compile Include="StatesDB\DBCreator.cs" />
+    <Compile Include="StatesDB\Trie.cs" />
     <Compile Include="StateSpaceEnumerator.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -147,6 +147,11 @@ namespace PADD
             return result;
         }
 
+		private KnowledgeHolder()
+		{
+
+		}
+
         public void show(int variable, System.Windows.Forms.Panel panel)
         {
             if (variable == 0)

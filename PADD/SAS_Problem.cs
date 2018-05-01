@@ -142,7 +142,7 @@ namespace PADD
         /// <summary>
         /// Info data about variables used in the SAS+ planning problem.
         /// </summary>
-        protected SASVariables variablesData;
+        public SASVariables variablesData { get; protected set; }
 
         /// <summary>
         /// Mutually exclusive constraints in the SAS+ planning problem.

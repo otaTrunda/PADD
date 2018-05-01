@@ -23,12 +23,12 @@ namespace PADD
         /// <returns>The initial state.</returns>
         IState GetInitialState();
 
-        /// <summary>
-        /// Checks whether the specified state is meeting goal conditions of the planning problem.
-        /// </summary>
-        /// <param name="state">A state to be checked.</param>
-        /// <returns>True if the specified state is a goal state of the problem, false otherwise.</returns>
-        bool IsGoalState(IState state);
+		/// <summary>
+		/// Checks whether the specified state is meeting goal conditions of the planning problem.
+		/// </summary>
+		/// <param name="state">A state to be checked.</param>
+		/// <returns>True if the specified state is a goal state of the problem, false otherwise.</returns>
+		bool IsGoalState(IState state);
 
         /// <summary>
         /// Gets a list of forward transitions (successors) from the specified state. Only maxNumSucc transitions are returned.

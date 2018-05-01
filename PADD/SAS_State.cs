@@ -21,6 +21,31 @@ namespace PADD
         /// </summary>
         protected int[] stateValues;
 
+		public static SASState parse(string s, SASProblem parentProblem)
+		{
+			string processed = s.Replace('[', ' ');
+			processed = processed.Replace(']', ' '); //removes "[" and "]" 
+			List<int> values = new List<int>();
+
+			var splitted = processed.Split(new string[] { " " }, StringSplitOptions.RemoveEmptyEntries);
+			foreach (var item in splitted)
+			{
+				if (!item.Contains("x"))
+					values.Add(int.Parse(item));
+				else
+				{
+					var parts = item.Split('x');
+					int count = int.Parse(parts[0]),
+						val = int.Parse(parts[1]);
+					for (int i = 0; i < count; i++)
+						values.Add(val);
+				}
+			}
+			if (values.Count != ((SASState)parentProblem.GetInitialState()).GetAllValues().Length)
+				throw new ArgumentException();
+			return new SASState(parentProblem, values.ToArray());
+		}
+
         /// <summary>
         /// Constructs the SAS+ state instance.
         /// </summary>

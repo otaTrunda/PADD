@@ -77,5 +77,24 @@ namespace PADD
 
             return sb.ToString();
         }
-    }
+
+		/// <summary>
+		/// Returns the sequence of states startig with the given state such that successsive states are created by applying respective operators. 
+		/// If the given state is the initial state of the problem, this will return a path to a goal state - i.e. the last state in the result will be a goal state.
+		/// </summary>
+		/// <param name="initialState"></param>
+		/// <returns></returns>
+		public List<IState> getSequenceOfStates(IState initialState)
+		{
+			List<IState> result = new List<IState>();
+			IState currentState = initialState;
+			result.Add(currentState);
+			foreach (var item in this.operatorSequence)
+			{
+				currentState = item.Apply(currentState);
+				result.Add(currentState);
+			}
+			return result;
+		}
+	}
 }

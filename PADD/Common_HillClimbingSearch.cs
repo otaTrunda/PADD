@@ -39,7 +39,7 @@ namespace PADD
                         bestOperators.Clear();
                         bestOperators.Add(op.GetOrderIndex());
                     }
-                    if(val == bestVal)
+                    else if(val == bestVal)
                         bestOperators.Add(op.GetOrderIndex());
                 }
                 bestOp = ((SASProblem)problem).GetOperators()[bestOperators[Program.r.Next(bestOperators.Count)]];

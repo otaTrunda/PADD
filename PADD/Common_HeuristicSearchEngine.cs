@@ -27,7 +27,7 @@ namespace PADD
         /// <summary>
         /// Reference to the planning problem.
         /// </summary>
-        protected IPlanningProblem problem;
+        public IPlanningProblem problem;
 
         /// <summary>
         /// Used heuristics.
@@ -66,7 +66,7 @@ namespace PADD
         /// Sets the planning problem to be solved.
         /// </summary>
         /// <param name="problem">Input planning problem.</param>
-        public void SetProblem(IPlanningProblem problem)
+        public virtual void SetProblem(IPlanningProblem problem)
         {
             this.problem = problem;
         }

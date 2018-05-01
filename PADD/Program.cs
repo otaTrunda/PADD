@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
+using PADD.StatesDB;
+using PADD.DomainDependentSolvers;
 
 namespace PADD
 {
@@ -18,15 +20,69 @@ namespace PADD
         private static string mediumDomainsFolderSecondHalf = "./../tests/benchmarksSAS_ALL - medium2";
         private static string small_and_mediumDomainsFolder = "./../tests/benchmarksSAS_ALL - small+medium";
         private static string freeLunchSmall = "../tests/FreeLunchBenchmarks - small";
-
+		
         private static string testFilesFolder = "../tests/test";
 		private static string test2FilesFolder = "../tests/test2";
+
+
+		static void Main(string[] args)
+		{
+			if (args.Length == 1 && args[0] == "combineResults")
+			{
+				CombineResultFiles();
+			}
+			if (args.Length == 1 && args[0] == "combineHistograms")
+			{
+				CombineHistogramFiles();
+			}
+			if (args.Length == 1 && args[0] == "count")
+			{
+				CountHistogramsAndResultFiles();
+			}
+			if (args.Length == 1 && args[0] == "visualizeGraphs")
+			{
+				visualizeKnowledgeGraphs(Path.Combine(SAS_all_WithoutAxioms, "gripper", "prob02.sas"));
+			}
+
+			if (args.Length == 1 && args[0] == "createDB")
+			{
+				createStatesDB(Path.Combine(SAS_all_WithoutAxioms, "gripper", "prob10.sas"), new GripperSolver());
+			}
+
+			if (args.Length == 3 && args[0] == "createHistograms_Results")
+			{
+				CreateHistograms_Results(args.Skip(1).ToArray());
+			}
+		}
+
+		static void createStatesDB(string problemFile, HeuristicSearchEngine domainSpecificSolver)
+		{
+			var sasProblem = SASProblem.CreateFromFile(problemFile);
+			StatesEnumerator e = new RandomWalksFromGoalPathStateSpaceEnumerator(sasProblem, domainSpecificSolver);
+			DBCreator c = new DBCreator(e);
+			c.createDB(problemFile, domainSpecificSolver, 100000, TimeSpan.FromHours(1));
+			var states = c.DB.getAllElements().ToList();
+
+
+
+			Trie<int> t = Trie<int>.load(c.getDBFilePath(problemFile),
+				s => int.Parse(s));
+			states = t.getAllElements().ToList();
+
+			var realStates = states.Select(s => (SASState.parse(s.key, sasProblem), s.value)).ToList();
+		}
+
+		static void visualizeKnowledgeGraphs(string problemFile)
+		{
+			var sasProblem = SASProblem.CreateFromFile(problemFile);
+			KnowledgeHolder h = KnowledgeHolder.compute(sasProblem);
+			h.visualize();
+		}
 
 		/// <summary>
 		/// Main function for creating statistics of heuristic values compared to real goal-distances. I.e. for creating "dataToLearn.tsv" file by combining existing histograms.
 		/// </summary>
-		/// <param name="args"></param>
-		static void Main3(string[] args)
+		static void CombineHistogramFiles()
 		{
 			/*
 			FeaturesCalculator.countHistograms(small_and_mediumDomainsFolder);
@@ -56,8 +112,7 @@ namespace PADD
 		/// <summary>
 		/// This function combines all computed resultFiles into a single file.
 		/// </summary>
-		/// <param name="args"></param>
-		static void Main(string[] args)
+		static void CombineResultFiles()
 		{
 			string domainsFolder = SAS_all_WithoutAxioms;
 			//string domainsFolder = "../tests/test2";
@@ -68,7 +123,7 @@ namespace PADD
 		/// Main function for creating heuristic-distance histograms OR planners results statistics
 		/// </summary>
 		/// <param name="args"></param>
-		static void Main4(string[] args)
+		static void CreateHistograms_Results(string[] args)
 		{
 			/*
 			string Domain = SAS_all_WithoutAxioms + "/logistics00";
@@ -102,83 +157,13 @@ namespace PADD
 			return;
 		}
 
-		/// <summary>
-		/// Main function for running the experiments.
-		/// </summary>
-		/// <param name="args"></param>
-		[STAThread]
-        static void Main5(string[] args)
-        {
-			//runPlanningExperiments(testFilesFolder, TimeSpan.FromMinutes(15), 3);
-			//runPlanningExperiments(mediumDomainsFolderFirstHalf, TimeSpan.FromMinutes(15), int.Parse(args[0]));
-			//runPlanningExperiments(mediumDomainsFolderSecondHalf, TimeSpan.FromMinutes(15), int.Parse(args[0]));
-
-			runPlanningExperiments(SAS_all_WithoutAxioms, TimeSpan.FromMinutes(30), int.Parse(args[0]) - 1);
-
-			//runPlanningExperiments(test2FilesFolder, TimeSpan.FromMinutes(30), int.Parse(args[0]) - 1);
-
-			//runPlanningExperiments(test2FilesFolder, TimeSpan.FromMinutes(30), 30);
-
-			return;
-        }
-
-		static void Main2(string[] args)
-		{
-			//runPlanningExperiments(test2FilesFolder, TimeSpan.FromMinutes(15), 3);
-			//return;
-
-			/*
-			MultiPolynomialRegressionModel m = new MultiPolynomialRegressionModel(2);
-			m.trainModel(new List<double[]>() { new double[] { 1 }, new double[] { 2 }, new double[] { 3 }, new double[] { 4 } }, new List<double>() { 3, 1, 2, 2 });
-			while (true)
-			{
-				double input = double.Parse(Console.ReadLine());
-				logger.Log("point: " + input + "\tval: " + m.eval(new double[] { input }));
-			}
-			*/
-
-			//runPlanningExperiments(testFilesFolder, TimeSpan.FromMinutes(15), 3);
-
-			//var predictions = FeaturesCalculator.generatePredictions(@"C:\Users\Trunda_Otakar\Documents\Visual Studio 2017\Projects\PADD\heuristicStats\blocks_probBLOCKS-4-0.txt");
-
-			//FeaturesCalculator.processFolder(@"..\..\..\testing\results\NNvsFF_withRandomWalks\inputs");
-			//return;
-
-			//string dataFilePath = @"..\..\..\testing\results\NNvsFF_withoutRandomWalks\inputData\dataToLearn1.tsv",
-			string dataFilePath = @"..\..\..\testing\results\NNvsFF_withRandomWalks\inputs\dataToLearn.tsv",
-				resultNetworkFile = @"..\..\..\testing\results\NNvsFF_withRandomWalks\inputs\trainedNetwork.bin",
-				trainingOutputsFile = @"..\..\..\testing\results\NNvsFF_withRandomWalks\inputs\trainingOutputs.txt";
-
-			//BrightWireNN m = new BrightWireNN();
-			BrightWireNN m = new FileBasedModel();
-
-			m.train(dataFilePath);
-			
-			/*
-			foreach (var item in m.evalOnFile(dataFilePath))
-			{
-				logger.Log(item);
-			}
-			*/
-
-			//BrightWireNN.save(m, resultNetworkFile);
-			//return;
-			//m = BrightWireNN.load(resultNetworkFile);
-
-			using (var writer = new StreamWriter(trainingOutputsFile))
-			{
-				foreach (var item in m.evalOnFile(dataFilePath))
-				{
-					writer.WriteLine(item);
-				}
-			}
-		}
+		#region supportMethods
 
 		/// <summary>
-		/// Main function for counting number of computed histograms or searchFile results
+		/// Function for counting number of computed histograms or searchFile results
 		/// </summary>
 		/// <param name="args"></param>
-		static void Main9(string[] args)
+		static void CountHistogramsAndResultFiles()
 		{
 			string domainsFolder = SAS_all_WithoutAxioms;
 
@@ -374,247 +359,7 @@ namespace PADD
 			}
 		}
 
-		[STAThread]
-        static void Main_OLD(string[] args)
-        {
-            //runPlanningExperiments(mediumDomainsFolder, TimeSpan.FromMinutes(15), int.Parse(args[0]));
-            return;
-
-
-            /*
-            //Red_BlackDomain d = Red_BlackDomain.createFromFile(@"..\tests\floortile-seq-p01-001.sas");
-            //Red_BlackDomain d = Red_BlackDomain.createFromFile(@"..\tests\nomystery-p01.sas");
-            Red_BlackDomain d = Red_BlackDomain.createFromFile(@"..\tests\elevators-p01.sas");
-            //Red_BlackDomain d = Red_BlackDomain.createFromFile(@"..\tests\parcprinter-p01.sas");
-            //Red_BlackDomain d = Red_BlackDomain.createFromFile(@"..\tests\pegsol-p01.sas");
-            //Red_BlackDomain d = Red_BlackDomain.createFromFile(@"..\tests\test.sas");
-
-            d.makeAllAbstracted();
-            //AStarSearch ast = new AStarSearch(d, new BlindHeuristic());
-            //AStarSearch ast = new AStarSearch(d, new NotAccomplishedGoalCount(d));
-            AStarSearch ast = new AStarSearch(d, new AbstractStateSizeHeuristic(d));
-            */
-
-            //runHeapTests(); return;
-
-
-            //runPatternsTest(@"..\tests\nomystery-p01.sas");
-            //runPatternsTest(@"..\tests\test.sas");
-            //return;
-
-            //List<IHeap<int, State>> datastructs = new List<IHeap<int, State>>();
-            /*
-            datastructs.Add(new Heaps.FibonacciHeap2<State>());
-            
-            datastructs.Add(new Heaps.BinomialHeap<State>());
-            datastructs.Add(new Heaps.LeftistHeap<State>());
-            datastructs.Add(new Heaps.RedBlackTreeHeap<State>());
-            datastructs.Add(new Heaps.RegularBinaryHeap<State>());
-            datastructs.Add(new Heaps.RegularTernaryHeap<State>());
-            
-            datastructs.Add(new Heaps.OrderedMutliDictionaryHeap<State>());
-             
-            datastructs.Add(new Heaps.FibonacciHeap2<State>());
-            
-            runHeapsTests(mediumDomainsFolder, datastructs, TimeSpan.FromMinutes(15)); return;
-
-            /*
-            string FilesToPrune = @"..\tests\benchmarksSAS_ALL - small";
-            DeleteTooEasyTasks(FilesToPrune, TimeSpan.FromSeconds(5));
-            return;
-             */
-
-            //PlanningProblem d = PlanningProblem.createFromFile(@"..\tests\floortile-seq-p01-001.sas");
-            //PlanningProblem d = PlanningProblem.createFromFile(@"..\..\..\..\TSP\TSP\bin\Release\tempTSP2SAS.sas");
-            //  SASDomain d = SASDomain.createFromFile(@"..\tests\nomystery-p01.sas");
-            //PlanningProblem d = PDDLDomain.createFromFile(@"..\tests\example_domain1.pddl", @"..\tests\example_problem1.pddl");
-
-
-            // rozsah: 16 hodnot pro predID, 64 hodnot pro 4 ruzne parametry, pro kazdy ze 4 parametru mame take isVar()
-            //PDDLDesignatorAdv pred = new PDDLDesignatorAdv(3, new int[] { 5, 31, 9, 40 }, new bool[] { true, true, false, true });
-
-            /*
-
-            // 5bit predID + 3x 8bit paramID (+ 3x 1bit isVarID)
-            PDDLDesignatorAdv_5_8_8_8 pred = new PDDLDesignatorAdv_5_8_8_8(3, new int[] { 50, 33, 4 }, new bool[] { true, true, false });
-            int predID = pred.getPredID();
-            int paramID1 = pred.getParam(0);
-            int paramID2 = pred.getParam(1);
-            int paramID3 = pred.getParam(2);
-            //int paramID4 = pred.getParam(3);
-            bool isVar1 = pred.isParamVar(0);
-            bool isVar2 = pred.isParamVar(1);
-            bool isVar3 = pred.isParamVar(2);
-            //bool isVar4 = pred.isParamVar(3);
-
-            pred.setParam(0, 21);
-            pred.setParam(1, 13);
-            pred.setParam(2, 0);
-            //pred.setParam(3, 9);
-
-            paramID1 = pred.getParam(0);
-            paramID2 = pred.getParam(1);
-            paramID3 = pred.getParam(2);
-            //paramID4 = pred.getParam(3);
-
-            */
-
-
-
-
-
-            //long StopBytes = 0;
-            //PDDLDesignator2 myFoo;
-
-            //long StartBytes = System.GC.GetTotalMemory(true);
-            //myFoo = new PDDLDesignator2();
-            //StopBytes = System.GC.GetTotalMemory(true);
-            //GC.KeepAlive(myFoo); // This ensure a reference to object keeps object in memory
-
-
-            //long ccc = (StopBytes - StartBytes);
-            //logger.Log("Byte size = {0}, bit size = {1}, ints = {2}", ccc, ccc*8, ccc/4);
-
-            //PDDLDesignator predd = new PDDLDesignator();
-
-            //long size2 = System.Runtime.InteropServices.Marshal.SizeOf(predd);
-
-
-
-            //int aaa = 5;
-
-
-
-
-
-
-            //PDDLDesignatorAdv_5_8_8_8 pred = new PDDLDesignatorAdv_5_8_8_8(3, new int[] { 50, 33, 4 }, new bool[] { true, true, false });
-            //int aaa = 5;
-
-            //long size = 0;
-            //object o = new PDDLDesignatorSimple2();
-            //using (Stream s = new MemoryStream())
-            //{
-            //    System.Runtime.Serialization.Formatters.Binary.BinaryFormatter formatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
-            //    formatter.Serialize(s, o);
-            //    size = s.Length;
-            //}
-
-            //long size2 = System.Runtime.InteropServices.Marshal.SizeOf(aaa);
-
-            //long size3 = sizeof(int);
-
-            //PDDLDesignator pp;
-            //pp.pred = 32;
-
-
-            ////long dfdf = sizeof(PDDLExper);
-            //long dfbdsb = System.Runtime.InteropServices.Marshal.SizeOf(pp);
-
-            //PDDLDesignator pred = new PDDLDesignator(21, new int[] { 1 }, new bool[] { true });
-            //int predID = pred.getPredID();
-            //int paramID1 = pred.getParam(0);
-            //int paramID2 = pred.getParam(1);
-            //int paramID3 = pred.getParam(2);
-
-            //bool isVar1 = pred.isParamVar(0);
-            //bool isVar2 = pred.isParamVar(1);
-            //bool isVar3 = pred.isParamVar(2);
-
-            //int paramCount = pred.getParamCount();
-            //bool isNull = pred.isNull();
-
-            //PDDLOperatorSubstitution substit = new PDDLOperatorSubstitution(new int[] { 1, 2 });
-            //pred = PDDLOperatorSubstitution.makeSubstituedDesignator(pred, substit);
-
-
-            //paramID1 = pred.getParam(0);
-            //paramID2 = pred.getParam(1);
-            //paramID3 = pred.getParam(2);
-
-
-
-            IPlanningProblem d = PDDLProblem.CreateFromFile(
-                @"..\tests\01_IPC-1998_Gripper\domain.pddl",
-                @"..\tests\01_IPC-1998_Gripper\prob01.pddl",
-                new PDDLDesignatorFactory(),
-                new PDDLStateFactory()
-                );
-
-            //var dict = d.getSuccessors(d.getInitialState(), 1);
-
-            //int countA = 0;
-            //int countB = 0;
-            //for (int i = 0; i < 100; ++i)
-            //{
-            //    var succ = d.getRandomSuccessor(d.getInitialState());
-            //    if (succ.Item2.GetHashCode() == 1122)
-            //        ++countA;
-            //    else
-            //        ++countB;
-            //    //System.Threading.Thread.Sleep(100);
-            //}
-
-            //var dict3 = d.getRandomSuccessor(d.getInitialState());
-            //int stateHash2 = dict3.Item2.GetHashCode();
-
-            //var dict4 = d.getRandomSuccessor(d.getInitialState());
-            //var dict5 = d.getRandomSuccessor(d.getInitialState());
-            //var dict6 = d.getRandomSuccessor(d.getInitialState());
-
-            //PlanningProblem d = PlanningProblem.createFromFile(@"..\tests\nomystery-p02.sas");
-            //PlanningProblem d = PlanningProblem.createFromFile(@"..\tests\nomystery-p03.sas");
-            //PlanningProblem d = PlanningProblem.createFromFile(@"..\tests\elevators-p01.sas");
-            //PlanningProblem d = PlanningProblem.createFromFile(@"..\tests\parcprinter-p01.sas");
-            //PlanningProblem d = PlanningProblem.createFromFile(@"..\tests\pegsol-p01.sas");
-            //PlanningProblem d = PlanningProblem.createFromFile(@"..\tests\sokoban-p01.sas");
-            //PlanningProblem d = PlanningProblem.createFromFile(@"..\tests\visitall-problem14.sas");
-            //PlanningProblem d = PlanningProblem.createFromFile(@"..\tests\scanalyzer-p03.sas");
-            //PlanningProblem d = PlanningProblem.createFromFile(@"..\tests\openstack-p02.sas");
-            //PlanningProblem d = PlanningProblem.createFromFile(@"..\tests\test.sas");
-            //PlanningProblem d = PlanningProblem.createFromFile(@"..\tests\benchmarksSAS_ALL - medium\airport\p36-airport5MUC-p2.sas");
-
-            AStarSearch ast = new AStarSearch(d, null);
-            //AStarSearch ast = new f_limitedAStarSearch(d, null);
-
-            //ast.setHeuristic(new BlindHeuristic());
-            ast.SetHeuristic(new NotAccomplishedGoalCount());
-            //ast.setHeuristic(new FFHeuristic(d));
-            //ast.setHeuristic(new PDBHeuristic(d));
-            //ast.setHeuristic(new DeleteRelaxationHeuristic_Perfect(d));
-            //ast.setHeuristic(new PlannigGraphLayersHeuristic(d));
-            //ast.setHeuristic(new WeightedHeuristic(new FFHeuristic(d), 200));
-            
-            //HeuristicSearchEngine ast = new HillClimbingSearch(d, new FFHeuristic(d));
-            //AStarSearch ast = new MCTSSolver(d, new FFHeuristic(d));
-            //Heuristic h = new PDBHeuristic(d);
-
-            //PlanningGraphComputation pgc = new PlanningGraphComputation(d);
-            //pgc.computePlanningGraph(d.initialState);
-
-            //KnowledgeHolder holder = KnowledgeHolder.compute(d);
-            //holder.visualize();
-            //return;
-
-            //TreeVisualizerForm f = new TreeVisualizerForm(d, new FFHeuristic(d));
-            //System.Windows.Forms.Application.Run(f);
-            //return;
-            ast.setHeapDatastructure(new Heaps.FibonacciHeap2<IState>());
-            //ast.setHeapDatastructure(new Heaps.RedBlackTreeHeap<State>());
-            //ast.setHeapDatastructure(new Heaps.SortedSetHeap<State>());
-            //ast.setHeapDatastructure(new Heaps.SortedDictionaryHeap<State>());
-            //ast.setHeapDatastructure(new Heaps.RegularBinaryHeap<State>());
-            //ast.setHeapDatastructure(new Heaps.RegularTernaryHeap<State>());
-            //ast.setHeapDatastructure(new Heaps.OrderedMutliDictionaryHeap<State>());
-            //ast.setHeapDatastructure(new Heaps.MeasuredHeap<State>());
-            //ast.setHeapDatastructure(new Heaps.SingleBucket<State>(32));
-
-            ast.Search();
-            string solutionStr = ast.GetSolution().ToString();
-
-          //  if (ast.openNodes is Heaps.MeasuredHeap<State>)
-          //      ((Heaps.MeasuredHeap<State>)ast.openNodes).printStats();
-         }
+		#endregion
 
         static void runHeapsTestsOLD(string domainsFolder, List<IHeap<double, IState>> dataStrucutures, TimeSpan timeLimit)
         {

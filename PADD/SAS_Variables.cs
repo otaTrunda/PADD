@@ -80,7 +80,7 @@ namespace PADD
         /// Meaning of assigned values to the variable (in form of symbolic names) in the SAS+ planning problem.
         /// An index in the list is an ID of the assigned value. The list size equals variable's domain range.
         /// </summary>
-        private List<string> valuesSymbolicMeaning;
+        public List<string> valuesSymbolicMeaning;
 
         /// <summary>
         /// Constructs SAS+ variable data object.
