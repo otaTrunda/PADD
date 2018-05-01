@@ -198,21 +198,21 @@ namespace PADD
 
         public void visualize(System.Windows.Forms.Panel panel = null, HashSet<int> invertibleVariables = null)
         {
-            Microsoft.Glee.Drawing.Graph g = new Microsoft.Glee.Drawing.Graph("Causual Graph");
+            Microsoft.Msagl.Drawing.Graph g = new Microsoft.Msagl.Drawing.Graph("Causual Graph");
             foreach (var item in vertices)
             {
                 g.AddNode(item.ToString());
                 if (invertibleVariables != null && !invertibleVariables.Contains(item))
                 {
-                    ((Microsoft.Glee.Drawing.Node)g.NodeMap[item.ToString()]).Attr.Color = Microsoft.Glee.Drawing.Color.Red;
-                    //g.SelectedNodeAttribute.Color = Microsoft.Glee.Drawing.Color.Red;
+                    ((Microsoft.Msagl.Drawing.Node)g.NodeMap[item.ToString()]).Attr.Color = Microsoft.Msagl.Drawing.Color.Red;
+                    //g.SelectedNodeAttribute.Color = Microsoft.Msagl.Drawing.Color.Red;
                 }
             }
             for (int i = 0; i < isEdge.GetLength(0); i++)
                 for (int j = 0; j < isEdge.GetLength(1); j++)
                     if (isEdge[i, j]) g.AddEdge(i.ToString(), j.ToString());                
 
-            Microsoft.Glee.GraphViewerGdi.GViewer viewer = new Microsoft.Glee.GraphViewerGdi.GViewer();
+            Microsoft.Msagl.GraphViewerGdi.GViewer viewer = new Microsoft.Msagl.GraphViewerGdi.GViewer();
             viewer.Graph = g;
             if (panel == null)
             {
@@ -451,7 +451,7 @@ namespace PADD
 
         public void visualize(bool isLabeled = true, System.Windows.Forms.Panel panel = null)
         {
-            Microsoft.Glee.Drawing.Graph g = new Microsoft.Glee.Drawing.Graph("PlanningProblem Transition Graph of variable " + variable);
+            Microsoft.Msagl.Drawing.Graph g = new Microsoft.Msagl.Drawing.Graph("PlanningProblem Transition Graph of variable " + variable);
             foreach (var item in vertices)
             {
                 g.AddNode(item.ToString());
@@ -459,10 +459,10 @@ namespace PADD
             if (isLabeled)
                 foreach (var item in edges)
                 {
-                    g.AddEdge(item.from.ToString(), "Cond:" + item.outsideCondition.ToStringEffectCondition() + "Eff:" + item.outsideEffect.ToStringEffectCondition(), item.to.ToString());
+                    var e = g.AddEdge(item.from.ToString(), "Cond:" + item.outsideCondition.ToStringEffectCondition() + "Eff:" + item.outsideEffect.ToStringEffectCondition(), item.to.ToString());
                     if (!isEdgeRSE_Invertible(item))
                     {
-                        g.Edges[g.EdgeCount - 1].Attr.Color = Microsoft.Glee.Drawing.Color.Red;
+                        e.Attr.Color = Microsoft.Msagl.Drawing.Color.Red;
                     }
                 }
             else
@@ -472,16 +472,16 @@ namespace PADD
                 {
                     if (isEdge[item.from, item.to])
                         continue;
-                    g.AddEdge(item.from.ToString(), item.to.ToString());
+					var e = g.AddEdge(item.from.ToString(), item.to.ToString());
                     if (!isEdgeRSE_Invertible(item))
                     {
-                        g.Edges[g.EdgeCount - 1].Attr.Color = Microsoft.Glee.Drawing.Color.Red;
+                        e.Attr.Color = Microsoft.Msagl.Drawing.Color.Red;
                     }
                     isEdge[item.from, item.to] = true;
                 }
             }
 
-            Microsoft.Glee.GraphViewerGdi.GViewer viewer = new Microsoft.Glee.GraphViewerGdi.GViewer();
+            Microsoft.Msagl.GraphViewerGdi.GViewer viewer = new Microsoft.Msagl.GraphViewerGdi.GViewer();
             viewer.Graph = g;
             if (panel == null)
             {
