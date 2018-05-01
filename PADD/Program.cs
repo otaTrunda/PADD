@@ -41,7 +41,7 @@ namespace PADD
 			}
 			if (args.Length == 1 && args[0] == "visualizeGraphs")
 			{
-				visualizeKnowledgeGraphs(Path.Combine(SAS_all_WithoutAxioms, "gripper", "prob02.sas"));
+				visualizeKnowledgeGraphs(Path.Combine(SAS_all_WithoutAxioms, "gripper", "prob10.sas"));
 			}
 
 			if (args.Length == 1 && args[0] == "createDB")

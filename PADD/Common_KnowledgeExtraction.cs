@@ -12,9 +12,11 @@ namespace PADD
             CausualGraph result = new CausualGraph();
             result.vertices = new List<int>(problem.GetVariablesCount());
             result.isEdge = new bool[problem.GetVariablesCount(), problem.GetVariablesCount()];
+			result.isMentionedInGoal = new bool[problem.GetVariablesCount()];
             for (int i = 0; i < problem.GetVariablesCount(); i++)
             {
                 result.vertices.Add(i);
+				result.isMentionedInGoal[i] = problem.GetGoalConditions().Any(g => g.variable == i);
             }
 
             foreach (SASOperator item in problem.GetOperators())
@@ -55,7 +57,9 @@ namespace PADD
             result.vertices = new List<int>();
             result.edges = new List<GraphEdge>();
 
-            for (int i = 0; i < problem.GetVariableDomainRange(variable); i++)
+			if (problem.GetGoalConditions().Any(g => g.variable == variable))
+				result.goalValue = problem.GetGoalConditions().Where(g => g.variable == variable).Single().value;
+			for (int i = 0; i < problem.GetVariableDomainRange(variable); i++)
             {
                 result.vertices.Add(i);
             }
@@ -189,6 +193,7 @@ namespace PADD
         public List<int> vertices;
         public bool[,] isEdge;
         private bool hasSomeEdge = false;
+		public bool[] isMentionedInGoal;
 
         public void setEdge(int from, int to)
         {
@@ -201,13 +206,14 @@ namespace PADD
             Microsoft.Msagl.Drawing.Graph g = new Microsoft.Msagl.Drawing.Graph("Causual Graph");
             foreach (var item in vertices)
             {
-                g.AddNode(item.ToString());
+                var node = g.AddNode(item.ToString());
                 if (invertibleVariables != null && !invertibleVariables.Contains(item))
                 {
-                    ((Microsoft.Msagl.Drawing.Node)g.NodeMap[item.ToString()]).Attr.Color = Microsoft.Msagl.Drawing.Color.Red;
-                    //g.SelectedNodeAttribute.Color = Microsoft.Msagl.Drawing.Color.Red;
+					node.Attr.Color = Microsoft.Msagl.Drawing.Color.Red;
                 }
-            }
+				if (isMentionedInGoal[item])
+					node.Attr.FillColor = Microsoft.Msagl.Drawing.Color.Yellow;
+			}
             for (int i = 0; i < isEdge.GetLength(0); i++)
                 for (int j = 0; j < isEdge.GetLength(1); j++)
                     if (isEdge[i, j]) g.AddEdge(i.ToString(), j.ToString());                
@@ -367,6 +373,7 @@ namespace PADD
         public int variable;
         public List<int> vertices;
         public List<GraphEdge> edges;
+		public int goalValue = -1;
         
         private List<GraphEdge>[] edgesByVertices;
         private bool isTransformed = false;
@@ -454,7 +461,9 @@ namespace PADD
             Microsoft.Msagl.Drawing.Graph g = new Microsoft.Msagl.Drawing.Graph("PlanningProblem Transition Graph of variable " + variable);
             foreach (var item in vertices)
             {
-                g.AddNode(item.ToString());
+                var node = g.AddNode(item.ToString());
+				if (item == goalValue)
+					node.Attr.FillColor = Microsoft.Msagl.Drawing.Color.Yellow;
             }
             if (isLabeled)
                 foreach (var item in edges)
