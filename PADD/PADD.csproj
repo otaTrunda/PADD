@@ -105,7 +105,9 @@
   <ItemGroup>
     <Compile Include="Common_AStarSearch.cs" />
     <Compile Include="Common_BeamStackSearch.cs" />
+    <Compile Include="DomainDependentSolvers\DomainDependentSolver.cs" />
     <Compile Include="DomainDependentSolvers\GripperSolver.cs" />
+    <Compile Include="DomainDependentSolvers\VisitAllSolver.cs" />
     <Compile Include="IFace_Problem.cs" />
     <Compile Include="Common_Transitions.cs" />
     <Compile Include="PDDL_IDMapping.cs" />

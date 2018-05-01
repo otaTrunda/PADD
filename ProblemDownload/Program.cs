@@ -10,7 +10,7 @@ namespace ProblemDownload
 	{
 		static void Main(string[] args)
 		{
-			//Downloader.download(77, @"C:\Users\Trunda_Otakar\Desktop\visitAll");
+			Downloader.download(77, @"C:\Users\Trunda_Otakar\Desktop\visitAll");
 			Translator.translateDomain(@"C:\Users\Trunda_Otakar\Desktop\visitAll\domain.pddl");
 		}
 	}

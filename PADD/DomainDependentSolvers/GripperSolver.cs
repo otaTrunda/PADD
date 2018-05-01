@@ -6,25 +6,15 @@ using System.Threading.Tasks;
 
 namespace PADD.DomainDependentSolvers
 {
-	class GripperSolver : HeuristicSearchEngine
+	class GripperSolver : DomainDependentSolver
 	{
-		SASProblem sasProblem;
-		List<SASVariable> allVariables;
 		(int variable, int value) robotInRoomA;
 		SASState initialState => (SASState)(sasProblem.GetInitialState());
 
-		protected void init()
+		protected override void init()
 		{
-			sasProblem = (SASProblem)problem;
-			allVariables = Enumerable.Range(0, sasProblem.variablesData.Count).Select(i => sasProblem.variablesData.GetVariable(i)).ToList();
 			robotInRoomA.variable = int.Parse(allVariables.Where(v => v.valuesSymbolicMeaning.Any(str => str.Contains("at-robby(rooma)"))).Single().GetName().Substring("var".Length));
 			robotInRoomA.value = allVariables[this.robotInRoomA.variable].valuesSymbolicMeaning.FindIndex(str => str.Contains("at-robby(rooma)"));
-		}
-
-		public override void SetProblem(IPlanningProblem problem)
-		{
-			base.SetProblem(problem);
-			init();
 		}
 
 		public override int Search(bool quiet = false)
@@ -81,15 +71,6 @@ namespace PADD.DomainDependentSolvers
 			return state.GetValue(robotInRoomA.variable) == robotInRoomA.value;
 		}
 
-		protected string getSymbolicMeaning(int variable, int value)
-		{
-			return allVariables[variable].valuesSymbolicMeaning[value];
-		}
-
-		protected string getSymbolicMeaning(int variable, SASState state)
-		{
-			return allVariables[variable].valuesSymbolicMeaning[state.GetValue(variable)];
-		}
 
 		protected int holdingBalls(SASState state)
 		{

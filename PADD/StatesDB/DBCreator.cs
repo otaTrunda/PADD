@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using PADD.DomainDependentSolvers;
 
 namespace PADD.StatesDB
 {
@@ -26,7 +27,7 @@ namespace PADD.StatesDB
 			return DBFileName;
 		}
 
-		public void createDB(string problemFile, HeuristicSearchEngine domainSpecificSolver, long numberOfSamples, TimeSpan maxTime)
+		public void createDB(string problemFile, DomainDependentSolver domainSpecificSolver, long numberOfSamples, TimeSpan maxTime)
 		{
 			System.Diagnostics.Stopwatch watch = System.Diagnostics.Stopwatch.StartNew();
 			DB = new Trie<int>();
@@ -99,7 +100,7 @@ namespace PADD.StatesDB
 
 		HeuristicSearchEngine goalPathFinder;
 
-		public RandomWalksFromGoalPathStateSpaceEnumerator(SASProblem problem, HeuristicSearchEngine domainDependentSolver) 
+		public RandomWalksFromGoalPathStateSpaceEnumerator(SASProblem problem, DomainDependentSolver domainDependentSolver) 
 			: base(problem)
 		{
 			domainDependentSolver.SetProblem(problem);

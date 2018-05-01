@@ -55,7 +55,7 @@ namespace PADD
 			}
 		}
 
-		static void createStatesDB(string problemFile, HeuristicSearchEngine domainSpecificSolver)
+		static void createStatesDB(string problemFile, DomainDependentSolver domainSpecificSolver)
 		{
 			var sasProblem = SASProblem.CreateFromFile(problemFile);
 			StatesEnumerator e = new RandomWalksFromGoalPathStateSpaceEnumerator(sasProblem, domainSpecificSolver);
