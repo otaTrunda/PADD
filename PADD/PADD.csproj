@@ -108,6 +108,12 @@
     <Compile Include="DomainDependentSolvers\DomainDependentSolver.cs" />
     <Compile Include="DomainDependentSolvers\GripperSolver.cs" />
     <Compile Include="DomainDependentSolvers\VisitAllSolver.cs" />
+    <Compile Include="DomainDependentSolvers\VisitAllVisForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="DomainDependentSolvers\VisitAllVisForm.Designer.cs">
+      <DependentUpon>VisitAllVisForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="IFace_Problem.cs" />
     <Compile Include="Common_Transitions.cs" />
     <Compile Include="PDDL_IDMapping.cs" />
@@ -172,6 +178,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Common_KnowledgeVisualizerForm.resx">
       <DependentUpon>Common_KnowledgeVisualizerForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="DomainDependentSolvers\VisitAllVisForm.resx">
+      <DependentUpon>VisitAllVisForm.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
