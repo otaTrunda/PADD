@@ -6,15 +6,16 @@ using System.Threading.Tasks;
 
 namespace PADD.DomainDependentSolvers
 {
-	public abstract class DomainDependentSolver : HeuristicSearchEngine
+	public abstract class DomainDependentSolver
 	{
 		protected abstract void init();
-		protected SASProblem sasProblem;
+		public SASProblem sasProblem;
 		public List<SASVariable> allVariables;
 
-		public override void SetProblem(IPlanningProblem problem)
+		public abstract double Search(bool quiet = false);
+
+		public void SetProblem(IPlanningProblem problem)
 		{
-			base.SetProblem(problem);
 			sasProblem = (SASProblem)problem;
 			allVariables = Enumerable.Range(0, sasProblem.variablesData.Count).Select(i => sasProblem.variablesData.GetVariable(i)).ToList();
 			init();

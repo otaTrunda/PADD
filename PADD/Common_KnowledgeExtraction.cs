@@ -203,7 +203,7 @@ namespace PADD
 
         public void visualize(System.Windows.Forms.Panel panel = null, HashSet<int> invertibleVariables = null)
         {
-            Microsoft.Msagl.Drawing.Graph g = new Microsoft.Msagl.Drawing.Graph("Causual Graph");
+			Microsoft.Msagl.Drawing.Graph g = new Microsoft.Msagl.Drawing.Graph("Causual Graph");
             foreach (var item in vertices)
             {
                 var node = g.AddNode(item.ToString());
@@ -220,6 +220,7 @@ namespace PADD
 
             Microsoft.Msagl.GraphViewerGdi.GViewer viewer = new Microsoft.Msagl.GraphViewerGdi.GViewer();
             viewer.Graph = g;
+			viewer.CurrentLayoutMethod = Microsoft.Msagl.GraphViewerGdi.LayoutMethod.MDS;
             if (panel == null)
             {
                 KnowledgeVisualizerForm form = new KnowledgeVisualizerForm();

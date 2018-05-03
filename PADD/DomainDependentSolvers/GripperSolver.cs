@@ -17,7 +17,7 @@ namespace PADD.DomainDependentSolvers
 			robotInRoomA.value = allVariables[this.robotInRoomA.variable].valuesSymbolicMeaning.FindIndex(str => str.Contains("at-robby(rooma)"));
 		}
 
-		public override int Search(bool quiet = false)
+		public override double Search(bool quiet = false)
 		{
 			int ballsInA = ballsAtA(initialState);
 			int ballsHolding = holdingBalls(initialState);

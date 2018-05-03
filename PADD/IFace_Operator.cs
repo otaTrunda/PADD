@@ -57,5 +57,6 @@ namespace PADD
         /// </summary>
         /// <returns>Operator ID in the planning problem.</returns>
         int GetOrderIndex();
-    }
+
+	}
 }

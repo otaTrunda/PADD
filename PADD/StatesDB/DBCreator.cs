@@ -42,7 +42,7 @@ namespace PADD.StatesDB
 					break;
 				problem.SetInitialState(state);
 				domainSpecificSolver.SetProblem(problem);
-				int goalDistance = domainSpecificSolver.Search(quiet: true);
+				int goalDistance = (int)Math.Floor(domainSpecificSolver.Search(quiet: true));
 				var stateString = state.ToString();
 				DB.add(stateString.Substring(0, stateString.Length - 2), goalDistance);	//skipes two last two characters of the string. They are always the same.
 			}
@@ -141,7 +141,7 @@ namespace PADD.StatesDB
 
 	public class HeuristicWrapper : Heuristic
 	{
-		HeuristicSearchEngine solver;
+		DomainDependentSolver solver;
 
 		public override string getDescription()
 		{
@@ -150,12 +150,12 @@ namespace PADD.StatesDB
 
 		protected override double evaluate(IState state)
 		{
-			var problem = (SASProblem)solver.problem;
+			var problem = solver.sasProblem;
 			problem.SetInitialState(state);
 			return solver.Search(quiet: true);
 		}
 
-		public HeuristicWrapper(HeuristicSearchEngine solver)
+		public HeuristicWrapper(DomainDependentSolver solver)
 		{
 			this.solver = solver;
 		}

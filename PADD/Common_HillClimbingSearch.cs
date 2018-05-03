@@ -28,7 +28,7 @@ namespace PADD
                 }
                 double bestVal = double.MaxValue;
                 IOperator bestOp = null;
-                
+
                 foreach (var succ in successors)
                 {
                     IOperator op = succ.GetOperator();
@@ -43,6 +43,7 @@ namespace PADD
                         bestOperators.Add(op.GetOrderIndex());
                 }
                 bestOp = ((SASProblem)problem).GetOperators()[bestOperators[Program.r.Next(bestOperators.Count)]];
+				Console.WriteLine(bestVal);
                 solution.AppendOperator(bestOp);
                 currentState = bestOp.Apply(currentState);// successors[bestOp];
                 length += bestOp.GetCost();

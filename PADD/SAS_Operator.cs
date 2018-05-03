@@ -69,11 +69,16 @@ namespace PADD
             return operatorName;
         }
 
-        /// <summary>
-        /// Gets SAS+ operator preconditions.
-        /// </summary>
-        /// <returns>SAS+ operator preconditions.</returns>
-        public SASOperatorPreconditions GetPreconditions()
+		public override string ToString()
+		{
+			return operatorName;
+		}
+
+		/// <summary>
+		/// Gets SAS+ operator preconditions.
+		/// </summary>
+		/// <returns>SAS+ operator preconditions.</returns>
+		public SASOperatorPreconditions GetPreconditions()
         {
             return operatorPreconditions;
         }
