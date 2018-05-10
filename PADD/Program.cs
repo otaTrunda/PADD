@@ -62,6 +62,12 @@ namespace PADD
 			var sasProblem = SASProblem.CreateFromFile(problemFile);
 			StatesEnumerator e = new RandomWalksFromGoalPathStateSpaceEnumerator(sasProblem, domainSpecificSolver);
 			DBCreator c = new DBCreator(e);
+			if (domainSpecificSolver is VisitAllSolver)
+			{
+				var goalPath = ((RandomWalksFromGoalPathStateSpaceEnumerator)e).goalPath;
+				((VisitAllSolver)domainSpecificSolver).drawPlan(goalPath);
+			}
+
 			c.createDB(problemFile, domainSpecificSolver, 100000, TimeSpan.FromHours(1));
 			var states = c.DB.getAllElements().ToList();
 

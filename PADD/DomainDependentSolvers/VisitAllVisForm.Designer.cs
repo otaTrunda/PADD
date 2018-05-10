@@ -28,7 +28,9 @@
 		/// </summary>
 		private void InitializeComponent()
 		{
+			this.components = new System.ComponentModel.Container();
 			this.pictureBox1 = new System.Windows.Forms.PictureBox();
+			this.drawingTimer = new System.Windows.Forms.Timer(this.components);
 			((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
 			this.SuspendLayout();
 			// 
@@ -40,6 +42,11 @@
 			this.pictureBox1.Size = new System.Drawing.Size(848, 603);
 			this.pictureBox1.TabIndex = 0;
 			this.pictureBox1.TabStop = false;
+			// 
+			// drawingTimer
+			// 
+			this.drawingTimer.Interval = 300;
+			this.drawingTimer.Tick += new System.EventHandler(this.drawingTimer_Tick);
 			// 
 			// VisitAllVisForm
 			// 
@@ -57,5 +64,6 @@
 		#endregion
 
 		private System.Windows.Forms.PictureBox pictureBox1;
+		private System.Windows.Forms.Timer drawingTimer;
 	}
 }

@@ -96,7 +96,7 @@ namespace PADD.StatesDB
 	public class RandomWalksFromGoalPathStateSpaceEnumerator : StatesEnumerator
 	{
 		List<RandomWalkStateSpaceEnumerator> StateSpaceEnumeratos;
-		List<SASState> goalPath;
+		public List<SASState> goalPath;
 
 		HeuristicSearchEngine goalPathFinder;
 

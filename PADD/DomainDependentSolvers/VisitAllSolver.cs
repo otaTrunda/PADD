@@ -46,6 +46,11 @@ namespace PADD.DomainDependentSolvers
 			vis = new VisitAllVisualizer(dom);
 			//vis.draw(new VisitAllState((SASState)sasProblem.GetInitialState(), dom));
 		}
+
+		public void drawPlan(List<SASState> states)
+		{
+			vis.draw(states);
+		}
 	}
 
 	class VisitAllNode
@@ -409,7 +414,18 @@ namespace PADD.DomainDependentSolvers
 		VisitAllVisForm form;
 		float targetCrossMarginPercent = 20f;
 		Font IDStringFont = new Font("Arial", 10);
-	
+
+		protected List<SASState> statesToDraw;
+		protected int alreadyDrawnStates = 0;
+
+		private bool drawAnotherState()
+		{
+			if (statesToDraw == null || alreadyDrawnStates >= statesToDraw.Count)
+				return false;
+			draw(new VisitAllState(statesToDraw[alreadyDrawnStates], domain));
+			alreadyDrawnStates++;
+			return true;
+		}
 
 		public VisitAllVisualizer(VisitAllDomain domain)
 		{
@@ -421,6 +437,21 @@ namespace PADD.DomainDependentSolvers
 			maxGridWidth = domain.nodes.Max(n => n.gridCoordX) + 1;
 			maxGridHeigth = domain.nodes.Max(n => n.gridCoordY) + 1;
 			tileSize = Math.Min(screen.Width / (maxGridWidth + 1), screen.Height / (maxGridHeigth + 1));
+		}
+
+		public void draw(List<SASState> states)
+		{
+			this.statesToDraw = states;
+			alreadyDrawnStates = 0;
+			new System.Threading.Thread(() =>
+			{
+				form.startTimer(drawAnotherState, () => true);
+				Application.Run(form);
+				//form.Show();
+				
+			}).Start();
+
+			System.Threading.Thread.CurrentThread.Join();
 		}
 
 		public void draw(VisitAllState state =  null)
@@ -453,7 +484,7 @@ namespace PADD.DomainDependentSolvers
 				}
 			*/
 			screen.Refresh();
-			form.ShowDialog();
+			if (!form.Visible) form.ShowDialog();
 		}
 	}
 }
