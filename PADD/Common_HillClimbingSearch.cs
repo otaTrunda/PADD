@@ -8,6 +8,7 @@ namespace PADD
     class HillClimbingSearch : HeuristicSearchEngine
     {
         private IState currentState;
+		private Action<SASState> onImprovement;
 
         public override int Search(bool quiet = false)
         {
@@ -31,7 +32,7 @@ namespace PADD
 
                 foreach (var succ in successors)
                 {
-                    IOperator op = succ.GetOperator();
+					IOperator op = succ.GetOperator();
                     double val = op.GetCost() + heuristic.getValue(succ.GetSuccessorState());
                     if (val < bestVal)
                     {

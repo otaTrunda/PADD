@@ -96,5 +96,11 @@ namespace PADD
 			}
 			return result;
 		}
+
+		public int getCost()
+		{
+			return operatorSequence.Sum(op => op.GetCost());
+		}
+
 	}
 }

@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Drawing;
 using System.Windows.Forms;
+using TSP;
 
 namespace PADD.DomainDependentSolvers
 {
@@ -14,6 +15,7 @@ namespace PADD.DomainDependentSolvers
 		VisitAllVisualizer vis;
 		double previousBest = double.MaxValue;
 		int withoutImprovement = 0;
+		bool drawNonimproving = true;
 
 		public override double Search(bool quiet = false)
 		{
@@ -28,7 +30,7 @@ namespace PADD.DomainDependentSolvers
 			}
 			else withoutImprovement++;
 
-			if (withoutImprovement >= 7)
+			if (drawNonimproving && withoutImprovement >= 8)
 			{
 				vis.draw(state);
 				c.computeDistance(state);
@@ -178,7 +180,14 @@ namespace PADD.DomainDependentSolvers
 			blackLeaves,
 			whiteLeaves,
 			visitedTouchingNonVisited;
+		//TSPSolver solver = new GreedyGrowingSolver();
+		TSPSolver solver = new GreedySolver();
 
+		private double computeDistnaceTSP(VisitAllState s)
+		{
+			var tspinp = s.toTSP();
+			return solver.solveStartPoint(tspinp.input, tspinp.position).totalDistance;
+		}
 
 		public double computeDistance(VisitAllState s)
 		{
@@ -237,7 +246,9 @@ namespace PADD.DomainDependentSolvers
 
 			penalty += ComponentGovernor.highestGovernors.Count() - 1;  //number of components
 			penalty += distanceToNearestNonVisited(s) - 1;
-			return nonVisitedTiles + penalty + (double)visitedTouchingNonVisited / (allTilesbyIDs.Count() * 4);
+
+			double result = nonVisitedTiles + penalty + (double)visitedTouchingNonVisited / (allTilesbyIDs.Count() * 4);
+			return result + computeDistnaceTSP(s);
 		}
 
 		private int distanceToNearestNonVisited(VisitAllState s)
@@ -394,6 +405,25 @@ namespace PADD.DomainDependentSolvers
 			}
 			visited[domain.startPosition] = true;
 			this.domain = domain;
+		}
+
+		public (TSPInput input, int position) toTSP()
+		{
+			TSPInput i = TSPInput.create((point1, point2) => Math.Abs(point1.x - point2.x) + Math.Abs(point1.y - point2.y));
+			int realPosition = 0;
+			foreach (var item in this.domain.nodes)
+			{
+				if (!visited[item.ID] || position == item.ID)
+				{
+					var point = TSPPoint.create(item.gridCoordX, item.gridCoordY);
+					i.addPoint(point);
+					if (position == item.ID)
+					{
+						realPosition = point.ID;
+					}
+				}
+			}
+			return (i, realPosition);
 		}
 	}
 

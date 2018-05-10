@@ -107,6 +107,12 @@
     <Compile Include="Common_BeamStackSearch.cs" />
     <Compile Include="DomainDependentSolvers\DomainDependentSolver.cs" />
     <Compile Include="DomainDependentSolvers\GripperSolver.cs" />
+    <Compile Include="DomainDependentSolvers\TSP\Edge.cs" />
+    <Compile Include="DomainDependentSolvers\TSP\GreedySolver.cs" />
+    <Compile Include="DomainDependentSolvers\TSP\SolutionPostProcessor.cs" />
+    <Compile Include="DomainDependentSolvers\TSP\TSPInput.cs" />
+    <Compile Include="DomainDependentSolvers\TSP\TSPSolution.cs" />
+    <Compile Include="DomainDependentSolvers\TSP\TSPSolver.cs" />
     <Compile Include="DomainDependentSolvers\VisitAllSolver.cs" />
     <Compile Include="DomainDependentSolvers\VisitAllVisForm.cs">
       <SubType>Form</SubType>
@@ -204,9 +210,7 @@
       <Name>BrightWire.Net4</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="DomainDependentSolvers\TSP\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

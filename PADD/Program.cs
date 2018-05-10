@@ -10,7 +10,7 @@ namespace PADD
 {
     class Program
     {
-        public static Random r = new Random();
+        public static Random r = new Random(123);
 		public static Logger logger = new Logger();
 
 		private static string SAS_allFolder = "./../tests/benchmarksSAS_ALL";
@@ -70,8 +70,6 @@ namespace PADD
 
 			c.createDB(problemFile, domainSpecificSolver, 100000, TimeSpan.FromHours(1));
 			var states = c.DB.getAllElements().ToList();
-
-
 
 			Trie<int> t = Trie<int>.load(c.getDBFilePath(problemFile),
 				s => int.Parse(s));
