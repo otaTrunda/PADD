@@ -7,11 +7,11 @@ namespace TSP
 {
     class GreedySolver : TSPSolver
     {
-        private List<int> available;
+        protected HashSet<int> available;
 
         public GreedySolver()
         {
-            available = new List<int>();
+            available = new HashSet<int>();
         }
 
         #region TSPSolver Members
@@ -89,11 +89,74 @@ namespace TSP
 
     class GreedyImprovedSolver : GreedySolver
     {
+		int pathStart, pathEnd;
+		bool solvingPath = false;
+
+		/// <summary>
+		/// Computes average of distance of all non-visited nodes from given node.
+		/// </summary>
+		/// <param name="point"></param>
+		protected double averageDistanceOfNonVisitedFrom(int point, TSPInput input)
+		{
+			return available.Average(r => input.getDistance(point, r));
+		}
+
         protected override int findBest(int from, TSPInput input)
         {
-            return base.findBest(from, input);
-        }
-    }
+			int best = -1;
+			double bestEvaluation = double.MaxValue;
+			foreach (var item in available)
+			{
+				double evaluation = input.getDistance(from, item);
+
+				if (solvingPath)
+				{
+					evaluation += airDistance(this.pathStart, item, input) / input.maximumDistance;
+					evaluation -= airDistance(this.pathEnd, item, input) / (input.maximumDistance);
+				}
+				if (isLeaf(item, input))
+					evaluation -= input.minimumDistance;
+
+				if (evaluation < bestEvaluation)
+				{
+					bestEvaluation = evaluation;
+					best = item;
+				}
+			}
+			return best;
+		}
+
+		/// <summary>
+		/// Node is leaf if there is only one other node such that their distance is the minimalDistance (among all nodes)
+		/// </summary>
+		/// <param name="node"></param>
+		/// <param name="input"></param>
+		/// <returns></returns>
+		protected bool isLeaf(int node, TSPInput input)
+		{
+			int neighbours = available.Select(r => input.getDistance(r, node)).Where(d => d == input.minimumDistance).Count();
+			if (input.getDistance(this.pathEnd, node) == input.minimumDistance)
+				neighbours++;
+			return neighbours == 1;
+		}
+
+		protected double airDistance(int point1, int point2, TSPInput input)
+		{
+			var p1 = input.getPoint(point1);
+			var p2 = input.getPoint(point2);
+			return Math.Sqrt(Math.Sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y)));
+		}
+
+		public override TSPSolution solvePath(TSPInput input, int startNode, int endNode)
+		{
+			this.solvingPath = true;
+			this.pathStart = startNode;
+			this.pathEnd = endNode;
+			var result = base.solvePath(input, startNode, endNode);
+			solvingPath = false;
+			return result;
+		}
+	}
 
     class GreedyImprovedSolverFactory : TSPSolverFactory<GreedyImprovedSolver>
     {

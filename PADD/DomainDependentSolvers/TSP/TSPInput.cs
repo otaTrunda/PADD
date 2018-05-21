@@ -91,6 +91,8 @@ namespace TSP
             this.distances = new List<List<double>>();
             this.points = new List<TSPPoint>();
             this.position = new Dictionary<int, int>();
+			this.maximumDistance = double.MinValue;
+			this.minimumDistance = double.MaxValue;
         }
 
         public static TSPInput create(Func<TSPPoint, TSPPoint, double> distanceCalculator = null)
@@ -242,7 +244,11 @@ namespace TSP
                 double distance_i_new = computeDistance(i, points.Count-1);
                 distances[i].Add(distance_i_new);
                 distances[distances.Count - 1].Add(distance_i_new);
-            }
+				if (distance_i_new > maximumDistance)
+					maximumDistance = distance_i_new;
+				if (distance_i_new < maximumDistance)
+					minimumDistance = distance_i_new;
+			}
             distances[distances.Count - 1].Add(0d);
             if (p.x > maxValueX)
                 maxValueX = p.x;
@@ -258,11 +264,21 @@ namespace TSP
             return distances[first][second];
         }
 
-        #endregion publicInterface
+		/// <summary>
+		/// Maximum distance between some pair of input nodes
+		/// </summary>
+		public double maximumDistance { get; protected set; }
 
-        #region PublicAccessData
+		/// <summary>
+		/// Minimum distance between some pair of input nodes
+		/// </summary>
+		public double minimumDistance { get; protected set; }
 
-        public double maxValueX
+		#endregion publicInterface
+
+		#region PublicAccessData
+
+		public double maxValueX
         {
             get;
             private set;

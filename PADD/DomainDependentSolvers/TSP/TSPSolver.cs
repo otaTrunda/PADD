@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using PADD.ExtensionMethods;
 
 namespace TSP
 {
@@ -13,6 +14,11 @@ namespace TSP
 		{
 			if (input.nodesCount <= 1)
 				return new TSPSolution(input);
+
+			int endnode = Enumerable.Range(0, input.nodesCount).Select(x => input.getDistance(startNode, x)).MaxWithIndex().index;
+			return solvePath(input, startNode, endnode);
+
+			/*
 			double bestDist = double.MaxValue;
 			TSPSolution bestSolution = null;
 			for (int i = 0; i < input.nodesCount; i++)
@@ -25,9 +31,13 @@ namespace TSP
 				{
 					bestSolution = sol;
 					bestDist = dist;
+					if (dist <= input.minimumDistance * (input.nodesCount - 1))
+						break;
+					//break;
 				}
 			}
 			return bestSolution;
+			*/
 		}
 	}
 

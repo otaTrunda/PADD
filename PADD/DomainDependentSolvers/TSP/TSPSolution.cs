@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PADD;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -46,7 +47,7 @@ namespace TSP
             get
             {
                 if (!isDistanceComputed)
-                    computeDistance();
+					_totalDistance = computeDistance();
                 return _totalDistance;
             }
             private set
@@ -138,7 +139,7 @@ namespace TSP
 
 	class TSPSolutionPath : TSPSolution
 	{
-		int startNode, endNode;
+		public int startNode, endNode;
 		public TSPSolutionPath(TSPInput inp, int startNode, int endNode) : base(inp)
 		{
 			this.startNode = startNode;
