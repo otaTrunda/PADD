@@ -48,7 +48,8 @@ namespace PADD
 			if (args.Length == 1 && args[0] == "createDB")
 			{
 				//createStatesDB(Path.Combine(SAS_all_WithoutAxioms, "gripper", "prob10.sas"), new GripperSolver());
-				createStatesDB(Path.Combine(SAS_all_WithoutAxioms, "visitall", "problem12.sas"), new VisitAllSolver());
+				//createStatesDB(Path.Combine(SAS_all_WithoutAxioms, "visitall", "problem16.sas"), new VisitAllSolver());
+				createStatesDB(Path.Combine(SAS_all_WithoutAxioms, "blocks", "probBLOCKS-4-0.sas"), new DomainDependentSolvers.BlocksWorld.BlocksWorldSolver());
 			}
 
 			if (args.Length == 3 && args[0] == "createHistograms_Results")

@@ -105,6 +105,15 @@
   <ItemGroup>
     <Compile Include="Common_AStarSearch.cs" />
     <Compile Include="Common_BeamStackSearch.cs" />
+    <Compile Include="DomainDependentSolvers\BlocksWorld\BlocksWorldDrawer.cs" />
+    <Compile Include="DomainDependentSolvers\BlocksWorld\BlocksWorldProblem.cs" />
+    <Compile Include="DomainDependentSolvers\BlocksWorld\BlocksWorldSolver.cs" />
+    <Compile Include="DomainDependentSolvers\BlocksWorld\BlocksWorldVisualizer.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="DomainDependentSolvers\BlocksWorld\BlocksWorldVisualizer.Designer.cs">
+      <DependentUpon>BlocksWorldVisualizer.cs</DependentUpon>
+    </Compile>
     <Compile Include="DomainDependentSolvers\DomainDependentSolver.cs" />
     <Compile Include="DomainDependentSolvers\GripperSolver.cs" />
     <Compile Include="DomainDependentSolvers\TSP\Edge.cs" />
@@ -120,6 +129,7 @@
     <Compile Include="DomainDependentSolvers\VisitAllVisForm.Designer.cs">
       <DependentUpon>VisitAllVisForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="ExtensionMethods\ExtensionMethods.cs" />
     <Compile Include="IFace_Problem.cs" />
     <Compile Include="Common_Transitions.cs" />
     <Compile Include="PDDL_IDMapping.cs" />
@@ -184,6 +194,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Common_KnowledgeVisualizerForm.resx">
       <DependentUpon>Common_KnowledgeVisualizerForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="DomainDependentSolvers\BlocksWorld\BlocksWorldVisualizer.resx">
+      <DependentUpon>BlocksWorldVisualizer.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="DomainDependentSolvers\VisitAllVisForm.resx">
       <DependentUpon>VisitAllVisForm.cs</DependentUpon>
