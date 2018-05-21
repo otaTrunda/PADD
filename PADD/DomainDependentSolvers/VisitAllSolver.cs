@@ -15,10 +15,20 @@ namespace PADD.DomainDependentSolvers
 		VisitAllVisualizer vis;
 		double previousBest = double.MaxValue;
 		int withoutImprovement = 0;
-		bool drawNonimproving = true;
+		bool drawNonimproving = false;
+		bool drawTSPPlan = false;
 
 		public override double Search(bool quiet = false)
 		{
+			if (drawTSPPlan)
+			{
+				TSPSolver solver = new GreedyImprovedSolver();
+				var tspinp = new VisitAllState((SASState)this.sasProblem.GetInitialState(), dom).toTSP();
+				var solution = solver.solveStartPoint(tspinp.input, tspinp.position);
+				var plan = dom.transformToPlan((TSPSolutionPath)solution);
+				vis.draw(plan);
+			}
+
 			VisitAllGoalDistanceCalculator c = new VisitAllGoalDistanceCalculator();
 			var state = new VisitAllState((SASState)this.sasProblem.GetInitialState(), dom);
 			double dist = c.computeDistance(state);
@@ -33,7 +43,6 @@ namespace PADD.DomainDependentSolvers
 			if (drawNonimproving && withoutImprovement >= 8)
 			{
 				vis.draw(state);
-				c.computeDistance(state);
 			}
 			return c.computeDistance(state);
 		}
@@ -83,17 +92,23 @@ namespace PADD.DomainDependentSolvers
 	{
 		public List<VisitAllNode> nodes;
 		public Dictionary<int, int> nodeIDByVariableNo;
+		public Dictionary<int, int> variableNoByNodeID;
 		public Dictionary<string, int> nodeIDByOrigName;
+		public Dictionary<int, Dictionary<int, int>> nodeIDByCoordinates;
 		public bool[,] connected;
 		public int[,] shortestDistances;
 		public int positionVariable;
 		public int startPosition;
+		protected SASProblem visitAllproblem;
 
 		public VisitAllDomain(VisitAllSolver solver, SASProblem visitAllproblem)
 		{
 			nodes = new List<VisitAllNode>();
 			nodeIDByVariableNo = new Dictionary<int, int>();
 			nodeIDByOrigName = new Dictionary<string, int>();
+			variableNoByNodeID = new Dictionary<int, int>();
+			nodeIDByCoordinates = new Dictionary<int, Dictionary<int, int>>();
+			this.visitAllproblem = visitAllproblem;
 
 			positionVariable = solver.allVariables.IndexOf(solver.allVariables.Where(v => v.valuesSymbolicMeaning.Any(s => s.Contains("at-robot"))).Single());
 			startPosition = ((SASState)visitAllproblem.GetInitialState()).GetValue(positionVariable);
@@ -104,6 +119,9 @@ namespace PADD.DomainDependentSolvers
 				var node = new VisitAllNode(splitted.Substring(0, splitted.Length - 1));
 				nodes.Add(node);
 				nodeIDByOrigName.Add(node.originalName, node.ID);
+				if (!nodeIDByCoordinates.ContainsKey(node.gridCoordX))
+					nodeIDByCoordinates.Add(node.gridCoordX, new Dictionary<int, int>());
+				nodeIDByCoordinates[node.gridCoordX].Add(node.gridCoordY, node.ID);
 			}
 			for (int i = 0; i < visitAllproblem.GetVariablesCount(); i++)
 			{
@@ -115,6 +133,7 @@ namespace PADD.DomainDependentSolvers
 					var node = nodes[ID];
 					node.variableNumber = i;
 					nodeIDByVariableNo.Add(i, node.ID);
+					variableNoByNodeID.Add(node.ID, i);
 				}
 			}
 
@@ -169,6 +188,77 @@ namespace PADD.DomainDependentSolvers
 				}
 			//}
 		}
+
+		protected int getNodeIDByTSPNodeID(int TSPNodeID, TSPSolutionPath solution)
+		{
+			var TSPNode = solution.inp.getPoint(TSPNodeID);
+			return nodeIDByCoordinates[(int)TSPNode.x][(int)TSPNode.y];
+		}
+
+		public List<SASState> transformToPlan(TSPSolutionPath solution)
+		{
+			List<SASState> result = new List<SASState>();
+			SASState initialState = (SASState)visitAllproblem.GetInitialState();
+			int[] currentValues = new int[initialState.GetAllValues().Length];
+			for (int i = 0; i < currentValues.Length; i++)
+				currentValues[i] = 1;
+			int currentPosition = solution.startNode;
+			int previous = solution.endNode;
+			int successor = 0;
+			for (int i = 0; i < solution.inp.nodesCount - 1; i++)
+			{
+				int currentNodeID = getNodeIDByTSPNodeID(currentPosition, solution);
+				currentValues[0] = currentNodeID;
+				currentValues[variableNoByNodeID[currentNodeID]] = 0;
+				successor = solution.getSuccessor(currentPosition, previous);
+				int successorNodeID = getNodeIDByTSPNodeID(successor, solution);
+				if (connected[currentNodeID, successorNodeID])
+				{
+					previous = currentPosition;
+					SASState currentState = new SASState(visitAllproblem, currentValues.ToList().ToArray());
+					result.Add(currentState);
+				}
+				else
+				{
+					addPath(result, currentPosition, successor, out previous, currentValues, solution);
+				}
+				currentPosition = successor;
+			}
+			currentValues[0] = getNodeIDByTSPNodeID(currentPosition, solution);
+			currentValues[variableNoByNodeID[getNodeIDByTSPNodeID(currentPosition, solution)]] = 0;
+			result.Add(new SASState(visitAllproblem, currentValues.ToList().ToArray()));
+			return result;
+		}
+
+		private void addPath(List<SASState> result, int currentPositionTSP, int targetPositionTSP, out int previousTSP, int[] currentValues, TSPSolutionPath solution)
+		{
+			//VisitAllVisualizer vis = new VisitAllVisualizer(this);
+			//vis.draw(new VisitAllState(new SASState(visitAllproblem, currentValues.ToList().ToArray()), this));
+			int pos = currentPositionTSP,
+				succ = 0,
+				prev = 0;
+			var targetNode = this.nodes[getNodeIDByTSPNodeID(targetPositionTSP, solution)];
+			var node = this.nodes[getNodeIDByTSPNodeID(currentPositionTSP, solution)];
+			while (node.ID != targetNode.ID)
+			{
+				if (node.gridCoordX < targetNode.gridCoordX)
+					succ = node.successors.Where(s => s.gridCoordX > node.gridCoordX).Single().ID;
+				if (node.gridCoordX > targetNode.gridCoordX)
+					succ = node.successors.Where(s => s.gridCoordX < node.gridCoordX).Single().ID;
+				if (node.gridCoordY < targetNode.gridCoordY)
+					succ = node.successors.Where(s => s.gridCoordY > node.gridCoordY).Single().ID;
+				if (node.gridCoordY > targetNode.gridCoordY)
+					succ = node.successors.Where(s => s.gridCoordY < node.gridCoordY).Single().ID;
+				currentValues[0] = succ;
+				currentValues[variableNoByNodeID[succ]] = 0;
+				SASState currentState = new SASState(visitAllproblem, currentValues.ToList().ToArray());
+				result.Add(currentState);
+				prev = pos;
+				pos = succ;
+				node = nodes[pos];
+			}
+			previousTSP = Enumerable.Range(0, solution.inp.nodesCount).Where(r => getNodeIDByTSPNodeID(r, solution) == prev).Single();
+		}
 	}
 
 	class VisitAllGoalDistanceCalculator
@@ -180,8 +270,8 @@ namespace PADD.DomainDependentSolvers
 			blackLeaves,
 			whiteLeaves,
 			visitedTouchingNonVisited;
-		//TSPSolver solver = new GreedyGrowingSolver();
-		TSPSolver solver = new GreedySolver();
+		TSPSolver solver = new GreedyImprovedSolver();
+		//TSPSolver solver = new GreedySolver();
 
 		private double computeDistnaceTSP(VisitAllState s)
 		{
@@ -191,6 +281,8 @@ namespace PADD.DomainDependentSolvers
 
 		public double computeDistance(VisitAllState s)
 		{
+			//return computeDistnaceTSP(s);
+
 			init();
 			foreach (var item in s.domain.nodes)
 			{
@@ -247,8 +339,8 @@ namespace PADD.DomainDependentSolvers
 			penalty += ComponentGovernor.highestGovernors.Count() - 1;  //number of components
 			penalty += distanceToNearestNonVisited(s) - 1;
 
-			double result = nonVisitedTiles + penalty + (double)visitedTouchingNonVisited / (allTilesbyIDs.Count() * 4);
-			return result + computeDistnaceTSP(s);
+			double result = 20*nonVisitedTiles + penalty + (double)visitedTouchingNonVisited / (allTilesbyIDs.Count() * 4);
+			return result;// + computeDistnaceTSP(s) / 10;
 		}
 
 		private int distanceToNearestNonVisited(VisitAllState s)
@@ -409,7 +501,12 @@ namespace PADD.DomainDependentSolvers
 
 		public (TSPInput input, int position) toTSP()
 		{
-			TSPInput i = TSPInput.create((point1, point2) => Math.Abs(point1.x - point2.x) + Math.Abs(point1.y - point2.y));
+			TSPInput i = TSPInput.create((point1, point2) =>
+			{
+				var node1 = domain.nodes[domain.nodeIDByCoordinates[(int)point1.x][(int)point1.y]];
+				var node2 = domain.nodes[domain.nodeIDByCoordinates[(int)point2.x][(int)point2.y]];
+				return Math.Abs(node1.gridCoordX - node2.gridCoordX) + Math.Abs(node1.gridCoordY - node2.gridCoordY);
+			});
 			int realPosition = 0;
 			foreach (var item in this.domain.nodes)
 			{

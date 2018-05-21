@@ -34,6 +34,11 @@ namespace PADD.DomainDependentSolvers
 			}
 		}
 
+		private void Pause_button_Click(object sender, EventArgs e)
+		{
+			timer.Enabled = !timer.Enabled;
+		}
+
 		public void startTimer(Func<bool> timerStepCode, Func<bool> timerStopsCode)
 		{
 			this.timerStepCode = timerStepCode;
