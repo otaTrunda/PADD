@@ -63,6 +63,8 @@ namespace PADD.DomainDependentSolvers.BlocksWorld
 			{
 				if (blockInHoist.targetBlockBelow.isOnTop() && blockInHoist.targetBlockBelow.isCorrect())
 					moveBlockToBlock(blockInHoist, blockInHoist.targetBlockBelow);
+				else
+					moveBlockToTable(blockInHoist);
 				actionsCount++;
 				blockInHoist = null;
 			}
@@ -86,6 +88,8 @@ namespace PADD.DomainDependentSolvers.BlocksWorld
 				moveBlockToTable(blockToMove);
 				actionsCount += 2;
 			}
+			if (drawStates)
+				new BlocksWorldVisualizer(this).ShowDialog();
 			return actionsCount;
 		}
 
@@ -131,7 +135,7 @@ namespace PADD.DomainDependentSolvers.BlocksWorld
 				{ 
 					var splitted = description.Split(stringSeparators, StringSplitOptions.RemoveEmptyEntries);
 					string arg1 = splitted[splitted.Length - 2],
-						arg2 = splitted[splitted.Length - 2];
+						arg2 = splitted[splitted.Length - 1];
 					Block b1 = blocksBySASNames[arg1],
 						b2 = blocksBySASNames[arg2];
 					if (b1.currentBlockBelow != null)
@@ -162,12 +166,13 @@ namespace PADD.DomainDependentSolvers.BlocksWorld
 				{
 					var splitted = description.Split(stringSeparators, StringSplitOptions.RemoveEmptyEntries);
 					string arg1 = splitted[splitted.Length - 2],
-						arg2 = splitted[splitted.Length - 2];
+						arg2 = splitted[splitted.Length - 1];
 					Block b1 = blocksBySASNames[arg1],
 						b2 = blocksBySASNames[arg2];
 					if (b1.targetBlockBelow != null)
 						throw new ArgumentException();
 					b1.targetBlockBelow = b2;
+					b1.isTargetSpecified = true;
 				}
 			}
 		}
@@ -200,16 +205,23 @@ namespace PADD.DomainDependentSolvers.BlocksWorld
 			this.targetBlockBelow = targetBlockBelow;
 		}
 
+		public override string ToString()
+		{
+			return ID.ToString();
+		}
+
 		public bool isCorrect()
 		{
 			if (!isTargetSpecified)
 			{
-				if (targetBlockBelow == null)
+				if (currentBlockBelow == null)
 					return true;
-				return targetBlockBelow.isCorrect();
+				return currentBlockBelow.isCorrect();
 			}
 			if (targetBlockBelow == null && currentBlockBelow == null)
 				return true;
+			if (currentBlockBelow == null)
+				return false;
 			return currentBlockBelow.ID == targetBlockBelow.ID && currentBlockBelow.isCorrect();
 		}
 

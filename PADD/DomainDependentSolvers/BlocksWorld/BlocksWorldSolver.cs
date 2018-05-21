@@ -16,6 +16,7 @@ namespace PADD.DomainDependentSolvers.BlocksWorld
 		public override double Search(bool quiet = false)
 		{
 			bool draw = true;
+			this.p = new BlocksWorldProblem(this.sasProblem);
 			return p.simulate(draw);
 		}
 
