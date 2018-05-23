@@ -10,6 +10,7 @@ namespace PADD.DomainDependentSolvers.BlocksWorld
 {
 	class BlocksWorldDrawer
 	{
+		protected int maxTowers = 0;
 		public int blockSize;
 		public List<Tower> blockTowers;
 		public Graphics g;
@@ -21,7 +22,7 @@ namespace PADD.DomainDependentSolvers.BlocksWorld
 		public void draw(PictureBox screen, BlocksWorldProblem problem)
 		{
 			blockTowers = createTowers(problem);
-			blockSize = Math.Min(screen.Width / (blockTowers.Count * 2), screen.Height / blockTowers.Max(t => t.blocksInTower.Count));
+			blockSize = Math.Min(screen.Width / (maxTowers * 2), screen.Height / blockTowers.Max(t => t.blocksInTower.Count));
 			screen.Image = new Bitmap(screen.Width, screen.Height);
 			g = Graphics.FromImage(screen.Image);
 			g.Clear(Color.WhiteSmoke);
@@ -57,6 +58,7 @@ namespace PADD.DomainDependentSolvers.BlocksWorld
 				}
 				result.Add(t);
 			}
+			maxTowers = maxTowers < result.Count ? result.Count : maxTowers;
 			return result;
 		}
 

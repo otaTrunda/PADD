@@ -12,7 +12,7 @@ namespace PADD.DomainDependentSolvers.BlocksWorld
 		Dictionary<string, Block> blocksBySASNames;
 		HashSet<Block> blocksOnTop;
 		HashSet<Block> notCorrectBlocks;
-
+		BlocksWorldVisualizer vis;
 		Block blockInHoist;
 
 		protected void moveBlockToBlock(Block moveThis, Block putOnThis)
@@ -40,10 +40,13 @@ namespace PADD.DomainDependentSolvers.BlocksWorld
 		{
 			if (!moveThis.isOnTop())
 				throw new ArgumentException();
-			if (moveThis.isCorrect() || moveThis.isOnTable())
+			if (moveThis.isCorrect() || (moveThis.isOnTable() && blockInHoist != moveThis))
 				throw new Exception();
-			moveThis.currentBlockBelow.currentBlockAbove = null;
-			blocksOnTop.Add(moveThis.currentBlockBelow);
+			if (moveThis.currentBlockBelow != null)
+			{
+				moveThis.currentBlockBelow.currentBlockAbove = null;
+				blocksOnTop.Add(moveThis.currentBlockBelow);
+			}
 			moveThis.currentBlockBelow = null;
 			if (moveThis.isCorrect())
 				notCorrectBlocks.Remove(moveThis);
@@ -71,7 +74,12 @@ namespace PADD.DomainDependentSolvers.BlocksWorld
 			while (notCorrectBlocks.Count > 0)
 			{
 				if (drawStates)
-					new BlocksWorldVisualizer(this).ShowDialog();
+				{
+					if (vis == null)
+						vis = new BlocksWorldVisualizer();
+					vis.draw(this);
+					vis.ShowDialog();
+				}
 
 				var canBePlacedCorrectly = blocksOnTop.Where(b => !b.isCorrect() && (b.targetBlockBelow == null || (b.targetBlockBelow.isOnTop() && b.targetBlockBelow.isCorrect()))).Take(1);
 				if (canBePlacedCorrectly.Any())
@@ -89,7 +97,13 @@ namespace PADD.DomainDependentSolvers.BlocksWorld
 				actionsCount += 2;
 			}
 			if (drawStates)
-				new BlocksWorldVisualizer(this).ShowDialog();
+			{
+				if (vis == null)
+					vis = new BlocksWorldVisualizer();
+				vis.draw(this);
+				vis.ShowDialog();
+			}
+			//	new BlocksWorldVisualizer(this).ShowDialog();
 			return actionsCount;
 		}
 

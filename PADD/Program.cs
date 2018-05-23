@@ -43,7 +43,7 @@ namespace PADD
 			{
 				//visualizeKnowledgeGraphs(Path.Combine(SAS_all_WithoutAxioms, "gripper", "prob10.sas"));
 				//visualizeKnowledgeGraphs(Path.Combine(SAS_all_WithoutAxioms, "visitall", "problem12.sas"));
-				visualizeKnowledgeGraphs(Path.Combine(SAS_all_WithoutAxioms, "blocks", "probBLOCKS-7-1.sas"));
+				visualizeKnowledgeGraphs(Path.Combine(SAS_all_WithoutAxioms, "blocks", "probBLOCKS-4-1.sas"));
 			}
 
 			if (args.Length == 1 && args[0] == "createDB")
