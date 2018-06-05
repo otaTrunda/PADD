@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,7 +9,7 @@ namespace PADD
     /// <summary>
     /// Implementation of variables in the SAS+ planning problem.
     /// </summary>
-    public class SASVariables
+    public class SASVariables : IEnumerable<SASVariable>
     {
         /// <summary>
         /// List of variables.
@@ -36,12 +37,22 @@ namespace PADD
             return this[variableIdx];
         }
 
-        /// <summary>
-        /// Gets the variable data at the specified index. Short version of getVariable(int).
-        /// </summary>
-        /// <param name="variableIdx">Variable index.</param>
-        /// <returns>Variable data at the given index.</returns>
-        public SASVariable this[int variableIdx]
+		public IEnumerator<SASVariable> GetEnumerator()
+		{
+			return variablesList.GetEnumerator();
+		}
+
+		IEnumerator IEnumerable.GetEnumerator()
+		{
+			return variablesList.GetEnumerator();
+		}
+
+		/// <summary>
+		/// Gets the variable data at the specified index. Short version of getVariable(int).
+		/// </summary>
+		/// <param name="variableIdx">Variable index.</param>
+		/// <returns>Variable data at the given index.</returns>
+		public SASVariable this[int variableIdx]
         {
             get { return variablesList[variableIdx]; }
         }
