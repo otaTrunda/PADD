@@ -12,7 +12,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 		public Dictionary<int, Plane> planesByIDs;
 		public Dictionary<int, Person> personsByIDs;
 
-		private static string[] delimiters = new string[] { "(", ",", " ", ")" };
+		private static string[] delimiters = new string[] { "(", ",", " ", ")", "Atom" };
 		private static Func<string, List<string>> splitSAS = new Func<string, List<string>>(f => f.Split(delimiters, StringSplitOptions.RemoveEmptyEntries).ToList());
 
 		private void load(SASProblem zenoTravelProblemInSAS)
@@ -34,7 +34,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 					var parts = splitSAS(meaning);
 					foreach (var item in parts)
 					{
-						if (parts.Contains("person"))
+						if (item.Contains("person"))
 						{
 							int id = int.Parse(item.Substring("person".Length));
 							if (!personsByIDs.ContainsKey(id))
@@ -42,37 +42,37 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 							if (value == currentValue)
 							{
 								var person = personsByIDs[id];
-								if (parts[1].Contains("city"))
+								if (parts[2].Contains("city"))
 								{
-									person.location = int.Parse(parts[1].Substring("city".Length));
+									person.location = int.Parse(parts[2].Substring("city".Length));
 									person.isBoarded = false;
 								}
-								if (parts[1].Contains("plane"))
+								if (parts[2].Contains("plane"))
 								{
-									person.location = int.Parse(parts[1].Substring("plane".Length));
+									person.location = int.Parse(parts[2].Substring("plane".Length));
 									person.isBoarded = true;
 								}
 							}
 							if (value == desiredValue)
 							{
 								var person = personsByIDs[id];
-								if (parts[1].Contains("city"))
+								if (parts[2].Contains("city"))
 								{
-									person.destination = int.Parse(parts[1].Substring("city".Length));
+									person.destination = int.Parse(parts[2].Substring("city".Length));
 								}
-								if (parts[1].Contains("plane"))
+								if (parts[2].Contains("plane"))
 								{
 									throw new Exception("Plane cannot be person's destination");
 								}
 							}
 						}
-						if (parts.Contains("city"))
+						if (item.Contains("city"))
 						{
 							int id = int.Parse(item.Substring("city".Length));
 							if (!cities.Contains(id))
 								cities.Add(id);
 						}
-						if (parts.Contains("plane"))
+						if (item.Contains("plane"))
 						{
 							int id = int.Parse(item.Substring("plane".Length));
 							if (!planesByIDs.ContainsKey(id))
@@ -82,17 +82,25 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 								if (meaning.Contains("at(plane"))
 								{
 									var plane = planesByIDs[id];
-									plane.location = int.Parse(parts[1].Substring("city".Length));
+									plane.location = int.Parse(parts[2].Substring("city".Length));
 								}
 								if (meaning.Contains("fuel-level(plane"))
 								{
 									var plane = planesByIDs[id];
-									plane.fuelReserve = int.Parse(parts[1].Substring("fl".Length));
+									plane.fuelReserve = int.Parse(parts[2].Substring("fl".Length));
 								}
 							}
 							if (value == desiredValue)
 							{
-								throw new Exception("Plane's fuel reserve cannot be among goal conditions.");
+								if (meaning.Contains("at(plane"))
+								{
+									var plane = planesByIDs[id];
+									plane.destination = int.Parse(parts[2].Substring("city".Length));
+								}
+								if (meaning.Contains("fuel-level(plane"))
+								{
+									throw new Exception("Plain's fuel reserve cannot be among goal conditions.");
+								}
 							}
 						}
 					}
@@ -100,10 +108,23 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 			}
 		}
 
+		/// <summary>
+		/// Removes all persons that are already in their destinations
+		/// </summary>
+		private void preprocess()
+		{
+			var toRemove = personsByIDs.Keys.Where(k => personsByIDs[k].location == personsByIDs[k].destination || personsByIDs[k].destination == -1).ToList();
+			foreach (var item in toRemove)
+			{
+				personsByIDs.Remove(item);
+			}
+		}
+
 		public static ZenoTravelProblem loadFromSAS(SASProblem zenoTravelProblemInSAS)
 		{
 			ZenoTravelProblem res = new ZenoTravelProblem();
 			res.load(zenoTravelProblemInSAS);
+			res.preprocess();
 			return res;
 		}
 
@@ -117,22 +138,24 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 
 	class Plane
 	{
-		public int location,
-			fuelReserve,
-			ID;
+		public int location = -1,
+			destination = -1,
+			fuelReserve = -1,
+			ID = -1;
 
 		public Plane(int ID)
 		{
 			this.ID = ID;
 		}
 
+		public bool isDestinationSet => destination != -1;
 	}
 
 	class Person
 	{
-		public int ID,
-			location,
-			destination;
+		public int ID = -1,
+			location = -1,
+			destination = -1;
 
 		public bool isBoarded;
 

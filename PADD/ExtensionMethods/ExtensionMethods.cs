@@ -61,5 +61,14 @@ namespace PADD.ExtensionMethods
 			}
 			return (maxElement, maxIndex);
 		}
+
+		public static void AddRange<T>(this HashSet<T> source, IEnumerable<T> toAdd)
+		{
+			foreach (var item in toAdd)
+			{
+				source.Add(item);
+			}
+		}
+
 	}
 }
