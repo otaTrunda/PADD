@@ -52,8 +52,8 @@ namespace ProblemDownload
 		public string domain_path;
 		public string problem_path;
 		public string tags;
-		public int lower_bound;
-		public int upper_bound;
+		public int? lower_bound;
+		public int? upper_bound;
 		public string average_effective_width;
 		public string max_effective_width;
 		public string lower_bound_description;
