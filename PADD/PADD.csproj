@@ -130,6 +130,8 @@
       <DependentUpon>VisitAllVisForm.cs</DependentUpon>
     </Compile>
     <Compile Include="DomainDependentSolvers\Zenotravel\ZenoTravelProblem.cs" />
+    <Compile Include="DomainDependentSolvers\Zenotravel\ZenotravelSolver.cs" />
+    <Compile Include="DomainDependentSolvers\Zenotravel\ZenotravelSpecialSolver.cs" />
     <Compile Include="ExtensionMethods\ExtensionMethods.cs" />
     <Compile Include="IFace_Problem.cs" />
     <Compile Include="Common_Transitions.cs" />

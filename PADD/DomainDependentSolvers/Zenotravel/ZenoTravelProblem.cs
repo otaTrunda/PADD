@@ -8,9 +8,9 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 {
 	class ZenoTravelProblem
 	{
-		HashSet<int> cities;
-		Dictionary<int, Plane> planesByIDs;
-		Dictionary<int, Person> personsByIDs;
+		public HashSet<int> cities;
+		public Dictionary<int, Plane> planesByIDs;
+		public Dictionary<int, Person> personsByIDs;
 
 		private static string[] delimiters = new string[] { "(", ",", " ", ")" };
 		private static Func<string, List<string>> splitSAS = new Func<string, List<string>>(f => f.Split(delimiters, StringSplitOptions.RemoveEmptyEntries).ToList());
@@ -100,7 +100,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 			}
 		}
 
-		private static ZenoTravelProblem loadFromSAS(SASProblem zenoTravelProblemInSAS)
+		public static ZenoTravelProblem loadFromSAS(SASProblem zenoTravelProblemInSAS)
 		{
 			ZenoTravelProblem res = new ZenoTravelProblem();
 			res.load(zenoTravelProblemInSAS);
