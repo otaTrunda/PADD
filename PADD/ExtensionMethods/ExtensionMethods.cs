@@ -70,5 +70,20 @@ namespace PADD.ExtensionMethods
 			}
 		}
 
+		public static void AddRange<T>(this List<T> source, List<T> toAdd, bool reverse)
+		{
+			if (!reverse)
+			foreach (var item in toAdd)
+			{
+				source.Add(item);
+			}
+			else
+			{
+				for (int i = toAdd.Count - 1; i >= 0; i--)
+				{
+					source.Add(toAdd[i]);
+				}
+			}
+		}
 	}
 }

@@ -109,15 +109,28 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 		}
 
 		/// <summary>
-		/// Removes all persons that are already in their destinations
+		/// Removes all persons that are already in their destinations, or persons that don't have any destination set.
+		/// Then it groups remaining persons by their locations and destnations, and groups of persons travelling the same route are replaced by a single representative with larger weight
 		/// </summary>
 		private void preprocess()
 		{
 			var toRemove = personsByIDs.Keys.Where(k => personsByIDs[k].location == personsByIDs[k].destination || personsByIDs[k].destination == -1).ToList();
 			foreach (var item in toRemove)
-			{
 				personsByIDs.Remove(item);
+			
+			toRemove.Clear();
+			var groups = personsByIDs.Values.GroupBy(person => (person.location, person.destination)).Where(group => group.Count() > 1).Select(g => g.ToList());
+			foreach (var item in groups)
+			{
+				Person representatve = item.First();
+				representatve.weight = item.Count;
+				foreach (var represented in item.Skip(1))
+				{
+					toRemove.Add(represented.ID);
+				}
 			}
+			foreach (var item in toRemove)
+				personsByIDs.Remove(item);
 		}
 
 		public static ZenoTravelProblem loadFromSAS(SASProblem zenoTravelProblemInSAS)
@@ -162,7 +175,15 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 		public Person(int ID)
 		{
 			this.ID = ID;
+			this.weight = 1;
 		}
+
+		public bool isDestinationSet => this.destination != -1;
+
+		/// <summary>
+		/// When there are more several persons that have the same location and destination, we represent them by a single person that has greater weight
+		/// </summary>
+		public int weight;
 	}
 
 }
