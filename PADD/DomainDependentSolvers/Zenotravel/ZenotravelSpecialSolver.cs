@@ -135,7 +135,6 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 			graphDrawer.Dock = DockStyle.Fill;
 			f.Controls.Add(graphDrawer);
 			graphDrawer.Graph = createMSAGLGraph(persons, plane);
-			var t = findAllLeaves();
 			f.ShowDialog();
 		}
 
@@ -273,6 +272,12 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 			createPreprocessedInput(ZenoTravelProblem problem, Plane plane, List<Person> persons)
 		{
 			createDesireGraph(persons, plane);
+			var cycles = CycleFounder.getElementaryCycles((this.outEdges.Keys.ToDictionary(k => k, k => outEdges[k].Keys.ToList()), null, involvedCities));
+			foreach (var cycle in cycles)
+			{
+				Console.WriteLine(string.Join(" ", cycle));
+			}
+
 			var enforcedActions = findAllLeaves();
 
 			if (enforcedActions.startLeaves.Count == 0 && enforcedActions.endLeaves.Count == 0)	//couldn't preprocess the problem :(
@@ -303,6 +308,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 		public override int solveSingle(ZenoTravelProblem problem, Plane plane, List<Person> persons)
 		{
 			init(plane);
+
 			var preprocessed = createPreprocessedInput(problem, plane, persons);
 			if (preprocessed.persons.Count == 0)
 			{

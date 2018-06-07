@@ -24,6 +24,8 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 		public ZenotravelSolver()
 		{
 			solver = new ZenotravelSpecialSolver();
+
+			CycleFounder.testElementaryCycles();
 		}
 	}
 }
