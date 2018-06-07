@@ -150,7 +150,8 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 					for (int j = 0; j < this.stack.Count; j++)
 					{
 						int index = stack[j];
-						cycle.Add(graphNodes[index]);
+						//cycle.Add(graphNodes[index]);
+						cycle.Add(index);
 					}
 					this.cycles.Add(cycle);
 					f = true;

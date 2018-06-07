@@ -314,10 +314,11 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 		protected int findBestNodeToVisit(ZenoTravelProblem problem, Plane plane, List<Person> persons, List<int> visitedNodes)
 		{
 			var remainingNodes = this.involvedCities.Where(c => persons.Any(p => (!p.isBoarded && p.location == c) || p.destination == c)).ToHashSet();
-			var remainingEdges = remainingNodes.ToDictionary(k => k, k => new List<int>());
-			foreach (var item in remainingEdges.Keys)
+			var remainingEdges = new Dictionary<int, List<int>>();
+			foreach (var item in remainingNodes)
 			{
-				remainingEdges[item] = this.outEdges[item].Keys.Where(r => remainingNodes.Contains(r)).ToList();
+				if (outEdges.ContainsKey(item) && outEdges[item].Keys.Any(r => remainingNodes.Contains(r)))
+					remainingEdges.Add(item, this.outEdges[item].Keys.Where(r => remainingNodes.Contains(r)).ToList());
 			}
 
 			var cycles = CycleFounder.getElementaryCycles((remainingEdges, null, remainingNodes));
@@ -350,6 +351,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 
 			var POplan = solveRecur(problem, persons, new List<int>(), isCycleSearchEpoch: false);
 			var plan = creator.createSolution(problem, plane, persons, POplan);
+			Console.WriteLine(string.Join(" ", plan));
 			var length = evaluatePlan(plan, plane, persons);
 			return length;
 		}
@@ -360,7 +362,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 				return new List<HashSet<int>>() { new HashSet<int>() };
 			if (persons.Count == 1)
 				return solveSinglePerson(problem, persons);
-			if (!isCycleSearchEpoch)
+			if (isCycleSearchEpoch == false)
 			{
 				var preprocessed = createPreprocessedInput(problem, persons, visitedNodes);
 				return preprocessed.POPlanExtender(solveRecur(preprocessed.problem, preprocessed.persons, visitedNodes, !isCycleSearchEpoch));
@@ -369,7 +371,9 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 			{
 				var nodeToVisit = findBestNodeToVisit(problem, plane, persons, visitedNodes);
 				visitedNodes.Add(nodeToVisit);
-				var subProblemSolution = solveRecur(problem, persons, visitedNodes, !isCycleSearchEpoch);
+				//persons.ForEach(p => { if (p.location == nodeToVisit) p.isBoarded = true; });
+				var newPersons = persons.Where(p => p.location != nodeToVisit).ToList();
+				var subProblemSolution = solveRecur(problem, newPersons, visitedNodes, !isCycleSearchEpoch);
 				var visitAction = new HashSet<int>() { nodeToVisit };
 				subProblemSolution.Insert(0, visitAction);
 				subProblemSolution.Add(visitAction);
