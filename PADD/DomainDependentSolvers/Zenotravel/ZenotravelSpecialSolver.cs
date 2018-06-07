@@ -13,10 +13,9 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 	class ZenotravelSpecialSolver
 	{
 		ZenotravelSingleSolver singleSolver;
-
 		public ZenotravelSpecialSolver()
 		{
-			this.singleSolver = new ZenotravelSingleOptimalSolver();
+			this.singleSolver = new ZenotravelSingleGreedySolver();
 		}
 
 		/// <summary>
@@ -60,7 +59,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 
 		protected HashSet<int> involvedCities;
 
-		protected Plane thisPlane;
+		protected Plane plane;
 
 		public ZenotravelSingleSolver()
 		{
@@ -84,7 +83,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 		protected virtual void init(Plane plane)
 		{
 			this.involvedCities = new HashSet<int>();
-			this.thisPlane = plane;
+			this.plane = plane;
 			this.inEdges = new Dictionary<int, Dictionary<int, int>>();
 			this.outEdges = new Dictionary<int, Dictionary<int, int>>();
 		}
@@ -165,12 +164,12 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 		/// This works with the REAL city IDs.
 		/// </summary>
 		/// <returns></returns>
-		protected (List<HashSet<int>> startLeaves, List<HashSet<int>> endLeaves) findAllLeaves()
+		protected (List<HashSet<int>> startLeaves, List<HashSet<int>> endLeaves) findAllLeaves(List<int> visitedNodes)
 		{
 			HashSet<int> isolated = findIsolatedVertices();
 
 			List<HashSet<int>> startLeaves = new List<HashSet<int>>();
-			HashSet<int> allStartLeaves = new HashSet<int>();
+			HashSet<int> allStartLeaves = new HashSet<int>(visitedNodes);
 			HashSet<int> ignoredNodes = isolated;
 			HashSet<int> newLeaves;
 			do
@@ -268,21 +267,23 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 		/// Using this technique twice will not do anything new.
 		/// It is not guaranteed that it will have any effect (i.e. it may just return the original input if it cannot be preprocessed).
 		/// </summary>
-		protected (bool didPreprocess, ZenoTravelProblem problem, Plane plane, List<Person> persons, Func<List<HashSet<int>>, List<HashSet<int>>> POPlanExtender) 
-			createPreprocessedInput(ZenoTravelProblem problem, Plane plane, List<Person> persons)
+		protected (bool didPreprocess, ZenoTravelProblem problem, List<Person> persons, Func<List<HashSet<int>>, List<HashSet<int>>> POPlanExtender) 
+			createPreprocessedInput(ZenoTravelProblem problem, List<Person> persons, List<int> visitedNodes)
 		{
 			createDesireGraph(persons, plane);
+			/*
 			var cycles = CycleFounder.getElementaryCycles((this.outEdges.Keys.ToDictionary(k => k, k => outEdges[k].Keys.ToList()), null, involvedCities));
 			foreach (var cycle in cycles)
 			{
 				Console.WriteLine(string.Join(" ", cycle));
 			}
+			*/
 
-			var enforcedActions = findAllLeaves();
+			var enforcedActions = findAllLeaves(visitedNodes);
 
 			if (enforcedActions.startLeaves.Count == 0 && enforcedActions.endLeaves.Count == 0)	//couldn't preprocess the problem :(
 			{
-				return (false, problem, plane, persons, new Func<List<HashSet<int>>, List<HashSet<int>>>(a => a));
+				return (false, problem, persons, new Func<List<HashSet<int>>, List<HashSet<int>>>(a => a));
 			}
 
 			List<Person> remainingPersons = persons.Where(p => !enforcedActions.startLeaves.Any(POLayer => POLayer.Contains(p.location) || POLayer.Contains(p.destination)) &&
@@ -297,11 +298,49 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 				return result;
 			});
 
-			return (true, problem, plane, remainingPersons, POPlanExtender);
+			return (true, problem, remainingPersons, POPlanExtender);
 		}
+
+		/// <summary>
+		/// When there are no obvious good choices (that means all remaining nodes are part of cycles), this will find all cycles in the remaining graph and return node that lies in the largest
+		/// number of cycles. If there are more such nodes, those with larger degree are prefered (sum of in- and out- degree).
+		/// Visiting such node should break cycles and the "preprocess" migh solve further parts of the remaining problem.
+		/// </summary>
+		/// <param name="problem"></param>
+		/// <param name="plane"></param>
+		/// <param name="persons"></param>
+		/// <param name="visitedNodes"></param>
+		/// <returns></returns>
+		protected int findBestNodeToVisit(ZenoTravelProblem problem, Plane plane, List<Person> persons, List<int> visitedNodes)
+		{
+			var remainingNodes = this.involvedCities.Where(c => persons.Any(p => (!p.isBoarded && p.location == c) || p.destination == c)).ToHashSet();
+			var remainingEdges = remainingNodes.ToDictionary(k => k, k => new List<int>());
+			foreach (var item in remainingEdges.Keys)
+			{
+				remainingEdges[item] = this.outEdges[item].Keys.Where(r => remainingNodes.Contains(r)).ToList();
+			}
+
+			var cycles = CycleFounder.getElementaryCycles((remainingEdges, null, remainingNodes));
+			Dictionary<int, int> occurences = remainingNodes.ToDictionary(k => k, k => 0);
+			foreach (var item in cycles.SelectMany(n => n))
+			{
+				occurences[item]++;
+			}
+			var mostOccurences = occurences.Keys.Max(k => occurences[k]);
+			var bestNodes = occurences.Keys.Where(k => occurences[k] == mostOccurences);
+
+			if (bestNodes.Count() == 1)
+				return bestNodes.Single();
+			var bestNodesDegrees = bestNodes.Select(node => (node, remainingEdges[node].Count + this.inEdges[node].Keys.Count(c => remainingNodes.Contains(c))));
+			var maxDegree = bestNodesDegrees.Max(r => r.Item2);
+			var bestNode = bestNodesDegrees.Where(r => r.Item2 == maxDegree);
+			return bestNode.First().node;
+
+		}
+
 	}
 
-	class ZenotravelSingleOptimalSolver : ZenotravelSingleSolver
+	class ZenotravelSingleGreedySolver : ZenotravelSingleSolver
 	{
 		SolutionCreator creator = new SolutionCreator();
 
@@ -309,27 +348,36 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 		{
 			init(plane);
 
-			var preprocessed = createPreprocessedInput(problem, plane, persons);
-			if (preprocessed.persons.Count == 0)
-			{
-				//problem is solved by the preprocessing
-				var solution = creator.createSolution(problem, plane, persons, preprocessed.POPlanExtender(new List<HashSet<int>>()));
-				Console.WriteLine(string.Join(" ", solution));
-				return evaluatePlan(solution, plane, persons);
-			}
-
-			if (preprocessed.persons.Count == 1)
-			{
-				var solvingOnePerson = solveSinglePerson(preprocessed.problem, preprocessed.plane, preprocessed.persons);
-				var solution = creator.createSolution(problem, plane, persons, preprocessed.POPlanExtender(solvingOnePerson));
-				Console.WriteLine(string.Join(" ", solution));
-				return evaluatePlan(solution, plane, persons);
-			}
-
-			return base.solveSingle(problem, plane, persons);
+			var POplan = solveRecur(problem, persons, new List<int>(), isCycleSearchEpoch: false);
+			var plan = creator.createSolution(problem, plane, persons, POplan);
+			var length = evaluatePlan(plan, plane, persons);
+			return length;
 		}
 
-		protected List<HashSet<int>> solveSinglePerson(ZenoTravelProblem problem, Plane plane, List<Person> persons)
+		protected List<HashSet<int>> solveRecur(ZenoTravelProblem problem, List<Person> persons, List<int> visitedNodes, bool isCycleSearchEpoch)
+		{
+			if (persons.Count == 0)
+				return new List<HashSet<int>>() { new HashSet<int>() };
+			if (persons.Count == 1)
+				return solveSinglePerson(problem, persons);
+			if (!isCycleSearchEpoch)
+			{
+				var preprocessed = createPreprocessedInput(problem, persons, visitedNodes);
+				return preprocessed.POPlanExtender(solveRecur(preprocessed.problem, preprocessed.persons, visitedNodes, !isCycleSearchEpoch));
+			}
+			else
+			{
+				var nodeToVisit = findBestNodeToVisit(problem, plane, persons, visitedNodes);
+				visitedNodes.Add(nodeToVisit);
+				var subProblemSolution = solveRecur(problem, persons, visitedNodes, !isCycleSearchEpoch);
+				var visitAction = new HashSet<int>() { nodeToVisit };
+				subProblemSolution.Insert(0, visitAction);
+				subProblemSolution.Add(visitAction);
+				return subProblemSolution;
+			}
+		}
+
+		protected List<HashSet<int>> solveSinglePerson(ZenoTravelProblem problem, List<Person> persons)
 		{
 			List<HashSet<int>> result = new List<HashSet<int>>();
 			var departureLoc = new HashSet<int>();
