@@ -85,5 +85,15 @@ namespace PADD.ExtensionMethods
 				}
 			}
 		}
+
+		public static HashSet<T> ToHashSet<T> (this IEnumerable<T> source)
+		{
+			HashSet<T> result = new HashSet<T>();
+			foreach (var item in source)
+			{
+				result.Add(item);
+			}
+			return result;
+		}
 	}
 }
