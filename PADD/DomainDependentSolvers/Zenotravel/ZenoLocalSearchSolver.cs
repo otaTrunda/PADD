@@ -103,6 +103,45 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 			return result;
 		}
 
+		/// <summary>
+		/// Tries to modify the assingment by some greedy rules-of-thumb. Works in-place.
+		/// </summary>
+		/// <returns></returns>
+		protected int[] greedyPostprocess(int[] item)
+		{
+			//persons whose destination is the same as target destination of some plane are assigned to that plane
+			foreach (var person in problem.personsByIDs.Values)
+			{
+				if (problem.planesByTheirTargetDestination.ContainsKey(person.destination))
+				{
+					var suitablePlanes = problem.planesByTheirTargetDestination[person.destination];
+					var planeID = suitablePlanes[r.Next(suitablePlanes.Count)];
+					var personPosition = getPersonsIndexInSolution(person.ID);
+					item[personPosition] = planeID;
+				}
+			}
+
+			/*
+			//persons whose original location is the same as location of some plane are assigned to that plane
+			throw new Exception();
+			foreach (var person in problem.personsByIDs.Values)
+			{
+				if (problem.planesByTheirTargetDestination.ContainsKey(person.destination))
+				{
+					var suitablePlanes = problem.planesByTheirTargetDestination[person.destination];
+					var planeID = suitablePlanes[r.Next(suitablePlanes.Count)];
+					var personPosition = getPersonsIndexInSolution(person.ID);
+					item[personPosition] = planeID;
+				}
+			}*/
+			return item;
+		}
+
+		protected int getPersonsIndexInSolution(int personID)
+		{
+			return problem.allPersonsIDs.IndexOf(personID);
+		}
+
 		public override int solve(ZenoTravelProblem problem)
 		{
 			this.genomeLength = problem.personsByIDs.Keys.Count;

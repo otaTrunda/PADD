@@ -48,6 +48,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 		{
 			int steps = 0;
 			int[] solution = generateRandom();
+			greedyPostprocess(solution);
 			int fitness = eval(solution);
 			while (steps < maxSteps)
 			{

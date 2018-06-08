@@ -25,7 +25,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 
 		public ZenotravelSolver()
 		{
-			solver = new ZenoHillClimbingSolver(HillClimbingMode.FirstChoice, 1000, new Random(123), 100);
+			solver = new ZenoHillClimbingSolver(HillClimbingMode.FirstChoice, 1000, new Random(123), 10);
 		}
 	}
 }
