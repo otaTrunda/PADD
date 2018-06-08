@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace PADD.DomainDependentSolvers.Zenotravel
 {
-	class CycleFounder
+	class CycleDetection
 	{
-		public static List<List<int>> getElementaryCycles((Dictionary<int, List<int>> outEdges, Dictionary<int, List<int>> inEdges, HashSet<int> allNodes) graph)
+		public static List<List<int>> findElementaryCycles((Dictionary<int, List<int>> outEdges, Dictionary<int, List<int>> inEdges, HashSet<int> allNodes) graph)
 		{
 			var searchEngine = new ElementaryCyclesSearch(graph.outEdges, graph.allNodes);
 			return searchEngine.getElementaryCycles();

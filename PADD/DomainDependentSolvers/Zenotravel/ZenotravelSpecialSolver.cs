@@ -10,12 +10,18 @@ using PADD.ExtensionMethods;
 
 namespace PADD.DomainDependentSolvers.Zenotravel
 {
-	class ZenotravelSpecialSolver
+	abstract class ZenotravelSpecialSolver
 	{
 		ZenotravelSingleSolver singleSolver;
+		protected ZenoTravelProblem problem;
 		public ZenotravelSpecialSolver()
 		{
 			this.singleSolver = new ZenotravelSingleGreedySolver();
+		}
+
+		public void showTravelGraph(ZenoTravelProblem problem)
+		{
+			singleSolver.showTravelGraph(problem.personsByIDs.Values.ToList(), problem.planesByIDs.Values.First());
 		}
 
 		/// <summary>
@@ -23,20 +29,42 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 		/// </summary>
 		/// <param name=""></param>
 		/// <returns></returns>
-		public int solve(ZenoTravelProblem problem)
+		public abstract int solve(ZenoTravelProblem problem);
+
+		protected int eval(int[] assignment, bool writeSolution = false)
 		{
-			var result = singleSolver.solveSingle(problem, problem.planesByIDs[1], problem.personsByIDs.Values.ToList());
-			Console.WriteLine(result);
-			singleSolver.showTravelGraph(problem.personsByIDs.Values.ToList(), problem.planesByIDs[1]);
-			return result;
+			var assignmentAsDictionary = translateAssignment(assignment, problem);
+			var length = 0;
+			foreach (var item in assignmentAsDictionary)
+			{
+				var result = singleSolver.solveSingle(problem, problem.planesByIDs[item.Key], item.Value.Select(id => problem.personsByIDs[id]).ToList());
+				if (writeSolution)
+				{
+					Console.WriteLine(string.Join(" ", result.plan) + ",\t" + result.length);
+				}
+				length += result.length;
+			}
+
+			return length;
 		}
 
+		protected Dictionary<int, HashSet<int>> translateAssignment(int[] assignment, ZenoTravelProblem problem)
+		{
+			Dictionary<int, HashSet<int>> result = new Dictionary<int, HashSet<int>>();
+			for (int i = 0; i < assignment.Length; i++)
+			{
+				if (!result.ContainsKey(assignment[i]))
+					result.Add(assignment[i], new HashSet<int>());
+				result[assignment[i]].Add(problem.allPersonsIDs[i]);
+			}
+			return result;
+		}
 	}
 
 	/// <summary>
 	/// Solver a single-plane problem with given subset of persons that the plane must transport to their destinations.
 	/// </summary>
-	class ZenotravelSingleSolver
+	abstract class ZenotravelSingleSolver
 	{
 		/// <summary>
 		/// Returns the number of actions required to perform the given path by the plane
@@ -54,11 +82,8 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 			return flyActionsCount + refuelActionCount + embarkAndDisembrakActionCount;
 		}
 
-		protected Dictionary<int, Dictionary<int, int>> inEdges,
-														outEdges;
-
+		protected Dictionary<int, Dictionary<int, int>> inEdges, outEdges;
 		protected HashSet<int> involvedCities;
-
 		protected Plane plane;
 
 		public ZenotravelSingleSolver()
@@ -73,12 +98,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 		/// <param name="planeID"></param>
 		/// <param name="persons"></param>
 		/// <returns></returns>
-		public virtual int solveSingle(ZenoTravelProblem problem, Plane plane, List<Person> persons)
-		{
-			init(plane);
-			showTravelGraph(persons, plane);
-			return 0;
-		}
+		public abstract (List<int> plan, int length) solveSingle(ZenoTravelProblem problem, Plane plane, List<Person> persons);
 
 		protected virtual void init(Plane plane)
 		{
@@ -88,7 +108,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 			this.outEdges = new Dictionary<int, Dictionary<int, int>>();
 		}
 
-		protected void createDesireGraph(List<Person> persons, Plane plane)
+		protected void createTravelGraph(List<Person> persons, Plane plane)
 		{
 			init(plane);
 			foreach (var item in persons)
@@ -113,7 +133,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 		protected Graph createMSAGLGraph(List<Person> persons, Plane plane)
 		{
 			Graph g = new Graph();
-			createDesireGraph(persons, plane);
+			createTravelGraph(persons, plane);
 			
 			foreach (var from in outEdges.Keys)
 				foreach (var to in outEdges[from].Keys)
@@ -158,10 +178,9 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 		}
 
 		/// <summary>
-		/// Should only be called after the desire matrix is computed.
+		/// Should only be called after the travel graph is computed.
 		/// Finds all start- and end- leaves. Returns them in a layered fashion: startLeaves in the first layer should be visited first, then startLeaves in the second layer can be visited
 		/// and so on. The same with the end-leaves.
-		/// This works with the REAL city IDs.
 		/// </summary>
 		/// <returns></returns>
 		protected (List<HashSet<int>> startLeaves, List<HashSet<int>> endLeaves) findAllLeaves(List<int> visitedNodes)
@@ -270,7 +289,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 		protected (bool didPreprocess, ZenoTravelProblem problem, List<Person> persons, Func<List<HashSet<int>>, List<HashSet<int>>> POPlanExtender) 
 			createPreprocessedInput(ZenoTravelProblem problem, List<Person> persons, List<int> visitedNodes)
 		{
-			createDesireGraph(persons, plane);
+			createTravelGraph(persons, plane);
 			/*
 			var cycles = CycleFounder.getElementaryCycles((this.outEdges.Keys.ToDictionary(k => k, k => outEdges[k].Keys.ToList()), null, involvedCities));
 			foreach (var cycle in cycles)
@@ -321,7 +340,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 					remainingEdges.Add(item, this.outEdges[item].Keys.Where(r => remainingNodes.Contains(r)).ToList());
 			}
 
-			var cycles = CycleFounder.getElementaryCycles((remainingEdges, null, remainingNodes));
+			var cycles = CycleDetection.findElementaryCycles((remainingEdges, null, remainingNodes));
 			Dictionary<int, int> occurences = remainingNodes.ToDictionary(k => k, k => 0);
 			foreach (var item in cycles.SelectMany(n => n))
 			{
@@ -345,15 +364,15 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 	{
 		SolutionCreator creator = new SolutionCreator();
 
-		public override int solveSingle(ZenoTravelProblem problem, Plane plane, List<Person> persons)
+		public override (List<int> plan, int length) solveSingle(ZenoTravelProblem problem, Plane plane, List<Person> persons)
 		{
 			init(plane);
 
 			var POplan = solveRecur(problem, persons, new List<int>(), isCycleSearchEpoch: false);
-			var plan = creator.createSolution(problem, plane, persons, POplan);
-			Console.WriteLine(string.Join(" ", plan));
+			var plan = creator.createLinearPlan(problem, plane, persons, POplan);
+			//Console.WriteLine(string.Join(" ", plan));
 			var length = evaluatePlan(plan, plane, persons);
-			return length;
+			return (plan, length);
 		}
 
 		protected List<HashSet<int>> solveRecur(ZenoTravelProblem problem, List<Person> persons, List<int> visitedNodes, bool isCycleSearchEpoch)
@@ -412,7 +431,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 
 		protected Dictionary<int, List<int>> requiredPredecessors;
 
-		public List<int> createSolution(ZenoTravelProblem problem, Plane plane, List<Person> persons, List<HashSet<int>> POPlan)
+		public List<int> createLinearPlan(ZenoTravelProblem problem, Plane plane, List<Person> persons, List<HashSet<int>> POPlan)
 		{
 			result = new List<int>();
 			positionsOfCitiesInSolution.Clear();
@@ -459,7 +478,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 			requiredPredecessors[item].Add(predecessor);
 		}
 
-		protected List<int> getPreviousPositions(int city)
+		protected List<int> getPreviousVisits(int city)
 		{
 			if (positionsOfCitiesInSolution.ContainsKey(city))
 				return positionsOfCitiesInSolution[city];
@@ -476,14 +495,14 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 		protected void addToResultIfNecessary(int city)
 		{
 			int positionToAdd = result.Count;
-			var positions = getPreviousPositions(city);
+			var positions = getPreviousVisits(city);
 			if (positions.Count == 0)
 			{
 				addToResult(city);
 				return;
 			}
-			var forcingPredecessors = getPredecessors(city).Where(pred => getPreviousPositions(pred).Count > 0);
-			var predecessorsFirstOccurences = forcingPredecessors.Select(pred => getPreviousPositions(pred).First());
+			var forcingPredecessors = getPredecessors(city).Where(pred => getPreviousVisits(pred).Count > 0);
+			var predecessorsFirstOccurences = forcingPredecessors.Select(pred => getPreviousVisits(pred).First());
 			var lastOccurenceOfThis = positions.Last();
 			if (predecessorsFirstOccurences.Any(oc => lastOccurenceOfThis < oc))
 				addToResult(city);

@@ -13,7 +13,9 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 
 		public override double Search(bool quiet = false)
 		{
-			return solver.solve(p);
+			var value = solver.solve(p);
+			solver.showTravelGraph(p);
+			return value;
 		}
 
 		protected override void init()
@@ -23,7 +25,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 
 		public ZenotravelSolver()
 		{
-			solver = new ZenotravelSpecialSolver();
+			solver = new ZenoHillClimbingSolver(HillClimbingMode.FirstChoice, 1000, new Random(123), 100);
 		}
 	}
 }

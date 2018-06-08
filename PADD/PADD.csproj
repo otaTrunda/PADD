@@ -129,7 +129,9 @@
     <Compile Include="DomainDependentSolvers\VisitAllVisForm.Designer.cs">
       <DependentUpon>VisitAllVisForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="DomainDependentSolvers\Zenotravel\CycleFounder.cs" />
+    <Compile Include="DomainDependentSolvers\Zenotravel\CycleDetection.cs" />
+    <Compile Include="DomainDependentSolvers\Zenotravel\ZenoHillClimbingSolver.cs" />
+    <Compile Include="DomainDependentSolvers\Zenotravel\ZenoLocalSearchSolver.cs" />
     <Compile Include="DomainDependentSolvers\Zenotravel\ZenoTravelProblem.cs" />
     <Compile Include="DomainDependentSolvers\Zenotravel\ZenotravelSolver.cs" />
     <Compile Include="DomainDependentSolvers\Zenotravel\ZenotravelSpecialSolver.cs" />

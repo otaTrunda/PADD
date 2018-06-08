@@ -11,6 +11,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 		public HashSet<int> cities;
 		public Dictionary<int, Plane> planesByIDs;
 		public Dictionary<int, Person> personsByIDs;
+		public List<int> allPersonsIDs;
 
 		private static string[] delimiters = new string[] { "(", ",", " ", ")", "Atom" };
 		private static Func<string, List<string>> splitSAS = new Func<string, List<string>>(f => f.Split(delimiters, StringSplitOptions.RemoveEmptyEntries).ToList());
@@ -131,6 +132,8 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 			}
 			foreach (var item in toRemove)
 				personsByIDs.Remove(item);
+
+			allPersonsIDs = personsByIDs.Keys.OrderBy(k => k).ToList();
 		}
 
 		public static ZenoTravelProblem loadFromSAS(SASProblem zenoTravelProblemInSAS)
