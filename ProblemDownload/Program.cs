@@ -10,8 +10,10 @@ namespace ProblemDownload
 	{
 		static void Main(string[] args)
 		{
-			Downloader.download(67, @"C:\Users\Trunda_Otakar\Desktop\depots");
-			Translator.translateDomain(@"C:\Users\Trunda_Otakar\Desktop\depots\domain.pddl");
+			Downloader.download(17, @"C:\Users\Trunda_Otakar\Desktop\zenotravel");
+
+			//Downloader.download(67, @"C:\Users\Trunda_Otakar\Desktop\depots");
+			//Translator.translateDomain(@"C:\Users\Trunda_Otakar\Desktop\depots\domain.pddl");
 		}
 	}
 }

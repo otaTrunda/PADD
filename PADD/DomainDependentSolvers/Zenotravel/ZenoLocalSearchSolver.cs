@@ -8,6 +8,13 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 {
 	abstract class ZenoLocalSearchSolver : ZenotravelSpecialSolver
 	{
+		protected static bool quiet = false;
+		protected static void logMsg(Func<string> msgGenerator)
+		{
+			if (!quiet)
+				Console.WriteLine(msgGenerator.Invoke());
+		}
+
 		protected int genomeLength,
 			geneMinVal,	//inclusive
 			geneMaxVal; //exclusive
@@ -121,19 +128,17 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 				}
 			}
 
-			/*
 			//persons whose original location is the same as location of some plane are assigned to that plane
-			throw new Exception();
 			foreach (var person in problem.personsByIDs.Values)
 			{
-				if (problem.planesByTheirTargetDestination.ContainsKey(person.destination))
+				if (problem.planesByTheirOriginalLocation.ContainsKey(person.location))
 				{
-					var suitablePlanes = problem.planesByTheirTargetDestination[person.destination];
+					var suitablePlanes = problem.planesByTheirOriginalLocation[person.location];
 					var planeID = suitablePlanes[r.Next(suitablePlanes.Count)];
 					var personPosition = getPersonsIndexInSolution(person.ID);
 					item[personPosition] = planeID;
 				}
-			}*/
+			}
 			return item;
 		}
 

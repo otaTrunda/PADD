@@ -19,9 +19,14 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 			this.singleSolver = new ZenotravelSingleGreedySolver();
 		}
 
-		public void showTravelGraph(ZenoTravelProblem problem)
+		public void setProblem(ZenoTravelProblem problem)
 		{
-			singleSolver.showTravelGraph(problem.personsByIDs.Values.ToList(), problem.planesByIDs.Values.First());
+			this.problem = problem;
+		}
+
+		public void showTravelGraph(ZenoTravelProblem problem, List<Person> onlyThesePersons = null)
+		{
+			singleSolver.showTravelGraph((onlyThesePersons == null ? problem.personsByIDs.Values.ToList() : onlyThesePersons), problem.planesByIDs.Values.First());
 		}
 
 		/// <summary>
@@ -34,6 +39,34 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 		protected int eval(int[] assignment, bool writeSolution = false)
 		{
 			var assignmentAsDictionary = translateAssignment(assignment, problem);
+			var length = 0;
+			foreach (var item in assignmentAsDictionary)
+			{
+				var result = singleSolver.solveSingle(problem, problem.planesByIDs[item.Key], item.Value.Select(id => problem.personsByIDs[id]).ToList());
+				if (writeSolution)
+				{
+					Console.WriteLine(string.Join(" ", result.plan) + ",\t" + result.length);
+				}
+				length += result.length;
+			}
+			var actionsMovingUnusedPlanesToTheirDestinations = 0;
+			foreach (var item in problem.planesByIDs.Values)
+			{
+				if (!item.isDestinationSet)
+					continue;
+				if (assignmentAsDictionary.ContainsKey(item.ID))
+					continue;
+				actionsMovingUnusedPlanesToTheirDestinations++;
+				if (item.fuelReserve == 0)
+					actionsMovingUnusedPlanesToTheirDestinations++;
+			}
+
+			return length + actionsMovingUnusedPlanesToTheirDestinations;
+		}
+
+		protected int eval<T>(List<T> assignment, Func<T, int> selector, bool writeSolution = false)
+		{
+			var assignmentAsDictionary = translateAssignment(assignment, selector, problem);
 			var length = 0;
 			foreach (var item in assignmentAsDictionary)
 			{
@@ -59,6 +92,39 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 			}
 			return result;
 		}
+
+		protected Dictionary<int, HashSet<int>> translateAssignment<T>(List<T> assignment, Func<T, int> selector, ZenoTravelProblem problem)
+		{
+			Dictionary<int, HashSet<int>> result = new Dictionary<int, HashSet<int>>();
+			for (int i = 0; i < assignment.Count; i++)
+			{
+				if (!result.ContainsKey(selector(assignment[i])))
+					result.Add(selector(assignment[i]), new HashSet<int>());
+				result[selector(assignment[i])].Add(problem.allPersonsIDs[i]);
+			}
+			return result;
+		}
+
+
+	}
+
+	class ZenotravelTestSolver : ZenotravelSpecialSolver
+	{
+		public override int solve(ZenoTravelProblem problem)
+		{
+			//showTravelGraph(problem, (new List<int>() { 6, 7, 9 }).Select(id => problem.personsByIDs[id]).ToList());
+
+			//var selectedPersons = new HashSet<int>() { 6, 7, 9 };
+			//return new ZenotravelSingleGreedySolver().solveSingle(problem, problem.planesByIDs[4], selectedPersons.Select(id => problem.personsByIDs[id]).ToList()).length;
+
+			var plan = new ZenotravelSingleGreedySolver().solveSingle(problem, problem.planesByIDs[1], problem.personsByIDs.Values.ToList());
+
+			Console.WriteLine(string.Join(" ", plan.plan));
+			Console.WriteLine(plan.length);
+			return plan.length;
+
+
+		}
 	}
 
 	/// <summary>
@@ -75,11 +141,34 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 		/// <returns></returns>
 		protected int evaluatePlan(List<int> planePath, Plane plane, List<Person> persons)
 		{
+			if (!checkPlan(planePath, plane, persons))
+				return -1;
 			int flyActionsCount = planePath.Count - 1;
 			int fuel = plane.fuelReserve;
 			int refuelActionCount = fuel >= flyActionsCount ? 0 : flyActionsCount - fuel;
-			int embarkAndDisembrakActionCount = persons.Sum(p => p.isBoarded ? 1 : 2);
+			int embarkAndDisembrakActionCount = persons.Sum(p => p.isBoarded ? p.weight : 2 * p.weight);
 			return flyActionsCount + refuelActionCount + embarkAndDisembrakActionCount;
+		}
+
+		protected bool checkPlan(List<int> planePath, Plane plane, List<Person> persons)
+		{
+			foreach (var item in persons)
+			{
+				if (!item.isBoarded && !planePath.Contains(item.location))
+					return false;
+				if (item.isDestinationSet && !planePath.Contains(item.destination))
+					return false;
+				if (!item.isBoarded && item.isDestinationSet)
+				{
+					if (planePath.IndexOf(item.location) > planePath.LastIndexOf(item.destination))
+						return false;
+				}
+			}
+			if (plane.isDestinationSet && planePath.Last() != plane.destination)
+				return false;
+			if (planePath.First() != plane.location)
+				return false;
+			return true;
 		}
 
 		protected Dictionary<int, Dictionary<int, int>> inEdges, outEdges;
@@ -306,7 +395,9 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 			}
 
 			List<Person> remainingPersons = persons.Where(p => !enforcedActions.startLeaves.Any(POLayer => POLayer.Contains(p.location) || POLayer.Contains(p.destination)) &&
-															   !enforcedActions.endLeaves.Any(POLayer => POLayer.Contains(p.location) || POLayer.Contains(p.destination))).ToList();
+															   !enforcedActions.endLeaves.Any(POLayer => POLayer.Contains(p.location) || POLayer.Contains(p.destination)) 
+															   //&&  p.destination != plane.destination
+															   ).ToList();
 
 			var POPlanExtender = new Func<List<HashSet<int>>, List<HashSet<int>>>(POPlan =>
 			{
@@ -364,13 +455,19 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 	{
 		SolutionCreator creator = new SolutionCreator();
 
+		/// <summary>
+		/// Person is called "easy" if it travels to the final destination of the plane.
+		/// </summary>
+		List<Person> easyPersons;
+
 		public override (List<int> plan, int length) solveSingle(ZenoTravelProblem problem, Plane plane, List<Person> persons)
 		{
-			init(plane);
+			init(plane, persons);
 
 			var POplan = solveRecur(problem, persons, new List<int>(), isCycleSearchEpoch: false);
 			var plan = creator.createLinearPlan(problem, plane, persons, POplan);
 			//Console.WriteLine(string.Join(" ", plan));
+			persons.AddRange(easyPersons);
 			var length = evaluatePlan(plan, plane, persons);
 			return (plan, length);
 		}
@@ -378,7 +475,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 		protected List<HashSet<int>> solveRecur(ZenoTravelProblem problem, List<Person> persons, List<int> visitedNodes, bool isCycleSearchEpoch)
 		{
 			if (persons.Count == 0)
-				return new List<HashSet<int>>() { new HashSet<int>() };
+				return solveEasyPersons(problem, this.easyPersons);
 			if (persons.Count == 1)
 				return solveSinglePerson(problem, persons);
 			if (isCycleSearchEpoch == false)
@@ -400,6 +497,12 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 			}
 		}
 
+		/// <summary>
+		/// Solves the problem with just one person.
+		/// </summary>
+		/// <param name="problem"></param>
+		/// <param name="persons"></param>
+		/// <returns></returns>
 		protected List<HashSet<int>> solveSinglePerson(ZenoTravelProblem problem, List<Person> persons)
 		{
 			List<HashSet<int>> result = new List<HashSet<int>>();
@@ -412,11 +515,33 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 			result.Add(departureLoc);
 			result.Add(arivalLoc);
 
+			result.AddRange(solveEasyPersons(problem, this.easyPersons));
 			return result;
 		}
 
-		protected override void init(Plane plane)
+		/// <summary>
+		/// Solves the problem where all persons want to travel the the final destination of the plane.
+		/// </summary>
+		/// <param name="problem"></param>
+		/// <param name="easyPersons"></param>
+		/// <returns></returns>
+		protected List<HashSet<int>> solveEasyPersons(ZenoTravelProblem problem, List<Person> easyPersons)
 		{
+			List<HashSet<int>> result = new List<HashSet<int>>();
+
+			foreach (var item in easyPersons)
+			{
+				var departureLoc = new HashSet<int>();
+				departureLoc.Add(item.location);
+				result.Add(departureLoc);
+			}
+			return result;
+		}
+
+		protected void init(Plane plane, List<Person> persons)
+		{
+			this.easyPersons = persons.Where(p => p.destination == plane.destination).ToList();
+			persons.RemoveAll(p => p.destination == plane.destination);
 			base.init(plane);
 		}
 

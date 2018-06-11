@@ -17,9 +17,9 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 		/// </summary>
 		/// <param name="mode">Various modes of the search</param>
 		/// <param name="maxSteps">Max steps during ONE iteration (i.e. between restarts). If local optimum is reached before this limit, the current iteration will end.</param>
-		/// <param name="r"></param>
+		/// <param name="random"></param>
 		/// <param name="restartsCount"></param>
-		public ZenoHillClimbingSolver(HillClimbingMode mode, int maxSteps, Random r, int restartsCount = 1) : base(r)
+		public ZenoHillClimbingSolver(HillClimbingMode mode, int maxSteps, Random random, int restartsCount = 1) : base(random)
 		{
 			this.mode = mode;
 			this.maxSteps = maxSteps;
@@ -44,11 +44,14 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 			return bestSolution;
 		}
 
-		protected (int[] sol, int fitness) doOneIteration()
+		public (int[] sol, int fitness) doOneIteration(int[] solution = null)
 		{
 			int steps = 0;
-			int[] solution = generateRandom();
-			greedyPostprocess(solution);
+			if (solution == null)
+			{
+				solution = generateRandom();
+				greedyPostprocess(solution);
+			}
 			int fitness = eval(solution);
 			while (steps < maxSteps)
 			{

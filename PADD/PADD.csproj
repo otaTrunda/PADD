@@ -64,6 +64,9 @@
     <Reference Include="CudaSolve, Version=8.0.22.0, Culture=neutral, processorArchitecture=AMD64">
       <HintPath>..\packages\ManagedCuda-CUSOLVE.8.0.22\lib\net46\CudaSolve.dll</HintPath>
     </Reference>
+    <Reference Include="GAF.47, Version=2.3.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\GAF.2.3.1\lib\net47\GAF.47.dll</HintPath>
+    </Reference>
     <Reference Include="Kora">
       <HintPath>bin\Kora.dll</HintPath>
     </Reference>
@@ -92,6 +95,7 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.ValueTuple, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.ValueTuple.4.4.0\lib\net47\System.ValueTuple.dll</HintPath>
     </Reference>
@@ -132,6 +136,7 @@
     <Compile Include="DomainDependentSolvers\Zenotravel\CycleDetection.cs" />
     <Compile Include="DomainDependentSolvers\Zenotravel\ZenoHillClimbingSolver.cs" />
     <Compile Include="DomainDependentSolvers\Zenotravel\ZenoLocalSearchSolver.cs" />
+    <Compile Include="DomainDependentSolvers\Zenotravel\ZenotravelGASolver.cs" />
     <Compile Include="DomainDependentSolvers\Zenotravel\ZenoTravelProblem.cs" />
     <Compile Include="DomainDependentSolvers\Zenotravel\ZenotravelSolver.cs" />
     <Compile Include="DomainDependentSolvers\Zenotravel\ZenotravelSpecialSolver.cs" />

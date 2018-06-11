@@ -51,7 +51,7 @@ namespace PADD
 				//createStatesDB(Path.Combine(SAS_all_WithoutAxioms, "gripper", "prob10.sas"), new GripperSolver());
 				//createStatesDB(Path.Combine(SAS_all_WithoutAxioms, "visitall", "problem16.sas"), new VisitAllSolver());
 				//createStatesDB(Path.Combine(SAS_all_WithoutAxioms, "blocks", "probBLOCKS-7-1.sas"), new DomainDependentSolvers.BlocksWorld.BlocksWorldSolver());
-				createStatesDB(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "pfile16.sas"), new DomainDependentSolvers.Zenotravel.ZenotravelSolver());
+				createStatesDB(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "pfile14.sas"), new DomainDependentSolvers.Zenotravel.ZenotravelSolver());
 			}
 
 			if (args.Length == 3 && args[0] == "createHistograms_Results")
