@@ -95,6 +95,8 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 					continue;
 				if (assignmentAsDictionary.ContainsKey(item.ID))
 					continue;
+				if (item.destination == item.location)
+					continue;
 				actionsMovingUnusedPlanesToTheirDestinations++;
 				if (item.fuelReserve == 0)
 					actionsMovingUnusedPlanesToTheirDestinations++;
@@ -123,6 +125,8 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 				if (!item.isDestinationSet)
 					continue;
 				if (assignmentAsDictionary.ContainsKey(item.ID))
+					continue;
+				if (item.destination == item.location)
 					continue;
 				actionsMovingUnusedPlanesToTheirDestinations++;
 				if (item.fuelReserve == 0)
