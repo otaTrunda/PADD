@@ -127,6 +127,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 			{
 				Person representatve = item.First();
 				representatve.weight = item.Count;
+				representatve.IDsOfRepresentedPersons = item.Select(p => p.ID).ToList();
 				foreach (var represented in item.Skip(1))
 				{
 					toRemove.Add(represented.ID);
@@ -187,6 +188,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 		{
 			this.ID = ID;
 			this.weight = 1;
+			IDsOfRepresentedPersons = new List<int>();
 		}
 
 		public bool isDestinationSet => this.destination != -1;
@@ -195,6 +197,8 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 		/// When there are more several persons that have the same location and destination, we represent them by a single person that has greater weight
 		/// </summary>
 		public int weight;
+
+		public List<int> IDsOfRepresentedPersons;
 	}
 
 }

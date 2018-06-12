@@ -27,6 +27,9 @@ namespace PADD
 
 		static void Main(string[] args)
 		{
+			solveZenotravelDomain(Path.Combine(SAS_all_WithoutAxioms, "zenotravel"));
+			return;
+
 			if (args.Length == 1 && args[0] == "combineResults")
 			{
 				CombineResultFiles();
@@ -51,13 +54,31 @@ namespace PADD
 				//createStatesDB(Path.Combine(SAS_all_WithoutAxioms, "gripper", "prob10.sas"), new GripperSolver());
 				//createStatesDB(Path.Combine(SAS_all_WithoutAxioms, "visitall", "problem16.sas"), new VisitAllSolver());
 				//createStatesDB(Path.Combine(SAS_all_WithoutAxioms, "blocks", "probBLOCKS-7-1.sas"), new DomainDependentSolvers.BlocksWorld.BlocksWorldSolver());
-				createStatesDB(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "pfile14.sas"), new DomainDependentSolvers.Zenotravel.ZenotravelSolver());
+				createStatesDB(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "pfile17.sas"), new DomainDependentSolvers.Zenotravel.ZenotravelSolver());
 			}
 
 			if (args.Length == 3 && args[0] == "createHistograms_Results")
 			{
 				CreateHistograms_Results(args.Skip(1).ToArray());
 			}
+		}
+
+		static void solveZenotravelDomain(string zenotravelFolder)
+		{
+			var solver = new DomainDependentSolvers.Zenotravel.ZenotravelSolver();
+			Console.WriteLine("problem\tminBound\tmaxBound\tplanLength");
+			foreach (var item in Directory.EnumerateFiles(zenotravelFolder))
+			{
+				if (Path.GetExtension(item) != ".sas")
+					continue;
+				solver.SetProblem(SASProblem.CreateFromFile(item));
+				var planLength = (int)solver.Search(quiet: true);
+				var problemInfo = File.ReadAllLines(Path.Combine(zenotravelFolder, "pddl", "_problemInfo", Path.ChangeExtension(Path.GetFileName(item), "txt"))).Select(
+					line => line.Split('\t').ToList()).ToDictionary(t => t.First(), t => t.Last());
+				int minBound = int.Parse(problemInfo["lowerBound"]);
+				int maxBound = int.Parse(problemInfo["upperBound"]);
+				Console.WriteLine(Path.GetFileNameWithoutExtension(item) + "\t" + minBound + "\t" + maxBound + "\t" + planLength);
+			}	
 		}
 
 		static void createStatesDB(string problemFile, DomainDependentSolver domainSpecificSolver)

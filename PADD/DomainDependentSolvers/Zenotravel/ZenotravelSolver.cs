@@ -13,8 +13,9 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 
 		public override double Search(bool quiet = false)
 		{
+			solver.quiet = quiet;
 			var value = solver.solve(p);
-			solver.showTravelGraph(p);
+			//solver.showTravelGraph(p);
 			return value;
 		}
 

@@ -8,12 +8,6 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 {
 	abstract class ZenoLocalSearchSolver : ZenotravelSpecialSolver
 	{
-		protected static bool quiet = false;
-		protected static void logMsg(Func<string> msgGenerator)
-		{
-			if (!quiet)
-				Console.WriteLine(msgGenerator.Invoke());
-		}
 
 		protected int genomeLength,
 			geneMinVal,	//inclusive
@@ -154,8 +148,10 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 			this.geneMaxVal = problem.planesByIDs.Keys.Max();
 			this.problem = problem;
 
-			var result = doLocalSearch();
-			return eval(result, true);
+			var result = new int[0];
+			if (problem.personsByIDs.Count > 0)
+				result = doLocalSearch();
+			return eval(result, writeSolution: !quiet);
 		}
 
 		protected abstract int[] doLocalSearch();

@@ -12,6 +12,13 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 {
 	abstract class ZenotravelSpecialSolver
 	{
+		public bool quiet = false;
+		protected void logMsg(Func<string> msgGenerator)
+		{
+			if (!quiet)
+				Console.WriteLine(msgGenerator.Invoke());
+		}
+
 		ZenotravelSingleSolver singleSolver;
 		protected ZenoTravelProblem problem;
 		public ZenotravelSpecialSolver()
@@ -36,19 +43,51 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 		/// <returns></returns>
 		public abstract int solve(ZenoTravelProblem problem);
 
+		protected List<string> translateToPDDLPlan(Dictionary<int, (List<int>, List<Person>)> plans, List<Plane> notUsedPlanes)
+		{
+			List<string> result = new List<string>();
+			foreach (var plan in plans)
+			{
+				result.AddRange(singleSolver.translateToPDDLPlan(plan.Value.Item1, problem.planesByIDs[plan.Key], plan.Value.Item2));
+			}
+			foreach (var item in notUsedPlanes)	//planes that were not used to transport persons might need to fly to their required destinations and might also need to refuel before it.
+			{
+				if (!item.isDestinationSet)
+					continue;
+				if (item.fuelReserve == 0)
+					singleSolver.addRefuelingAction(item, item.location, 0, result);
+				singleSolver.addFlyAction(item, item.location, item.destination, (item.fuelReserve == 0 ? 1 : item.fuelReserve), result);
+			}
+			return result;
+		}
+
 		protected int eval(int[] assignment, bool writeSolution = false)
 		{
 			var assignmentAsDictionary = translateAssignment(assignment, problem);
 			var length = 0;
+			Dictionary<int, (List<int>, List<Person>)> resultingPlans = new Dictionary<int, (List<int>, List<Person>)>();
 			foreach (var item in assignmentAsDictionary)
 			{
-				var result = singleSolver.solveSingle(problem, problem.planesByIDs[item.Key], item.Value.Select(id => problem.personsByIDs[id]).ToList());
+				var persons = item.Value.Select(id => problem.personsByIDs[id]).ToList();
+				var result = singleSolver.solveSingle(problem, problem.planesByIDs[item.Key], persons);
 				if (writeSolution)
 				{
+					resultingPlans.Add(item.Key, (result.plan, persons));
 					Console.WriteLine(string.Join(" ", result.plan) + ",\t" + result.length);
 				}
 				length += result.length;
 			}
+
+			if (writeSolution)
+			{
+				Console.WriteLine();
+				var translatedPlan = translateToPDDLPlan(resultingPlans, problem.planesByIDs.Values.Where(p => !assignmentAsDictionary.ContainsKey(p.ID)).ToList());
+				foreach (var item in translatedPlan)
+				{
+					Console.WriteLine(item);
+				}
+			}
+
 			var actionsMovingUnusedPlanesToTheirDestinations = 0;
 			foreach (var item in problem.planesByIDs.Values)
 			{
@@ -78,7 +117,19 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 				length += result.length;
 			}
 
-			return length;
+			var actionsMovingUnusedPlanesToTheirDestinations = 0;
+			foreach (var item in problem.planesByIDs.Values)
+			{
+				if (!item.isDestinationSet)
+					continue;
+				if (assignmentAsDictionary.ContainsKey(item.ID))
+					continue;
+				actionsMovingUnusedPlanesToTheirDestinations++;
+				if (item.fuelReserve == 0)
+					actionsMovingUnusedPlanesToTheirDestinations++;
+			}
+
+			return length + actionsMovingUnusedPlanesToTheirDestinations;
 		}
 
 		protected Dictionary<int, HashSet<int>> translateAssignment(int[] assignment, ZenoTravelProblem problem)
@@ -147,6 +198,9 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 			int fuel = plane.fuelReserve;
 			int refuelActionCount = fuel >= flyActionsCount ? 0 : flyActionsCount - fuel;
 			int embarkAndDisembrakActionCount = persons.Sum(p => p.isBoarded ? p.weight : 2 * p.weight);
+
+			//var PDDLPlan = translateToPDDLPlan(planePath, plane, persons);
+
 			return flyActionsCount + refuelActionCount + embarkAndDisembrakActionCount;
 		}
 
@@ -177,6 +231,87 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 
 		public ZenotravelSingleSolver()
 		{
+		}
+
+		public List<string> translateToPDDLPlan(List<int> plan, Plane plane, List<Person> persons)
+		{
+			List<string> result = new List<string>();
+
+			HashSet<int> hasBoarded = new HashSet<int>();
+			HashSet<int> hasExited = new HashSet<int>();
+			int planeLoc = plane.location;
+			int planeFuel = plane.fuelReserve;
+			for (int i = 0; i < plan.Count-1; i++)
+			{
+				var boardingPersons = persons.Where(p => p.location == planeLoc && !hasBoarded.Contains(p.ID) && !hasExited.Contains(p.ID));
+				foreach (var item in boardingPersons)
+				{
+					addBoardingAction(item, plane, planeLoc, result);
+					hasBoarded.Add(item.ID);
+				}
+				var unboardingPersons = persons.Where(p => p.destination == planeLoc && hasBoarded.Contains(p.ID) && !hasExited.Contains(p.ID));
+				foreach (var item in unboardingPersons)
+				{
+					addUnboardingAction(item, plane, planeLoc, result);
+					hasExited.Add(item.ID);
+				}
+				if (planeFuel == 0)
+				{
+					addRefuelingAction(plane, planeLoc, planeFuel, result);
+					planeFuel++;
+				}
+				addFlyAction(plane, planeLoc, plan[i + 1], planeFuel, result);
+				planeLoc = plan[i + 1];
+				planeFuel--;
+			}
+			foreach (var item in persons.Where(p => p.destination == planeLoc && hasBoarded.Contains(p.ID) && !hasExited.Contains(p.ID)))
+			{
+				addUnboardingAction(item, plane, planeLoc, result);
+				hasExited.Add(item.ID);
+			}
+			return result;
+		}
+
+		protected void addBoardingAction(Person p, Plane plane, int loc, List<string> allActions)
+		{
+			if (p.weight > 1)
+				foreach (var personID in p.IDsOfRepresentedPersons)
+				{
+					string res = "board" + " person" + personID + " plane" + plane.ID + " city" + loc;
+					allActions.Add("(" + res + ")");
+				}
+			else
+			{
+				string res = "board" + " person" + p.ID + " plane" + plane.ID + " city" + loc;
+				allActions.Add("(" + res + ")");
+			}
+		}
+
+		protected void addUnboardingAction(Person p, Plane plane, int loc, List<string> allActions)
+		{
+			if (p.weight > 1)
+				foreach (var personID in p.IDsOfRepresentedPersons)
+				{
+					string res = "debark" + " person" + personID + " plane" + plane.ID + " city" + loc;
+					allActions.Add("(" + res + ")");
+				}
+			else
+			{
+				string res = "debark" + " person" + p.ID + " plane" + plane.ID + " city" + loc;
+				allActions.Add("(" + res + ")");
+			}
+		}
+
+		public void addRefuelingAction(Plane plane, int loc, int currentFuel, List<string> allActions)
+		{
+			string res = "refuel" + " plane" + plane.ID + " city" + loc + " fl" + currentFuel + " fl" + (currentFuel + 1);
+			allActions.Add("(" + res + ")");
+		}
+
+		public void addFlyAction(Plane plane, int locFrom, int locTo, int currentFuel, List<string> allActions)
+		{
+			string res = "fly" + " plane" + plane.ID + " city" + locFrom + " city" + locTo + " fl" + currentFuel + " fl" + (currentFuel - 1);
+			allActions.Add("(" + res + ")");
 		}
 
 		/// <summary>
@@ -562,7 +697,8 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 			positionsOfCitiesInSolution.Clear();
 			computePredecessors(persons);
 
-			addToResult(plane.location);
+			if (POPlan.Count > 0 || plane.isDestinationSet)
+				addToResult(plane.location);
 			for (int i = 0; i < POPlan.Count - 1; i++)
 			{
 				var POLayer = POPlan[i];
@@ -572,13 +708,13 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 				}
 			}
 			//last layer:
-
-			foreach (var city in POPlan[POPlan.Count - 1])
-			{
-				if (city == plane.destination)
-					continue;
-				addToResultIfNecessary(city);
-			}
+			if (POPlan.Count > 0)
+				foreach (var city in POPlan[POPlan.Count - 1])
+				{
+					if (city == plane.destination)
+						continue;
+					addToResultIfNecessary(city);
+				}
 			if (plane.isDestinationSet)
 				addToResult(plane.destination);
 
