@@ -347,12 +347,24 @@ namespace PADD
             return constantStringToID[constName].Item2;
         }
 
-        /// <summary>
-        /// Gets all of the constants of the specified type.
-        /// </summary>
-        /// <param name="typeID">Type ID.</param>
-        /// <returns>List of all constants for the type.</returns>
-        public List<int> GetConstantsIDs(int typeID)
+		/// <summary>
+		/// Gets IDs of all constants.
+		/// </summary>
+		/// <returns>Sequence of IDs of all constants.</returns>
+		public IEnumerable<int> GetConstantsIDs()
+		{
+			foreach (var item in constantStringToID.Values)
+			{
+				yield return item.Item1;
+			}
+		}
+
+		/// <summary>
+		/// Gets all of the constants of the specified type.
+		/// </summary>
+		/// <param name="typeID">Type ID.</param>
+		/// <returns>List of all constants for the type.</returns>
+		public List<int> GetConstantsIDs(int typeID)
         {
             if (typesToConstListMapping.ContainsKey(typeID))
                 return typesToConstListMapping[typeID];
@@ -415,6 +427,26 @@ namespace PADD
             typeChildrenList.Add(currFreeID, new List<int>());
             ++currFreeID;
         }
+
+		public string getTypeNameByID(int typeID)
+		{
+			var res = typeStringToID.Keys.Where(k => typeStringToID[k] == typeID);
+			if (res.Any())
+				return res.Single();
+			throw new ArgumentException();
+		}
+
+		/// <summary>
+		/// Gets IDs of all known types.
+		/// </summary>
+		/// <returns></returns>
+		public IEnumerable<int> GetAllTypeIDs()
+		{
+			foreach (var item in typeStringToID.Values)
+			{
+				yield return item;
+			}
+		}
 
         /// <summary>
         /// Registers the specified type with its parent type. Registers the parent type as well, if it wasn't specified before.

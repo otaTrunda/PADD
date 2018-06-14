@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Microsoft.Msagl.Drawing;
+using Microsoft.Msagl.GraphViewerGdi;
 
 namespace PADD
 {
@@ -134,7 +136,8 @@ namespace PADD
     {
         public CausualGraph CG;
         public List<DomainTransitionGraph> DTGs;
-        public HashSet<int> RSE_InvertibleVariables;
+		public PredicateConstantGraph predConstGraph;
+		public HashSet<int> RSE_InvertibleVariables;
 
         public static KnowledgeHolder compute(SASProblem problem)
         {
@@ -151,6 +154,13 @@ namespace PADD
             return result;
         }
 
+		public static KnowledgeHolder create(PDDLProblem problem)
+		{
+			KnowledgeHolder h = new KnowledgeHolder();
+			h.predConstGraph = new PredicateConstantGraph(problem);
+			return h;
+		}
+
 		private KnowledgeHolder()
 		{
 
@@ -158,7 +168,13 @@ namespace PADD
 
         public void show(int variable, System.Windows.Forms.Panel panel)
         {
-            if (variable == 0)
+			if (variable == -1)
+			{
+				predConstGraph.visualize(panel);
+				return;
+			}
+
+			if (variable == 0)
             {
                 CG.visualize(panel, RSE_InvertibleVariables);
                 return;
@@ -171,20 +187,28 @@ namespace PADD
             DTGs[variable - CG.vertices.Count - 1].visualize(false, panel);
         }
 
-        public void visualize()
+        public void visualize(bool isSAS = true)
         {
-            KnowledgeVisualizerForm f = new KnowledgeVisualizerForm();
-            f.listView1.Items.Add("Causual Graph");
-            for (int i = 0; i < CG.vertices.Count; i++)
-            {
-                f.listView1.Items.Add("DTG var" + i.ToString());
-            }
-            for (int i = 0; i < CG.vertices.Count; i++)
-            {
-                f.listView1.Items.Add("DTG NoLabel var" + i.ToString());
-            }
-            f.h = this;
-            System.Windows.Forms.Application.Run(f);
+			if (isSAS)
+			{
+				KnowledgeVisualizerForm f = new KnowledgeVisualizerForm();
+				f.listView1.Items.Add("Causual Graph");
+				for (int i = 0; i < CG.vertices.Count; i++)
+				{
+					f.listView1.Items.Add("DTG var" + i.ToString());
+				}
+				for (int i = 0; i < CG.vertices.Count; i++)
+				{
+					f.listView1.Items.Add("DTG NoLabel var" + i.ToString());
+				}
+				f.h = this;
+				System.Windows.Forms.Application.Run(f);
+			}
+			else
+			{
+				//TODO
+				throw new NotImplementedException();
+			}
         }
     }
 
@@ -203,7 +227,7 @@ namespace PADD
 
         public void visualize(System.Windows.Forms.Panel panel = null, HashSet<int> invertibleVariables = null)
         {
-			Microsoft.Msagl.Drawing.Graph g = new Microsoft.Msagl.Drawing.Graph("Causual Graph");
+			Graph g = new Graph("Causual Graph");
             foreach (var item in vertices)
             {
                 var node = g.AddNode(item.ToString());
@@ -216,11 +240,11 @@ namespace PADD
 			}
             for (int i = 0; i < isEdge.GetLength(0); i++)
                 for (int j = 0; j < isEdge.GetLength(1); j++)
-                    if (isEdge[i, j]) g.AddEdge(i.ToString(), j.ToString());                
+                    if (isEdge[i, j]) g.AddEdge(i.ToString(), j.ToString());
 
-            Microsoft.Msagl.GraphViewerGdi.GViewer viewer = new Microsoft.Msagl.GraphViewerGdi.GViewer();
+			GViewer viewer = new GViewer();
             viewer.Graph = g;
-			viewer.CurrentLayoutMethod = Microsoft.Msagl.GraphViewerGdi.LayoutMethod.MDS;
+			viewer.CurrentLayoutMethod = LayoutMethod.MDS;
             if (panel == null)
             {
                 KnowledgeVisualizerForm form = new KnowledgeVisualizerForm();
@@ -592,6 +616,112 @@ namespace PADD
         }
     
     }
+
+	public abstract class GraphVisualizable
+	{
+		public abstract Graph toMSAGLGraph();
+
+		public void visualize(System.Windows.Forms.Panel panel)
+		{
+			Graph g = toMSAGLGraph();
+
+			GViewer viewer = new GViewer();
+			viewer.Graph = g;
+			viewer.CurrentLayoutMethod = LayoutMethod.MDS;
+			viewer.Dock = System.Windows.Forms.DockStyle.Fill;
+			panel.Controls.Clear();
+			panel.Controls.Add(viewer);
+			panel.Refresh();
+		}
+	}
+
+	public class PredicateConstantGraph : GraphVisualizable
+	{
+		PDDLProblem problem;
+
+		public PredicateConstantGraph(PDDLProblem p)
+		{
+			this.problem = p;
+		}
+
+		protected void addTypes(Graph g)
+		{
+			var typesManager = problem.GetIDManager().GetTypesMapping();
+			foreach (var item in typesManager.GetAllTypeIDs())
+			{
+				var node = g.AddNode(getTypeLabel(item, typesManager));
+				node.Attr.FillColor = Color.Blue;
+				node.Attr.Shape = Shape.Box;
+			}
+
+			foreach (var parentType in typesManager.GetAllTypeIDs())
+			{
+				var childrenTypes = typesManager.GetChildrenTypeIDs(parentType);
+				foreach (var childrenType in childrenTypes)
+				{
+					var edge = g.AddEdge(getTypeLabel(childrenType, typesManager), "subtype", getTypeLabel(parentType, typesManager));
+					edge.Attr.Color = Color.Blue;
+				}
+			}
+
+		}
+
+		protected void addConstants(Graph g)
+		{
+			var mapping = problem.GetIDManager().GetConstantsMapping();
+			foreach (var item in mapping.GetConstantsIDs())
+			{
+				var node = g.AddNode(getConstLabel(item, mapping));
+				node.Attr.FillColor = Color.Red;
+				var edge = g.AddEdge(node.Id, "hasType", getTypeLabel(mapping.GetTypeID(mapping.GetStringForConstID(item)), problem.GetIDManager().GetTypesMapping()));
+				edge.Attr.Color = Color.Blue;
+			}
+
+
+		}
+
+		protected void addPredicates(Graph g)
+		{
+			PDDLStateDefault state = (PDDLStateDefault)problem.GetInitialState();
+			foreach (var item in state.GetPredicates())
+			{
+				var arity = item.GetParamCount();
+				var constantIDs = Enumerable.Range(0, arity).Select(i => item.GetParam(i)).ToList();
+				var constantNames = constantIDs.Select(ID => problem.GetIDManager().GetConstantsMapping().GetStringForConstID(ID)).ToList();
+				var label = problem.GetIDManager().GetPredicatesMapping().GetStringForPredicateID(item.GetPrefixID()) + "(" +
+					string.Join(", ", constantNames) + ")\n[predicate]";
+				var node = g.AddNode(label);
+				node.Attr.FillColor = Color.Green;
+
+				foreach (var constID in constantIDs)
+				{
+					var constNodeLabel = getConstLabel(constID, problem.GetIDManager().GetConstantsMapping());
+					var edge = g.AddEdge(constNodeLabel, label);
+				}
+
+
+			}
+		}
+
+		protected string getConstLabel(int constID, PDDLConstantsMapping mapping)
+		{
+			return mapping.GetStringForConstID(constID) + "\n[const]";
+		}
+
+		protected string getTypeLabel(int typeID, PDDLTypesMapping mapping)
+		{
+			return mapping.getTypeNameByID(typeID) + "\n[type]";
+		}
+
+		public override Graph toMSAGLGraph()
+		{
+			Graph g = new Graph("Constant-predicate-type graph");
+			addTypes(g);
+			addConstants(g);
+			addPredicates(g);
+			return g;
+		}
+	}
 
     public class GraphEdge
     {

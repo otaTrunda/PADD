@@ -69,6 +69,9 @@ namespace PADD
 		{
 			var solver = new DomainDependentSolvers.Zenotravel.ZenotravelSolver();
 			Console.WriteLine("problem\tminBound\tmaxBound\tplanLength");
+			var plansFolder = Path.Combine(zenotravelFolder, "plans");
+			if (!Directory.Exists(plansFolder))
+				Directory.CreateDirectory(plansFolder);
 			foreach (var item in Directory.EnumerateFiles(zenotravelFolder))
 			{
 				if (Path.GetExtension(item) != ".sas")
@@ -80,6 +83,9 @@ namespace PADD
 				int minBound = int.Parse(problemInfo["lowerBound"]);
 				int maxBound = int.Parse(problemInfo["upperBound"]);
 				Console.WriteLine(Path.GetFileNameWithoutExtension(item) + "\t" + minBound + "\t" + maxBound + "\t" + planLength);
+				var planFile = Path.Combine(plansFolder, Path.ChangeExtension(Path.GetFileName(item), "txt"));
+				if (!File.Exists(planFile) || planLength < File.ReadAllLines(planFile).Count())
+					File.WriteAllLines(planFile, solver.getPDDLPlan());
 			}	
 		}
 
@@ -108,6 +114,13 @@ namespace PADD
 		{
 			var sasProblem = SASProblem.CreateFromFile(problemFile);
 			KnowledgeHolder h = KnowledgeHolder.compute(sasProblem);
+			h.visualize();
+		}
+
+		static void visualizePDDLKnowledgeGraphs(string PDDLDomainFile, string PDDLProblemFile)
+		{
+			var problem = PDDLProblem.CreateFromFile(PDDLDomainFile, PDDLProblemFile);
+			KnowledgeHolder h = KnowledgeHolder.create(problem);
 			h.visualize();
 		}
 
