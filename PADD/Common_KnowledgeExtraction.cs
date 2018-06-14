@@ -668,14 +668,14 @@ namespace PADD
 			return true;
 		}
 
-		protected void addConstants(Graph g, bool useTypes)
+		protected void addConstants(Graph g, bool useTyping)
 		{
 			var mapping = problem.GetIDManager().GetConstantsMapping();
 			foreach (var item in mapping.GetConstantsIDs())
 			{
 				var node = g.AddNode(getConstLabel(item, mapping));
 				node.Attr.FillColor = Color.Red;
-				if (useTypes)
+				if (useTyping)
 				{
 					var edge = g.AddEdge(node.Id, "hasType", getTypeLabel(mapping.GetTypeID(mapping.GetStringForConstID(item)), problem.GetIDManager().GetTypesMapping()));
 					formatAsTypeEdge(edge);

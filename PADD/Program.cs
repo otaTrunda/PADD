@@ -27,10 +27,10 @@ namespace PADD
 		[STAThread]
 		static void Main(string[] args)
 		{
-			/*
+			
 			solveZenotravelDomain(Path.Combine(SAS_all_WithoutAxioms, "zenotravel"));
 			return;
-			*/
+			
 
 			if (args.Length == 1 && args[0] == "combineResults")
 			{
