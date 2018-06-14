@@ -62,6 +62,8 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 			{
 				if (!item.isDestinationSet)
 					continue;
+				if (item.destination == item.location)
+					continue;
 				if (item.fuelReserve == 0)
 					singleSolver.addRefuelingAction(item, item.location, 0, result);
 				singleSolver.addFlyAction(item, item.location, item.destination, (item.fuelReserve == 0 ? 1 : item.fuelReserve), result);
@@ -176,8 +178,6 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 
 	class ZenotravelTestSolver : ZenotravelSpecialSolver
 	{
-		
-
 		public override List<string> getPDDLPlan()
 		{
 			throw new NotImplementedException();
@@ -451,6 +451,8 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 			List<HashSet<int>> endLeaves = new List<HashSet<int>>();
 			HashSet<int> allEndLeaves = new HashSet<int>();
 			ignoredNodes = allStartLeaves;
+			foreach (var item in visitedNodes)
+				ignoredNodes.Remove(item);
 			ignoredNodes.AddRange(isolated);
 			
 			do
@@ -581,6 +583,10 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 		protected int findBestNodeToVisit(ZenoTravelProblem problem, Plane plane, List<Person> persons, List<int> visitedNodes)
 		{
 			var remainingNodes = this.involvedCities.Where(c => persons.Any(p => (!p.isBoarded && p.location == c) || p.destination == c)).ToHashSet();
+
+			if (remainingNodes.Contains(plane.location))
+				return plane.location;
+
 			var remainingEdges = new Dictionary<int, List<int>>();
 			foreach (var item in remainingNodes)
 			{
@@ -629,16 +635,21 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 			return (plan, length);
 		}
 
-		protected List<HashSet<int>> solveRecur(ZenoTravelProblem problem, List<Person> persons, List<int> visitedNodes, bool isCycleSearchEpoch)
+		protected List<HashSet<int>> solveRecur(ZenoTravelProblem problem, List<Person> persons, List<int> visitedNodes, bool isCycleSearchEpoch, int depth = 0)
 		{
 			if (persons.Count == 0)
 				return solveEasyPersons(problem, this.easyPersons);
 			if (persons.Count == 1)
 				return solveSinglePerson(problem, persons);
+			if (depth > 20)
+			{
+
+			}
+
 			if (isCycleSearchEpoch == false)
 			{
 				var preprocessed = createPreprocessedInput(problem, persons, visitedNodes);
-				return preprocessed.POPlanExtender(solveRecur(preprocessed.problem, preprocessed.persons, visitedNodes, !isCycleSearchEpoch));
+				return preprocessed.POPlanExtender(solveRecur(preprocessed.problem, preprocessed.persons, visitedNodes, !isCycleSearchEpoch, depth + 1));
 			}
 			else
 			{
@@ -646,7 +657,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 				visitedNodes.Add(nodeToVisit);
 				//persons.ForEach(p => { if (p.location == nodeToVisit) p.isBoarded = true; });
 				var newPersons = persons.Where(p => p.location != nodeToVisit).ToList();
-				var subProblemSolution = solveRecur(problem, newPersons, visitedNodes, !isCycleSearchEpoch);
+				var subProblemSolution = solveRecur(problem, newPersons, visitedNodes, !isCycleSearchEpoch, depth + 1);
 				var visitAction = new HashSet<int>() { nodeToVisit };
 				subProblemSolution.Insert(0, visitAction);
 				subProblemSolution.Add(visitAction);
@@ -718,6 +729,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 			result = new List<int>();
 			positionsOfCitiesInSolution.Clear();
 			computePredecessors(persons);
+			int currentPlaneLoc = plane.location;
 
 			if (POPlan.Count > 0 || plane.isDestinationSet)
 				addToResult(plane.location);
@@ -726,7 +738,8 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 				var POLayer = POPlan[i];
 				foreach (var city in POLayer)
 				{
-					addToResultIfNecessary(city);
+					if (addToResultIfNecessary(city))
+						currentPlaneLoc = city;
 				}
 			}
 			//last layer:
@@ -735,9 +748,10 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 				{
 					if (city == plane.destination)
 						continue;
-					addToResultIfNecessary(city);
+					if (addToResultIfNecessary(city))
+						currentPlaneLoc = city;
 				}
-			if (plane.isDestinationSet)
+			if (plane.isDestinationSet && currentPlaneLoc != plane.destination)
 				addToResult(plane.destination);
 
 			return result;
@@ -775,20 +789,29 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 			return emptyList;
 		}
 
-		protected void addToResultIfNecessary(int city)
+		/// <summary>
+		/// Returns true if it was added.
+		/// </summary>
+		/// <param name="city"></param>
+		/// <returns></returns>
+		protected bool addToResultIfNecessary(int city)
 		{
 			int positionToAdd = result.Count;
 			var positions = getPreviousVisits(city);
 			if (positions.Count == 0)
 			{
 				addToResult(city);
-				return;
+				return true;
 			}
 			var forcingPredecessors = getPredecessors(city).Where(pred => getPreviousVisits(pred).Count > 0);
 			var predecessorsFirstOccurences = forcingPredecessors.Select(pred => getPreviousVisits(pred).First());
 			var lastOccurenceOfThis = positions.Last();
 			if (predecessorsFirstOccurences.Any(oc => lastOccurenceOfThis < oc))
+			{
 				addToResult(city);
+				return true;
+			}
+			return false;
 		}
 
 		protected void addToResult(int city)
