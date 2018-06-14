@@ -8,12 +8,13 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 {
 	abstract class ZenoLocalSearchSolver : ZenotravelSpecialSolver
 	{
-
 		protected int genomeLength,
 			geneMinVal,	//inclusive
 			geneMaxVal; //exclusive
 
 		protected Random r;
+
+		protected List<string> PDDL_plan;
 
 		protected IEnumerable<int[]> generateNeighbourhood(int[] item)
 		{
@@ -151,7 +152,9 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 			var result = new int[0];
 			if (problem.personsByIDs.Count > 0)
 				result = doLocalSearch();
-			return eval(result, writeSolution: !quiet);
+			var value = eval(result, returnPlan: true);
+			this.PDDL_plan = value.Item2;
+			return value.Item1;
 		}
 
 		protected abstract int[] doLocalSearch();
@@ -159,6 +162,11 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 		public ZenoLocalSearchSolver(Random r)
 		{
 			this.r = r;
+		}
+
+		public override List<string> getPDDLPlan()
+		{
+			return PDDL_plan;
 		}
 
 	}

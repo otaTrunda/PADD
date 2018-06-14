@@ -12,6 +12,8 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 {
 	abstract class ZenotravelSpecialSolver
 	{
+		protected List<string> emptyList = new List<string>();
+
 		public bool quiet = false;
 		protected void logMsg(Func<string> msgGenerator)
 		{
@@ -43,6 +45,12 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 		/// <returns></returns>
 		public abstract int solve(ZenoTravelProblem problem);
 
+		/// <summary>
+		/// Returns PDDL plan for the previous "solve" call.
+		/// </summary>
+		/// <returns></returns>
+		public abstract List<string> getPDDLPlan();
+
 		protected List<string> translateToPDDLPlan(Dictionary<int, (List<int>, List<Person>)> plans, List<Plane> notUsedPlanes)
 		{
 			List<string> result = new List<string>();
@@ -61,7 +69,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 			return result;
 		}
 
-		protected int eval(int[] assignment, bool writeSolution = false)
+		protected (int, List<string>) eval(int[] assignment, bool returnPlan = false)
 		{
 			var assignmentAsDictionary = translateAssignment(assignment, problem);
 			var length = 0;
@@ -70,15 +78,16 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 			{
 				var persons = item.Value.Select(id => problem.personsByIDs[id]).ToList();
 				var result = singleSolver.solveSingle(problem, problem.planesByIDs[item.Key], persons);
-				if (writeSolution)
+				if (returnPlan)
 				{
 					resultingPlans.Add(item.Key, (result.plan, persons));
-					Console.WriteLine(string.Join(" ", result.plan) + ",\t" + result.length);
+					//Console.WriteLine(string.Join(" ", result.plan) + ",\t" + result.length);
 				}
 				length += result.length;
 			}
 
-			if (writeSolution)
+			/*
+			if (returnPlan)
 			{
 				Console.WriteLine();
 				var translatedPlan = translateToPDDLPlan(resultingPlans, problem.planesByIDs.Values.Where(p => !assignmentAsDictionary.ContainsKey(p.ID)).ToList());
@@ -87,6 +96,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 					Console.WriteLine(item);
 				}
 			}
+			*/
 
 			var actionsMovingUnusedPlanesToTheirDestinations = 0;
 			foreach (var item in problem.planesByIDs.Values)
@@ -102,20 +112,21 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 					actionsMovingUnusedPlanesToTheirDestinations++;
 			}
 
-			return length + actionsMovingUnusedPlanesToTheirDestinations;
+			if (returnPlan)
+			{
+				var translatedPlan = translateToPDDLPlan(resultingPlans, problem.planesByIDs.Values.Where(p => !assignmentAsDictionary.ContainsKey(p.ID)).ToList());
+				return (translatedPlan.Count, translatedPlan);
+			}
+			return (length + actionsMovingUnusedPlanesToTheirDestinations, emptyList);
 		}
 
-		protected int eval<T>(List<T> assignment, Func<T, int> selector, bool writeSolution = false)
+		protected int eval<T>(List<T> assignment, Func<T, int> selector)
 		{
 			var assignmentAsDictionary = translateAssignment(assignment, selector, problem);
 			var length = 0;
 			foreach (var item in assignmentAsDictionary)
 			{
 				var result = singleSolver.solveSingle(problem, problem.planesByIDs[item.Key], item.Value.Select(id => problem.personsByIDs[id]).ToList());
-				if (writeSolution)
-				{
-					Console.WriteLine(string.Join(" ", result.plan) + ",\t" + result.length);
-				}
 				length += result.length;
 			}
 
@@ -165,6 +176,13 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 
 	class ZenotravelTestSolver : ZenotravelSpecialSolver
 	{
+		
+
+		public override List<string> getPDDLPlan()
+		{
+			throw new NotImplementedException();
+		}
+
 		public override int solve(ZenoTravelProblem problem)
 		{
 			//showTravelGraph(problem, (new List<int>() { 6, 7, 9 }).Select(id => problem.personsByIDs[id]).ToList());

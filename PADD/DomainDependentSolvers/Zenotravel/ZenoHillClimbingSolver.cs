@@ -52,7 +52,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 				solution = generateRandom();
 				greedyPostprocess(solution);
 			}
-			int fitness = eval(solution);
+			int fitness = eval(solution).Item1;
 			while (steps < maxSteps)
 			{
 				steps++;
@@ -76,7 +76,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 			{
 				case HillClimbingMode.RMHC:
 					var res = singlePointMutationInPlace(item);
-					var newFitness = eval(item);
+					var newFitness = eval(item).Item1;
 					if (newFitness < currentFitness)
 						return (false, newFitness);
 					item[res.indexOfChange] = res.previousVal;
@@ -84,7 +84,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 				case HillClimbingMode.FirstChoice:
 					foreach (var modified in generateNeighbourhoodInPlace(item))
 					{
-						int fitness = eval(modified);
+						int fitness = eval(modified).Item1;
 						if (fitness < currentFitness)
 							return (false, fitness);
 					}
@@ -94,7 +94,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 					int indexOfChange = -1, newValue = -1;
 					foreach (var modified in generateNeighbourhoodInPlace(item, true))
 					{
-						int fitness = eval(modified.item);
+						int fitness = eval(modified.item).Item1;
 						if (fitness < bestFitness)
 						{
 							bestFitness = fitness;
