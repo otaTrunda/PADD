@@ -168,7 +168,7 @@ namespace PADD
 
         public void show(int variable, System.Windows.Forms.Panel panel)
         {
-			if (variable == -1)
+			if (predConstGraph != null)
 			{
 				predConstGraph.visualize(panel);
 				return;
@@ -189,9 +189,9 @@ namespace PADD
 
         public void visualize(bool isSAS = true)
         {
-			if (isSAS)
+			KnowledgeVisualizerForm f = new KnowledgeVisualizerForm();
+			if (isSAS && CG != null)
 			{
-				KnowledgeVisualizerForm f = new KnowledgeVisualizerForm();
 				f.listView1.Items.Add("Causual Graph");
 				for (int i = 0; i < CG.vertices.Count; i++)
 				{
@@ -201,15 +201,15 @@ namespace PADD
 				{
 					f.listView1.Items.Add("DTG NoLabel var" + i.ToString());
 				}
-				f.h = this;
-				System.Windows.Forms.Application.Run(f);
+
 			}
 			else
 			{
-				//TODO
-				throw new NotImplementedException();
+				f.listView1.Items.Add("Object graph");
 			}
-        }
+			f.h = this;
+			System.Windows.Forms.Application.Run(f);
+		}
     }
 
     public class CausualGraph
@@ -644,14 +644,15 @@ namespace PADD
 			this.problem = p;
 		}
 
-		protected void addTypes(Graph g)
+		protected bool addTypes(Graph g)
 		{
 			var typesManager = problem.GetIDManager().GetTypesMapping();
+			if (typesManager.GetAllTypeIDs().Count() <= 1)
+				return false;
 			foreach (var item in typesManager.GetAllTypeIDs())
 			{
 				var node = g.AddNode(getTypeLabel(item, typesManager));
-				node.Attr.FillColor = Color.Blue;
-				node.Attr.Shape = Shape.Box;
+				formatAsTypeNode(node);
 			}
 
 			foreach (var parentType in typesManager.GetAllTypeIDs())
@@ -660,24 +661,26 @@ namespace PADD
 				foreach (var childrenType in childrenTypes)
 				{
 					var edge = g.AddEdge(getTypeLabel(childrenType, typesManager), "subtype", getTypeLabel(parentType, typesManager));
-					edge.Attr.Color = Color.Blue;
+					formatAsTypeEdge(edge);
+					
 				}
 			}
-
+			return true;
 		}
 
-		protected void addConstants(Graph g)
+		protected void addConstants(Graph g, bool useTypes)
 		{
 			var mapping = problem.GetIDManager().GetConstantsMapping();
 			foreach (var item in mapping.GetConstantsIDs())
 			{
 				var node = g.AddNode(getConstLabel(item, mapping));
 				node.Attr.FillColor = Color.Red;
-				var edge = g.AddEdge(node.Id, "hasType", getTypeLabel(mapping.GetTypeID(mapping.GetStringForConstID(item)), problem.GetIDManager().GetTypesMapping()));
-				edge.Attr.Color = Color.Blue;
+				if (useTypes)
+				{
+					var edge = g.AddEdge(node.Id, "hasType", getTypeLabel(mapping.GetTypeID(mapping.GetStringForConstID(item)), problem.GetIDManager().GetTypesMapping()));
+					formatAsTypeEdge(edge);
+				}
 			}
-
-
 		}
 
 		protected void addPredicates(Graph g)
@@ -703,6 +706,45 @@ namespace PADD
 			}
 		}
 
+		protected void formatAsTypeNode(Node n)
+		{
+			n.Attr.FillColor = Color.LightBlue;
+			n.Attr.Shape = Shape.Box;
+		}
+
+		protected void formatAsTypeEdge(Edge e)
+		{
+			e.Attr.Color = Color.Blue;
+		}
+
+		protected void addRigidRelations(Graph g)
+		{
+			var rigidRelations = problem.GetRigidRelations();
+			var predicateNameByID = new Func<int, string>(ID => problem.GetIDManager().GetPredicatesMapping().GetStringForPredicateID(ID));
+			var constantNameByID = new Func<int, string>(ID => problem.GetIDManager().GetConstantsMapping().GetStringForConstID(ID));
+
+			foreach (var item in rigidRelations)
+			{
+				if (item.GetParamCount() == 1)  //unary rigid relations are treated as types
+				{
+					string typeLabel = predicateNameByID(item.GetPrefixID()) + "\n[rigid (type)]";
+					string constLabel = getConstLabel(item.GetParam(0), problem.GetIDManager().GetConstantsMapping());
+					Node n = g.AddNode(typeLabel);
+					formatAsTypeNode(n);
+					Edge e = g.AddEdge(constLabel, typeLabel);
+					formatAsTypeEdge(e);
+				}
+				if (item.GetParamCount() == 2)
+				{
+					string const1Label = getConstLabel(item.GetParam(0), problem.GetIDManager().GetConstantsMapping());
+					string const2Label = getConstLabel(item.GetParam(1), problem.GetIDManager().GetConstantsMapping());
+					string relationLabel = predicateNameByID(item.GetPrefixID()) + "\n[rigid]";
+					g.AddEdge(const1Label, relationLabel, const2Label);
+				}
+			}
+
+		}
+
 		protected string getConstLabel(int constID, PDDLConstantsMapping mapping)
 		{
 			return mapping.GetStringForConstID(constID) + "\n[const]";
@@ -716,8 +758,9 @@ namespace PADD
 		public override Graph toMSAGLGraph()
 		{
 			Graph g = new Graph("Constant-predicate-type graph");
-			addTypes(g);
-			addConstants(g);
+			bool useTyping = addTypes(g);
+			addConstants(g, useTyping);
+			addRigidRelations(g);
 			addPredicates(g);
 			return g;
 		}

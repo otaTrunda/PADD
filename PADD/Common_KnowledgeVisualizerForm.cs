@@ -4,7 +4,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
-using System.Text;
+using System.IO;
 using System.Windows.Forms;
 
 namespace PADD
@@ -26,7 +26,13 @@ namespace PADD
 
         private void openFileDialog1_FileOk(object sender, CancelEventArgs e)
         {
-            h = KnowledgeHolder.compute(SASProblem.CreateFromFile(openFileDialog1.FileName));
+			if (Path.GetExtension(openFileDialog1.FileName) == ".sas")
+				h = KnowledgeHolder.compute(SASProblem.CreateFromFile(openFileDialog1.FileName));
+			else
+			{
+				var domain = Path.Combine(Path.GetDirectoryName(openFileDialog1.FileName), "domain.pddl");
+				h = KnowledgeHolder.create(PDDLProblem.CreateFromFile(domain, openFileDialog1.FileName));
+			}
             listView1.Clear();
             listView1.Items.Add("Causual Graph");
             for (int i = 0; i < h.CG.vertices.Count; i++)
@@ -45,5 +51,10 @@ namespace PADD
         {
             openFileDialog1.ShowDialog();
         }
-    }
+
+		private void listView1_DoubleClick(object sender, EventArgs e)
+		{
+			openFileDialog1.ShowDialog();
+		}
+	}
 }

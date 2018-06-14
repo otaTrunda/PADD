@@ -24,13 +24,13 @@ namespace PADD
         private static string testFilesFolder = "../tests/test";
 		private static string test2FilesFolder = "../tests/test2";
 
-
+		[STAThread]
 		static void Main(string[] args)
 		{
-			
+			/*
 			solveZenotravelDomain(Path.Combine(SAS_all_WithoutAxioms, "zenotravel"));
 			return;
-			
+			*/
 
 			if (args.Length == 1 && args[0] == "combineResults")
 			{
@@ -48,7 +48,9 @@ namespace PADD
 			{
 				//visualizeKnowledgeGraphs(Path.Combine(SAS_all_WithoutAxioms, "gripper", "prob10.sas"));
 				//visualizeKnowledgeGraphs(Path.Combine(SAS_all_WithoutAxioms, "visitall", "problem12.sas"));
-				visualizeKnowledgeGraphs(Path.Combine(SAS_all_WithoutAxioms, "blocks", "probBLOCKS-4-1.sas"));
+				//visualizeKnowledgeGraphs(Path.Combine(SAS_all_WithoutAxioms, "blocks", "probBLOCKS-4-1.sas"));
+				//visualizeKnowledgeGraphs(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "pfile3.sas"));
+				visualizeKnowledgeGraphs(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "pddl", "pfile3.pddl"));
 			}
 
 			if (args.Length == 1 && args[0] == "createDB")
@@ -112,8 +114,17 @@ namespace PADD
 
 		static void visualizeKnowledgeGraphs(string problemFile)
 		{
-			var sasProblem = SASProblem.CreateFromFile(problemFile);
-			KnowledgeHolder h = KnowledgeHolder.compute(sasProblem);
+			KnowledgeHolder h = null;
+			if (Path.GetExtension(problemFile) == ".sas")
+			{
+				var sasProblem = SASProblem.CreateFromFile(problemFile);
+				h = KnowledgeHolder.compute(sasProblem);
+			}
+			else
+			{
+				var domain = Path.Combine(Path.GetDirectoryName(problemFile), "domain.pddl");
+				h = KnowledgeHolder.create(PDDLProblem.CreateFromFile(domain, problemFile));
+			}
 			h.visualize();
 		}
 
