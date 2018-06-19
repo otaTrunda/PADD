@@ -173,7 +173,6 @@ namespace PADD.DomainDependentSolvers.BlocksWorld
 				{
 					var name = description.Split(stringSeparators, StringSplitOptions.RemoveEmptyEntries).Last();
 					blocksBySASNames[name].targetBlockBelow = null;
-					blocksBySASNames[name].isTargetSpecified = true;
 					continue;
 				}
 				if (description.Contains("on("))
@@ -186,7 +185,6 @@ namespace PADD.DomainDependentSolvers.BlocksWorld
 					if (b1.targetBlockBelow != null)
 						throw new ArgumentException();
 					b1.targetBlockBelow = b2;
-					b1.isTargetSpecified = true;
 				}
 			}
 		}
@@ -201,7 +199,7 @@ namespace PADD.DomainDependentSolvers.BlocksWorld
 		public Block currentBlockAbove;
 		public Block targetBlockBelow;
 
-		public bool isTargetSpecified = false;
+		public bool isTargetSpecified => targetBlockBelow != null;
 
 		public Block(Block targetBlockBelow)
 		{

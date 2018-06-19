@@ -15,12 +15,12 @@ namespace PADD.DomainDependentSolvers.BlocksWorld
 
 		public override List<string> getPDDLPlan()
 		{
-			throw new NotImplementedException();
+			return new List<string>();
 		}
 
 		public override double Search(bool quiet = false)
 		{
-			bool draw = true;
+			bool draw = false;
 			this.p = new BlocksWorldProblem(this.sasProblem);
 			return p.simulate(draw);
 		}

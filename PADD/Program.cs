@@ -29,7 +29,8 @@ namespace PADD
 		{
 			
 			//solveDomain(Path.Combine(SAS_all_WithoutAxioms, "zenotravel"), new DomainDependentSolvers.Zenotravel.ZenotravelSolver());
-			solveDomain(Path.Combine(SAS_all_WithoutAxioms, "visitall"), new DomainDependentSolvers.VisitAll.VisitAllGreedySolver());
+			//solveDomain(Path.Combine(SAS_all_WithoutAxioms, "visitall"), new DomainDependentSolvers.VisitAll.VisitAllGreedySolver());
+			solveDomain(Path.Combine(SAS_all_WithoutAxioms, "blocks"), new DomainDependentSolvers.BlocksWorld.BlocksWorldSolver());
 			return;
 			
 
@@ -80,7 +81,7 @@ namespace PADD
 					continue;
 				solver.SetProblem(SASProblem.CreateFromFile(item));
 				var planLength = (int)solver.Search(quiet: true);
-				var problemInfo = File.ReadAllLines(Path.Combine(domainFolder, "pddl", "_problemInfo", Path.ChangeExtension(Path.GetFileName(item), "txt"))).Select(
+				var problemInfo = File.ReadAllLines(Path.Combine(domainFolder, "pddl", "_problemInfo", Path.ChangeExtension(Path.GetFileName(item), "txt"))).Distinct().Select(
 					line => line.Split('\t').ToList()).ToDictionary(t => t.First(), t => t.Last());
 				int minBound = 0;
 				if (!int.TryParse(problemInfo["lowerBound"], out minBound))
