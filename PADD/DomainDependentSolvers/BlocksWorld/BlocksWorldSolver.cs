@@ -13,6 +13,11 @@ namespace PADD.DomainDependentSolvers.BlocksWorld
 		{
 		}
 
+		public override List<string> getPDDLPlan()
+		{
+			throw new NotImplementedException();
+		}
+
 		public override double Search(bool quiet = false)
 		{
 			bool draw = true;

@@ -95,5 +95,22 @@ namespace PADD.ExtensionMethods
 			}
 			return result;
 		}
+
+		public static T MaxElement<T, G>(this IEnumerable<T> source, Func<T, G> selector)
+			where G : IComparable
+		{
+			T maxElement = source.First();
+			G maxVal = selector(maxElement);
+			foreach (var item in source)
+			{
+				G val = selector(item);
+				if (val.CompareTo(maxVal) > 0)
+				{
+					maxVal = val;
+					maxElement = item;
+				}
+			}
+			return maxElement;
+		}
 	}
 }

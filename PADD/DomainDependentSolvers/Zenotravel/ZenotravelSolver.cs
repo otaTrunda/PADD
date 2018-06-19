@@ -35,7 +35,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 		/// Gets the plan corresponding to the last "Search" call.
 		/// </summary>
 		/// <returns></returns>
-		public List<string> getPDDLPlan()
+		public override List<string> getPDDLPlan()
 		{
 			return solver.getPDDLPlan();
 		}

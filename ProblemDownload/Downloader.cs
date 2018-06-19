@@ -31,7 +31,7 @@ namespace ProblemDownload
 			c.DownloadFile(parsedResponse.result.First().domain_url, Path.Combine(folderToDownloadTo, "domain.pddl"));
 			foreach (var item in parsedResponse.result)
 			{
-				c.DownloadFile(item.problem_url, Path.Combine(folderToDownloadTo, item.problem));
+				c.DownloadFile(item.problem_url, Path.Combine(folderToDownloadTo, Path.HasExtension(item.problem) ? item.problem : item.problem + ".pddl"));
 				using (var writter = new StreamWriter(Path.Combine(infoDirectory, Path.ChangeExtension(item.problem, ".txt")), append: true))
 				{
 					writter.WriteLine("lowerBound\t" + item.lower_bound);

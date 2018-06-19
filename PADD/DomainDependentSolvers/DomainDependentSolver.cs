@@ -14,6 +14,12 @@ namespace PADD.DomainDependentSolvers
 
 		public abstract double Search(bool quiet = false);
 
+		/// <summary>
+		/// Returns plan for the previous call of "Search"
+		/// </summary>
+		/// <returns></returns>
+		public abstract List<string> getPDDLPlan();
+
 		public void SetProblem(IPlanningProblem problem)
 		{
 			sasProblem = (SASProblem)problem;

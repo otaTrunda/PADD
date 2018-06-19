@@ -82,6 +82,11 @@ namespace PADD.DomainDependentSolvers
 			return Enumerable.Range(0, allVariables.Count).Where(i => (getSymbolicMeaning(i, state).Contains("at(") && getSymbolicMeaning(i, state).Contains("rooma"))).Count();
 		}
 
+		public override List<string> getPDDLPlan()
+		{
+			throw new NotImplementedException();
+		}
+
 		public GripperSolver()
 		{
 			

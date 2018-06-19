@@ -28,7 +28,8 @@ namespace PADD
 		static void Main(string[] args)
 		{
 			
-			solveZenotravelDomain(Path.Combine(SAS_all_WithoutAxioms, "zenotravel"));
+			//solveDomain(Path.Combine(SAS_all_WithoutAxioms, "zenotravel"), new DomainDependentSolvers.Zenotravel.ZenotravelSolver());
+			solveDomain(Path.Combine(SAS_all_WithoutAxioms, "visitall"), new DomainDependentSolvers.VisitAll.VisitAllGreedySolver());
 			return;
 			
 
@@ -67,26 +68,29 @@ namespace PADD
 			}
 		}
 
-		static void solveZenotravelDomain(string zenotravelFolder)
+		static void solveDomain(string domainFolder, DomainDependentSolver solver)
 		{
-			var solver = new DomainDependentSolvers.Zenotravel.ZenotravelSolver();
 			Console.WriteLine("problem\tminBound\tmaxBound\tplanLength");
-			var plansFolder = Path.Combine(zenotravelFolder, "plans");
+			var plansFolder = Path.Combine(domainFolder, "plans");
 			if (!Directory.Exists(plansFolder))
 				Directory.CreateDirectory(plansFolder);
-			foreach (var item in Directory.EnumerateFiles(zenotravelFolder))
+			foreach (var item in Directory.EnumerateFiles(domainFolder))
 			{
 				if (Path.GetExtension(item) != ".sas")
 					continue;
 				solver.SetProblem(SASProblem.CreateFromFile(item));
 				var planLength = (int)solver.Search(quiet: true);
-				var problemInfo = File.ReadAllLines(Path.Combine(zenotravelFolder, "pddl", "_problemInfo", Path.ChangeExtension(Path.GetFileName(item), "txt"))).Select(
+				var problemInfo = File.ReadAllLines(Path.Combine(domainFolder, "pddl", "_problemInfo", Path.ChangeExtension(Path.GetFileName(item), "txt"))).Select(
 					line => line.Split('\t').ToList()).ToDictionary(t => t.First(), t => t.Last());
-				int minBound = int.Parse(problemInfo["lowerBound"]);
-				int maxBound = int.Parse(problemInfo["upperBound"]);
+				int minBound = 0;
+				if (!int.TryParse(problemInfo["lowerBound"], out minBound))
+					minBound = 0;
+				int maxBound = int.MaxValue;
+				if (!int.TryParse(problemInfo["upperBound"], out maxBound))
+					maxBound = int.MaxValue;
 				Console.WriteLine(Path.GetFileNameWithoutExtension(item) + "\t" + minBound + "\t" + maxBound + "\t" + planLength);
 				var planFile = Path.Combine(plansFolder, Path.ChangeExtension(Path.GetFileName(item), "txt"));
-				if (!File.Exists(planFile) || planLength < File.ReadAllLines(planFile).Count())
+				if (!File.Exists(planFile) || planLength <= File.ReadAllLines(planFile).Count())
 					File.WriteAllLines(planFile, solver.getPDDLPlan());
 			}	
 		}
@@ -96,10 +100,10 @@ namespace PADD
 			var sasProblem = SASProblem.CreateFromFile(problemFile);
 			StatesEnumerator e = new RandomWalksFromGoalPathStateSpaceEnumerator(sasProblem, domainSpecificSolver);
 			DBCreator c = new DBCreator(e);
-			if (domainSpecificSolver is VisitAllSolver)
+			if (domainSpecificSolver is DomainDependentSolvers.VisitAll.VisitAllSolver)
 			{
 				var goalPath = ((RandomWalksFromGoalPathStateSpaceEnumerator)e).goalPath;
-				((VisitAllSolver)domainSpecificSolver).drawPlan(goalPath);
+				((DomainDependentSolvers.VisitAll.VisitAllSolver)domainSpecificSolver).drawPlan(goalPath);
 			}
 
 			c.createDB(problemFile, domainSpecificSolver, 100000, TimeSpan.FromHours(1));

@@ -126,13 +126,19 @@
     <Compile Include="DomainDependentSolvers\TSP\TSPInput.cs" />
     <Compile Include="DomainDependentSolvers\TSP\TSPSolution.cs" />
     <Compile Include="DomainDependentSolvers\TSP\TSPSolver.cs" />
-    <Compile Include="DomainDependentSolvers\VisitAllSolver.cs" />
-    <Compile Include="DomainDependentSolvers\VisitAllVisForm.cs">
+    <Compile Include="DomainDependentSolvers\VisitAll\VisitAllDomain.cs" />
+    <Compile Include="DomainDependentSolvers\VisitAll\VisitAllGoalDistanceCalculator.cs" />
+    <Compile Include="DomainDependentSolvers\VisitAll\VisitAllGreedySolver.cs" />
+    <Compile Include="DomainDependentSolvers\VisitAll\VisitAllNode.cs" />
+    <Compile Include="DomainDependentSolvers\VisitAll\VisitAllSolver.cs" />
+    <Compile Include="DomainDependentSolvers\VisitAll\VisitAllState.cs" />
+    <Compile Include="DomainDependentSolvers\VisitAll\VisitAllVisForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="DomainDependentSolvers\VisitAllVisForm.Designer.cs">
+    <Compile Include="DomainDependentSolvers\VisitAll\VisitAllVisForm.Designer.cs">
       <DependentUpon>VisitAllVisForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="DomainDependentSolvers\VisitAll\VisitAllVisualizer.cs" />
     <Compile Include="DomainDependentSolvers\Zenotravel\CycleDetection.cs" />
     <Compile Include="DomainDependentSolvers\Zenotravel\ZenoHillClimbingSolver.cs" />
     <Compile Include="DomainDependentSolvers\Zenotravel\ZenoLocalSearchSolver.cs" />
@@ -209,7 +215,7 @@
     <EmbeddedResource Include="DomainDependentSolvers\BlocksWorld\BlocksWorldVisualizer.resx">
       <DependentUpon>BlocksWorldVisualizer.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="DomainDependentSolvers\VisitAllVisForm.resx">
+    <EmbeddedResource Include="DomainDependentSolvers\VisitAll\VisitAllVisForm.resx">
       <DependentUpon>VisitAllVisForm.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
