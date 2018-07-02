@@ -13,7 +13,7 @@ namespace ProblemDownload
 		{
 			Downloader.download(112, @"C:\Users\Trunda_Otakar\Desktop\blocks");
 			//removeTextFromFiles(" - block", @"C:\Users\Trunda_Otakar\Desktop\blocks\");
-			Translator.translateDomain(@"C:\Users\Trunda_Otakar\Desktop\blocks\domain.pddl");
+			//Translator.translateDomain(@"C:\Users\Trunda_Otakar\Desktop\blocks\domain.pddl");
 
 			//Downloader.download(17, @"C:\Users\Trunda_Otakar\Desktop\zenotravel");
 

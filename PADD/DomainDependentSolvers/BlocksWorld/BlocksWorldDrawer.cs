@@ -37,7 +37,7 @@ namespace PADD.DomainDependentSolvers.BlocksWorld
 					Rectangle r = new Rectangle(i * blockSize * 2, j * blockSize, blockSize, blockSize);
 					g.FillRectangle(brush, r);
 					g.DrawRectangle(Pens.Black, r);
-					g.DrawString(b.ID + "\n(" + targetBlockBelow + ")", blockDescriptionFont, Brushes.Black, r);
+					g.DrawString(b.originalName + "(" + b.ID + ")" + "\n[" + targetBlockBelow + "]", blockDescriptionFont, Brushes.Black, r);
 				}
 			}
 			screen.Refresh();
@@ -47,7 +47,7 @@ namespace PADD.DomainDependentSolvers.BlocksWorld
 		protected List<Tower> createTowers(BlocksWorldProblem problem)
 		{
 			List<Tower> result = new List<Tower>();
-			foreach (var item in problem.blocksByIDs.Where(b => b.isOnTable()))
+			foreach (var item in problem.blocksByIDs.Values.Where(b => b.isOnTable()))
 			{
 				Tower t = new Tower(item);
 				var blockAbove = item.currentBlockAbove;

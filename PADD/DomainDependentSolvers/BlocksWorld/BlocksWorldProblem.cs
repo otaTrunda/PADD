@@ -8,12 +8,14 @@ namespace PADD.DomainDependentSolvers.BlocksWorld
 {
 	public class BlocksWorldProblem
 	{
-		public List<Block> blocksByIDs;
+		public Dictionary<int, Block> blocksByIDs;
 		Dictionary<string, Block> blocksBySASNames;
 		HashSet<Block> blocksOnTop;
 		HashSet<Block> notCorrectBlocks;
 		BlocksWorldVisualizer vis;
-		Block blockInHoist;
+		public Block blockInHoist;
+
+		public List<BlocksAction> actions;
 
 		protected void moveBlockToBlock(Block moveThis, Block putOnThis)
 		{
@@ -25,6 +27,7 @@ namespace PADD.DomainDependentSolvers.BlocksWorld
 				throw new Exception();
 			if (moveThis.isCorrect())
 				throw new Exception();
+			Block blockBelow = moveThis.currentBlockBelow;
 			if (moveThis.currentBlockBelow != null)
 			{
 				moveThis.currentBlockBelow.currentBlockAbove = null;
@@ -34,6 +37,8 @@ namespace PADD.DomainDependentSolvers.BlocksWorld
 			putOnThis.currentBlockAbove = moveThis;
 			blocksOnTop.Remove(putOnThis);
 			notCorrectBlocks.Remove(moveThis);
+
+			actions.Add(new BlocksAction(BlocksActionType.moveBlockToBlock, moveThis.ID, putOnThis.ID, blockBelow));
 		}
 
 		protected void moveBlockToTable(Block moveThis)
@@ -42,6 +47,7 @@ namespace PADD.DomainDependentSolvers.BlocksWorld
 				throw new ArgumentException();
 			if (moveThis.isCorrect() || (moveThis.isOnTable() && blockInHoist != moveThis))
 				throw new Exception();
+			Block blockBelow = moveThis.currentBlockBelow;
 			if (moveThis.currentBlockBelow != null)
 			{
 				moveThis.currentBlockBelow.currentBlockAbove = null;
@@ -50,12 +56,15 @@ namespace PADD.DomainDependentSolvers.BlocksWorld
 			moveThis.currentBlockBelow = null;
 			if (moveThis.isCorrect())
 				notCorrectBlocks.Remove(moveThis);
+
+			actions.Add(new BlocksAction(BlocksActionType.moveBlockToTable, moveThis.ID, -1, blockBelow));
 		}
 
 		public void init()
 		{
-			this.blocksOnTop = new HashSet<Block>(blocksByIDs.Where(b => b.isOnTop()));
-			this.notCorrectBlocks = new HashSet<Block>(blocksByIDs.Where(b => !b.isCorrect()));
+			this.blocksOnTop = new HashSet<Block>(blocksByIDs.Values.Where(b => b.isOnTop()));
+			this.notCorrectBlocks = new HashSet<Block>(blocksByIDs.Values.Where(b => !b.isCorrect()));
+			this.actions = new List<BlocksAction>();
 		}
 
 		public int simulate(bool drawStates = false)
@@ -110,7 +119,7 @@ namespace PADD.DomainDependentSolvers.BlocksWorld
 		public BlocksWorldProblem(SASProblem blockWorldInSAS)
 		{
 			SASState initialState = (SASState)blockWorldInSAS.GetInitialState();
-			blocksByIDs = new List<Block>();
+			blocksByIDs = new Dictionary<int, Block>();
 			blocksBySASNames = new Dictionary<string, Block>();
 			var stringSeparators = new string[] { " ", ",", "(", ")" };
 
@@ -122,8 +131,9 @@ namespace PADD.DomainDependentSolvers.BlocksWorld
 				int val = initialState.GetValue(item);
 				string blockName = blockWorldInSAS.variablesData.GetVariable(item).GetValueSymbolicMeaning(val).Split(stringSeparators, StringSplitOptions.RemoveEmptyEntries).Last();
 				Block b = new Block(null);
-				blocksByIDs.Add(b);
+				blocksByIDs.Add(b.ID, b);
 				blocksBySASNames.Add(blockName, b);
+				b.originalName = blockName;
 			}
 			var blocksPositionsVars = SASVars.Where(i => blockWorldInSAS.variablesData.GetVariable(i).valuesSymbolicMeaning.Any(m => m.Contains("on("))).ToList();
 
@@ -198,6 +208,7 @@ namespace PADD.DomainDependentSolvers.BlocksWorld
 		public Block currentBlockBelow;
 		public Block currentBlockAbove;
 		public Block targetBlockBelow;
+		public string originalName;
 
 		public bool isTargetSpecified => targetBlockBelow != null;
 
@@ -258,5 +269,26 @@ namespace PADD.DomainDependentSolvers.BlocksWorld
 				return ((Block)obj).ID == this.ID;
 			return false;
 		}
+	}
+
+	public class BlocksAction
+	{
+		public BlocksActionType type;
+		public int block1ID, block2ID;
+		public Block blockBelowTheFirst;
+
+		public BlocksAction(BlocksActionType type, int block1ID, int block2ID, Block blockBelowTheFirst)
+		{
+			this.type = type;
+			this.block1ID = block1ID;
+			this.block2ID = block2ID;
+			this.blockBelowTheFirst = blockBelowTheFirst;
+		}
+	}
+
+	public enum BlocksActionType
+	{
+		moveBlockToBlock,
+		moveBlockToTable
 	}
 }

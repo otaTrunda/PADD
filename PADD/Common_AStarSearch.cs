@@ -201,7 +201,7 @@ namespace PADD
 			Stopwatch loggingWatch = Stopwatch.StartNew();
 			TimeSpan loggingInterval = TimeSpan.FromMinutes(5);
 
-			bool printHeapContent = true;
+			bool printHeapContent = false;
 
             gValues = new Dictionary<IState, StateInformation>();
             searchStatus = SearchStatus.InProgress;

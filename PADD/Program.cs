@@ -30,7 +30,7 @@ namespace PADD
 			
 			//solveDomain(Path.Combine(SAS_all_WithoutAxioms, "zenotravel"), new DomainDependentSolvers.Zenotravel.ZenotravelSolver());
 			//solveDomain(Path.Combine(SAS_all_WithoutAxioms, "visitall"), new DomainDependentSolvers.VisitAll.VisitAllGreedySolver());
-			solveDomain(Path.Combine(SAS_all_WithoutAxioms, "blocks"), new DomainDependentSolvers.BlocksWorld.BlocksWorldSolver());
+			solveDomain(Path.Combine(SAS_all_WithoutAxioms, "blocks"), new DomainDependentSolvers.BlocksWorld.BlocksWorldSolver(), submitPlans: true);
 			return;
 			
 
@@ -69,7 +69,7 @@ namespace PADD
 			}
 		}
 
-		static void solveDomain(string domainFolder, DomainDependentSolver solver)
+		static void solveDomain(string domainFolder, DomainDependentSolver solver, bool submitPlans = false)
 		{
 			Console.WriteLine("problem\tminBound\tmaxBound\tplanLength");
 			var plansFolder = Path.Combine(domainFolder, "plans");
@@ -89,10 +89,23 @@ namespace PADD
 				int maxBound = int.MaxValue;
 				if (!int.TryParse(problemInfo["upperBound"], out maxBound))
 					maxBound = int.MaxValue;
+				int problemID = 0;
+				if (!int.TryParse(problemInfo["problemID"], out problemID))
+					problemID = -1;
 				Console.WriteLine(Path.GetFileNameWithoutExtension(item) + "\t" + minBound + "\t" + maxBound + "\t" + planLength);
 				var planFile = Path.Combine(plansFolder, Path.ChangeExtension(Path.GetFileName(item), "txt"));
 				if (!File.Exists(planFile) || planLength <= File.ReadAllLines(planFile).Count())
 					File.WriteAllLines(planFile, solver.getPDDLPlan());
+				if (submitPlans && planLength < maxBound)
+				{
+					var plan = File.ReadAllLines(planFile).ToList();
+					Console.WriteLine("Submiting plan...");
+					Console.WriteLine("response:");
+					Console.WriteLine("-------------");
+					var response = PlanSubmission.submitPlan(plan, problemID);
+					Console.WriteLine(response);
+					Console.WriteLine("-------------");
+				}
 			}	
 		}
 

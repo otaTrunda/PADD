@@ -32,10 +32,13 @@ namespace ProblemDownload
 			foreach (var item in parsedResponse.result)
 			{
 				c.DownloadFile(item.problem_url, Path.Combine(folderToDownloadTo, Path.HasExtension(item.problem) ? item.problem : item.problem + ".pddl"));
-				using (var writter = new StreamWriter(Path.Combine(infoDirectory, Path.ChangeExtension(item.problem, ".txt")), append: true))
+				using (var writter = new StreamWriter(Path.Combine(infoDirectory, Path.ChangeExtension(item.problem, ".txt")), append: false))
 				{
 					writter.WriteLine("lowerBound\t" + item.lower_bound);
 					writter.WriteLine("upperBound\t" + item.upper_bound);
+					writter.WriteLine("problemName\t" + item.problem);
+					writter.WriteLine("problemID\t" + item.problem_id);
+					writter.WriteLine("domainID\t" + item.domain_id);
 				}
 			}
 		}
