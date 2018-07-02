@@ -683,7 +683,34 @@ namespace PADD
 			}
 		}
 
-		protected void addPredicates(Graph g)
+		protected string getPredicateHeadID(IPDDLDesignator predicate)
+		{
+			return getPredicateHeadID(predicate.GetPrefixID());
+		}
+
+		protected string getPredicateHeadID(int predicateSymbolID)
+		{
+			var label = problem.GetIDManager().GetPredicatesMapping().GetStringForPredicateID(predicateSymbolID);
+			return label + "\n[predicate symbol]";
+		}
+
+		protected void addPredicateSymbols(Graph g)
+		{
+			var rigidRelations = problem.GetRigidRelations();
+			foreach (var item in problem.GetIDManager().GetPredicatesMapping().getAllPredicateSymbolsID())
+			{
+				string predicateName = problem.GetIDManager().GetPredicatesMapping().GetStringForPredicateID(item);
+				var paramsCount = problem.GetIDManager().GetPredicatesMapping().GetNumberOfParameters(predicateName);
+				if (rigidRelations.Any(r => r.GetPrefixID() == item))// &&	paramsCount <= 1)
+					continue;	//rigid unary predicates are treated as types. They are not needed here.
+
+				var label = getPredicateHeadID(item);
+				var node = g.AddNode(label);
+				formatAsPredicateSymbolNode(node);
+			}
+		}
+
+		protected void addInitialPredicates(Graph g)
 		{
 			PDDLStateDefault state = (PDDLStateDefault)problem.GetInitialState();
 			foreach (var item in state.GetPredicates())
@@ -692,7 +719,7 @@ namespace PADD
 				var constantIDs = Enumerable.Range(0, arity).Select(i => item.GetParam(i)).ToList();
 				var constantNames = constantIDs.Select(ID => problem.GetIDManager().GetConstantsMapping().GetStringForConstID(ID)).ToList();
 				var label = problem.GetIDManager().GetPredicatesMapping().GetStringForPredicateID(item.GetPrefixID()) + "(" +
-					string.Join(", ", constantNames) + ")\n[predicate]";
+					string.Join(", ", constantNames) + ")\n[initial predicate]";
 				var node = g.AddNode(label);
 				node.Attr.FillColor = Color.Green;
 
@@ -702,8 +729,42 @@ namespace PADD
 					var edge = g.AddEdge(constNodeLabel, label);
 				}
 
-
+				g.AddEdge(label, getPredicateHeadID(item));
 			}
+		}
+
+		protected void addGoalPredicates(Graph g)
+		{
+			foreach (var item in problem.GetGoalConditions().getAllPredicates())
+			{
+				var arity = item.GetParamCount();
+				var constantIDs = Enumerable.Range(0, arity).Select(i => item.GetParam(i)).ToList();
+				var constantNames = constantIDs.Select(ID => problem.GetIDManager().GetConstantsMapping().GetStringForConstID(ID)).ToList();
+				var label = problem.GetIDManager().GetPredicatesMapping().GetStringForPredicateID(item.GetPrefixID()) + "(" +
+					string.Join(", ", constantNames) + ")\n[goal predicate]";
+				var node = g.AddNode(label);
+				formatAsGoalPredicateNode(node);
+
+				foreach (var constID in constantIDs)
+				{
+					var constNodeLabel = getConstLabel(constID, problem.GetIDManager().GetConstantsMapping());
+					var edge = g.AddEdge(constNodeLabel, label);
+				}
+
+				g.AddEdge(label, getPredicateHeadID(item));
+			}
+		}
+
+		protected void formatAsGoalPredicateNode(Node n)
+		{
+			n.Attr.FillColor = Color.Gold;
+			//n.Attr.Shape = Shape.Diamond;
+		}
+
+		protected void formatAsPredicateSymbolNode(Node n)
+		{
+			n.Attr.FillColor = Color.Pink;
+			n.Attr.Shape = Shape.Diamond;
 		}
 
 		protected void formatAsTypeNode(Node n)
@@ -761,7 +822,9 @@ namespace PADD
 			bool useTyping = addTypes(g);
 			addConstants(g, useTyping);
 			addRigidRelations(g);
-			addPredicates(g);
+			addPredicateSymbols(g);
+			addInitialPredicates(g);
+			addGoalPredicates(g);
 			return g;
 		}
 	}

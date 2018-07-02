@@ -89,6 +89,11 @@ namespace PADD
     /// </summary>
     public class PDDLPredicatesMapping
     {
+		public IEnumerable<int> getAllPredicateSymbolsID()
+		{
+			return predicateIDToString.Keys;
+		}
+		
         /// <summary>
         /// Mapping of the original predicate name to corresponding ID and its parameters type IDs.
         /// </summary>

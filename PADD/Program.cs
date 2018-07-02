@@ -30,8 +30,8 @@ namespace PADD
 			
 			//solveDomain(Path.Combine(SAS_all_WithoutAxioms, "zenotravel"), new DomainDependentSolvers.Zenotravel.ZenotravelSolver());
 			//solveDomain(Path.Combine(SAS_all_WithoutAxioms, "visitall"), new DomainDependentSolvers.VisitAll.VisitAllGreedySolver());
-			solveDomain(Path.Combine(SAS_all_WithoutAxioms, "blocks"), new DomainDependentSolvers.BlocksWorld.BlocksWorldSolver(), submitPlans: true);
-			return;
+			//solveDomain(Path.Combine(SAS_all_WithoutAxioms, "blocks"), new DomainDependentSolvers.BlocksWorld.BlocksWorldSolver(), submitPlans: true);
+			//return;
 			
 
 			if (args.Length == 1 && args[0] == "combineResults")
@@ -53,6 +53,8 @@ namespace PADD
 				//visualizeKnowledgeGraphs(Path.Combine(SAS_all_WithoutAxioms, "blocks", "probBLOCKS-4-1.sas"));
 				//visualizeKnowledgeGraphs(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "pfile3.sas"));
 				visualizeKnowledgeGraphs(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "pddl", "pfile3.pddl"));
+				//visualizeKnowledgeGraphs(Path.Combine(SAS_all_WithoutAxioms, "blocks", "pddl", "probBLOCKS-7-1.pddl"));
+				//visualizeKnowledgeGraphs(Path.Combine(SAS_all_WithoutAxioms, "gripper", "pddl", "prob10.pddl"));
 			}
 
 			if (args.Length == 1 && args[0] == "createDB")

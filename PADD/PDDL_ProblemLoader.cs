@@ -291,7 +291,12 @@ namespace PADD
 
             fetchedBlock.rest = str.Substring(endIdx + 1).Trim();
 
-            return fetchedBlock;
+			
+			fetchedBlock.blockBody = fetchedBlock.blockBody?.ToLower();
+			fetchedBlock.blockHeader = fetchedBlock.blockHeader?.ToLower();
+			fetchedBlock.rest = fetchedBlock.rest?.ToLower();
+			
+			return fetchedBlock;
         }
 
         /// <summary>
@@ -429,7 +434,7 @@ namespace PADD
                 }
                 else // FileType.PROBLEM
                 {
-                    switch (currBlock.blockHeader)
+                    switch (currBlock.blockHeader.ToLower())
                     {
                         case "problem":
                             if (processedProblemSegments.Contains(ProblemSegments.ProblemName))

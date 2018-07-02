@@ -687,4 +687,41 @@ namespace PADD
             return refState.GetFunctionValue(func);
         }
     }
+
+	public class FindAllPredicatesVisitor : IExpressionPropCountVisitor
+	{
+		public List<IPDDLDesignator> foundPredicates;
+
+		public FindAllPredicatesVisitor()
+		{
+			foundPredicates = new List<IPDDLDesignator>();
+		}
+
+		Tuple<int, int> IExpressionPropCountVisitor.Visit(PredicateExpr expr)
+		{
+			foundPredicates.Add(expr.predicate);
+			return new Tuple<int, int>(0, 0);
+		}
+
+		Tuple<int, int> IExpressionPropCountVisitor.Visit(EqualsExpr expr)
+		{
+			return new Tuple<int, int>(0, 0);
+		}
+
+		Tuple<int, int> IExpressionPropCountVisitor.Visit(ExistsExpr expr)
+		{
+			return new Tuple<int, int>(0, 0);
+		}
+
+		Tuple<int, int> IExpressionPropCountVisitor.Visit(ForallExpr expr)
+		{
+			return new Tuple<int, int>(0, 0);
+		}
+
+		Tuple<int, int> IExpressionPropCountVisitor.Visit(RelationalOperatorExpr expr)
+		{
+			return new Tuple<int, int>(0, 0);
+		}
+	}
+
 }

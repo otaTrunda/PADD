@@ -35,7 +35,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 
 		public void showTravelGraph(ZenoTravelProblem problem, List<Person> onlyThesePersons = null)
 		{
-			singleSolver.showTravelGraph((onlyThesePersons == null ? problem.personsByIDs.Values.ToList() : onlyThesePersons), problem.planesByIDs.Values.First());
+			singleSolver.showDeliveryGraph((onlyThesePersons == null ? problem.personsByIDs.Values.ToList() : onlyThesePersons), problem.planesByIDs.Values.First());
 		}
 
 		/// <summary>
@@ -393,7 +393,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 			return g;
 		}
 
-		public void showTravelGraph(List<Person> persons, Plane plane)
+		public void showDeliveryGraph(List<Person> persons, Plane plane)
 		{
 			Form f = new Form();
 			var graphDrawer = new Microsoft.Msagl.GraphViewerGdi.GViewer();

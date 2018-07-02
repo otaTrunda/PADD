@@ -25,6 +25,16 @@ namespace PADD
         Tuple<int, int> Accept(IExpressionPropCountVisitor visitor);
     }
 
+	public static class IPDDLLogicalExpressionExtensions
+	{
+		public static List<IPDDLDesignator> getAllPredicates(this IPDDLLogicalExpression source)
+		{
+			FindAllPredicatesVisitor v = new FindAllPredicatesVisitor();
+			source.Accept(v);
+			return v.foundPredicates;
+		}
+	}
+
     /// <summary>
     /// Logical expression - OR.
     /// </summary>
