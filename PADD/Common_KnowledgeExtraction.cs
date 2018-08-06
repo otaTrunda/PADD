@@ -129,8 +129,15 @@ namespace PADD
             }
             result.computeRSE_Invertibility();
             return result;
-        }    
-    }
+        }
+
+		public static PredicateConstantGraph computeObjectGraph(SASProblem p)
+		{
+			var pddlProblemPath = Utils.FileSystemUtils.getPDDLProblemPath(p.GetInputFilePath());
+			PDDLProblem pp = PDDLProblem.CreateFromFile(pddlProblemPath.domainFile, pddlProblemPath.problemFile);
+			return new PredicateConstantGraph(pp);
+		}
+	}
 
     public class KnowledgeHolder
     {

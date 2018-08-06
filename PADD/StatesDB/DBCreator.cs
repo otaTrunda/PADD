@@ -27,7 +27,7 @@ namespace PADD.StatesDB
 			return DBFileName;
 		}
 
-		public void createDB(string problemFile, DomainDependentSolver domainSpecificSolver, long numberOfSamples, TimeSpan maxTime)
+		public Trie<int> createDB(string problemFile, DomainDependentSolver domainSpecificSolver, long numberOfSamples, TimeSpan maxTime, bool storeDB = true)
 		{
 			System.Diagnostics.Stopwatch watch = System.Diagnostics.Stopwatch.StartNew();
 			DB = new Trie<int>();
@@ -46,7 +46,9 @@ namespace PADD.StatesDB
 				var stateString = state.ToString();
 				DB.add(stateString.Substring(0, stateString.Length - 2), goalDistance);	//skipes two last two characters of the string. They are always the same.
 			}
-			DB.store(getDBFilePath(problemFile));
+			if (storeDB)
+				DB.store(getDBFilePath(problemFile));
+			return DB;
 		}
 
 		public DBCreator(StatesEnumerator enumerator)
@@ -152,6 +154,7 @@ namespace PADD.StatesDB
 		{
 			var problem = solver.sasProblem;
 			problem.SetInitialState(state);
+			solver.SetProblem(problem);
 			return solver.Search(quiet: true);
 		}
 

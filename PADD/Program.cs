@@ -62,7 +62,9 @@ namespace PADD
 				//createStatesDB(Path.Combine(SAS_all_WithoutAxioms, "gripper", "prob10.sas"), new GripperSolver());
 				//createStatesDB(Path.Combine(SAS_all_WithoutAxioms, "visitall", "problem16.sas"), new VisitAllSolver());
 				//createStatesDB(Path.Combine(SAS_all_WithoutAxioms, "blocks", "probBLOCKS-7-1.sas"), new DomainDependentSolvers.BlocksWorld.BlocksWorldSolver());
-				createStatesDB(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "pfile3.sas"), new DomainDependentSolvers.Zenotravel.ZenotravelSolver());
+				//createStatesDB(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "pfile3.sas"), new DomainDependentSolvers.Zenotravel.ZenotravelSolver());
+
+				createStatesDBForDomain(Path.Combine(SAS_all_WithoutAxioms, "zenotravel"), Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "trainingSamples"), new DomainDependentSolvers.Zenotravel.ZenotravelSolver(), 100);
 			}
 
 			if (args.Length == 3 && args[0] == "createHistograms_Results")
@@ -130,6 +132,52 @@ namespace PADD
 			states = t.getAllElements().ToList();
 
 			var realStates = states.Select(s => (SASState.parse(s.key, sasProblem), s.value)).ToList();
+		}
+
+		static void createStatesDBForDomain(string domainFolder, string outputFolder, DomainDependentSolver solver, long totalSamples, bool storeObjectGraphs = true)
+		{
+			var problemFiles = Utils.FileSystemUtils.enumerateProblemFiles(domainFolder).ToList();
+			long samplesPerFile = totalSamples / problemFiles.Count;
+
+			Utils.FileSystemUtils.createDirIfNonExisting(outputFolder);
+
+			using (var writter = new StreamWriter(Path.Combine(outputFolder, "samples.tsv")))
+			{
+				long currentID = 1;
+				writter.WriteLine("_ID\ttarget\tstate\tdomain\tproblem");   //writing header
+
+				foreach (var item in problemFiles)
+				{
+					var sasProblem = SASProblem.CreateFromFile(item);
+					var initialState = sasProblem.GetInitialState();
+					StatesEnumerator e = new RandomWalksFromGoalPathStateSpaceEnumerator(sasProblem, solver);
+					DBCreator c = new DBCreator(e);
+					var DB = c.createDB(item, solver, samplesPerFile, TimeSpan.FromHours(1));
+					foreach (var sample in DB.getAllElements())
+					{
+						writter.Write(currentID + "\t");
+						writter.Write(sample.value + "\t");
+						writter.Write(sample.key + "\t");
+						writter.Write(Path.GetDirectoryName(domainFolder) + "\t");
+						writter.Write(Path.GetFileName(item));
+						if (storeObjectGraphs)
+						{
+							SASState s = SASState.parse(sample.key, sasProblem);
+							sasProblem.SetInitialState(s);
+							var graph = KnowledgeExtraction.computeObjectGraph(sasProblem).toMSAGLGraph();
+							string graphPath = Path.Combine(outputFolder, "graphs", currentID.ToString() + ".bin");
+							Utils.FileSystemUtils.createDirIfNonExisting(Path.Combine(outputFolder, "graphs"));
+							using (var stream = new FileStream(graphPath, FileMode.Create))
+							{
+								graph.WriteToStream(stream);
+							}
+							sasProblem.SetInitialState(initialState);
+						}
+						currentID++;
+					}
+				}
+			}
+
 		}
 
 		static void visualizeKnowledgeGraphs(string problemFile)
