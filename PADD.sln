@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProblemDownload", "ProblemD
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "API_tool", "API_tool\API_tool.csproj", "{C7D9AC83-A8A0-4D74-BC91-D3185E7CEC8A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Utils", "Utils\Utils.csproj", "{EF4AA8F1-02E6-479C-82AA-8A9EDC52ABE7}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		..\..\GIT_REPOS\brightwire\BrightWire.CUDA.Source\BrightWire.CUDA.Source.projitems*{50bcb2ab-e8ca-4974-b136-49a98d5e34cb}*SharedItemsImports = 4
@@ -88,6 +90,18 @@ Global
 		{C7D9AC83-A8A0-4D74-BC91-D3185E7CEC8A}.Release|x64.Build.0 = Release|Any CPU
 		{C7D9AC83-A8A0-4D74-BC91-D3185E7CEC8A}.Release|x86.ActiveCfg = Release|Any CPU
 		{C7D9AC83-A8A0-4D74-BC91-D3185E7CEC8A}.Release|x86.Build.0 = Release|Any CPU
+		{EF4AA8F1-02E6-479C-82AA-8A9EDC52ABE7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EF4AA8F1-02E6-479C-82AA-8A9EDC52ABE7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EF4AA8F1-02E6-479C-82AA-8A9EDC52ABE7}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{EF4AA8F1-02E6-479C-82AA-8A9EDC52ABE7}.Debug|x64.Build.0 = Debug|Any CPU
+		{EF4AA8F1-02E6-479C-82AA-8A9EDC52ABE7}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{EF4AA8F1-02E6-479C-82AA-8A9EDC52ABE7}.Debug|x86.Build.0 = Debug|Any CPU
+		{EF4AA8F1-02E6-479C-82AA-8A9EDC52ABE7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EF4AA8F1-02E6-479C-82AA-8A9EDC52ABE7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EF4AA8F1-02E6-479C-82AA-8A9EDC52ABE7}.Release|x64.ActiveCfg = Release|Any CPU
+		{EF4AA8F1-02E6-479C-82AA-8A9EDC52ABE7}.Release|x64.Build.0 = Release|Any CPU
+		{EF4AA8F1-02E6-479C-82AA-8A9EDC52ABE7}.Release|x86.ActiveCfg = Release|Any CPU
+		{EF4AA8F1-02E6-479C-82AA-8A9EDC52ABE7}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

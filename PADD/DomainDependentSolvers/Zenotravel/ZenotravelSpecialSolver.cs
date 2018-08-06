@@ -447,6 +447,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 				}
 			} while (newLeaves.Count > 0);
 
+			startLeaves.Add(isolated);	//isolated vertices also need to be visited
 
 			List<HashSet<int>> endLeaves = new List<HashSet<int>>();
 			HashSet<int> allEndLeaves = new HashSet<int>();
