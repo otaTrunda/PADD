@@ -133,11 +133,58 @@ namespace PADD
 
 		public static PredicateConstantGraph computeObjectGraph(SASProblem p)
 		{
-			var pddlProblemPath = Utils.FileSystemUtils.getPDDLProblemPath(p.GetInputFilePath());
-			PDDLProblem pp = PDDLProblem.CreateFromFile(pddlProblemPath.domainFile, pddlProblemPath.problemFile);
+			//var pddlProblemPath = Utils.FileSystemUtils.getPDDLProblemPath(p.GetInputFilePath());
+			//var pp = PDDLProblem.CreateFromFile(pddlProblemPath.domainFile, pddlProblemPath.problemFile);
+
+			var t = translateSASProblemToPDDL(p);
+			var pp = t;
 			return new PredicateConstantGraph(pp);
 		}
+
+		/// <summary>
+		/// Gets SaSproblem and produces a PDDLProblem description that
+		/// is equivalent to current SASState. It returns content of a PDDL problem file (that when parsed would have the same initial state as the SaSProblem.
+		/// </summary>
+		/// <param name="p"></param>
+		/// <param name="s"></param>
+		/// <returns></returns>
+		public static PDDLProblem translateSASProblemToPDDL(SASProblem s)
+		{
+			var pddlProblemPath = Utils.FileSystemUtils.getPDDLProblemPath(s.GetInputFilePath());
+			string originalText = System.IO.File.ReadAllText(pddlProblemPath.problemFile);
+
+			string PDDLStateInitRegion = originalText.Split(new string[] { "(:init" }, StringSplitOptions.RemoveEmptyEntries).Skip(1).First().
+				Split(new string[] { "(:" }, StringSplitOptions.RemoveEmptyEntries).First();
+			List<string> predicates = PDDLStateInitRegion.Split('(').Select(r => r.Replace(")", "").Trim()).Where(q => !string.IsNullOrWhiteSpace(q)).ToList();
+			predicates = predicates.Select(q => { int firstSpace = q.IndexOf(" "); return q.Remove(firstSpace, 1).Insert(firstSpace, "("); }).Select(q => q.Replace(" ", ", ") + ")").ToList();
+
+			List<string> newPredicates = new List<string>();
+			var initialState = (SASState)s.GetInitialState();
+			for (int i = 0; i < initialState.GetAllValues().Length; i++)
+			{
+				List<string> corresponding = predicates.Where(q => s.GetVariablesData()[i].valuesSymbolicMeaning.Contains("Atom " + q)).ToList();
+				predicates.RemoveAll(p => corresponding.Contains(p));
+				newPredicates.Add(s.GetVariablesData()[i].valuesSymbolicMeaning[initialState.GetAllValues()[i]]);
+			}
+			predicates.AddRange(newPredicates);
+			predicates = predicates.Select(p => p.Replace("Atom ", "").Replace("(", " ").Replace(",", "").Replace(")", "").Trim()).ToList();
+			string tempFileName = System.IO.Path.GetTempFileName();
+
+			string text = originalText.Split(new string[] { "(:init" }, StringSplitOptions.RemoveEmptyEntries).First() + "(:init\n";
+			text += string.Join("\n", predicates.Select(q => "\t(" + q + ")"));
+			text += "\n)\n(:";
+			text += string.Join("(:", originalText.Split(new string[] { "(:init" }, StringSplitOptions.RemoveEmptyEntries).Skip(1).First().Split(new string[] { "(:" }, StringSplitOptions.RemoveEmptyEntries).Skip(1));
+
+			System.IO.File.WriteAllText(tempFileName, text);
+
+			PDDLProblem result = PDDLProblem.CreateFromFile(pddlProblemPath.domainFile, tempFileName);
+			System.IO.File.Delete(tempFileName);
+			return result;
+		}
+
 	}
+
+
 
     public class KnowledgeHolder
     {

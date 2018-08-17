@@ -18,6 +18,7 @@ namespace PADD
             DateTime start = DateTime.Now;
 
             int length = 0;
+			double previousBest = -1;
             currentState = problem.GetInitialState();
             while (!problem.IsGoalState(currentState))
             {
@@ -30,21 +31,21 @@ namespace PADD
                 double bestVal = double.MaxValue;
                 IOperator bestOp = null;
 
-                foreach (var succ in successors)
-                {
+				foreach (var succ in successors)
+				{
 					IOperator op = succ.GetOperator();
-                    double val = op.GetCost() + heuristic.getValue(succ.GetSuccessorState());
-                    if (val < bestVal)
-                    {
-                        bestVal = val;
-                        bestOperators.Clear();
-                        bestOperators.Add(op.GetOrderIndex());
-                    }
-                    else if(val == bestVal)
-                        bestOperators.Add(op.GetOrderIndex());
-                }
+					double val = op.GetCost() + heuristic.getValue(succ.GetSuccessorState());
+					if (val < bestVal)
+					{
+						bestVal = val;
+						bestOperators.Clear();
+						bestOperators.Add(op.GetOrderIndex());
+					}
+					else if (val == bestVal)
+						bestOperators.Add(op.GetOrderIndex());
+				}
                 bestOp = ((SASProblem)problem).GetOperators()[bestOperators[Program.r.Next(bestOperators.Count)]];
-				Console.WriteLine(bestVal);
+				Console.WriteLine("bestVal: " + bestVal);
                 solution.AppendOperator(bestOp);
                 currentState = bestOp.Apply(currentState);// successors[bestOp];
                 length += bestOp.GetCost();

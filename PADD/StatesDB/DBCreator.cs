@@ -27,6 +27,26 @@ namespace PADD.StatesDB
 			return DBFileName;
 		}
 
+		public IEnumerable<(string key, int val)> createSamples(string problemFile, DomainDependentSolver domainSpecificSolver, long numberOfSamples, TimeSpan maxTime, bool storeDB = true)
+		{
+			System.Diagnostics.Stopwatch watch = System.Diagnostics.Stopwatch.StartNew();
+			int samples = 0;
+			enumerator.problem = SASProblem.CreateFromFile(problemFile);
+			var states = enumerator.enumerateStates();
+			var problem = SASProblem.CreateFromFile(problemFile);
+			foreach (var state in states)
+			{
+				samples++;
+				if (samples > numberOfSamples || watch.Elapsed > maxTime)
+					break;
+				problem.SetInitialState(state);
+				domainSpecificSolver.SetProblem(problem);
+				int goalDistance = (int)Math.Floor(domainSpecificSolver.Search(quiet: true));
+				var stateString = state.ToString();
+				yield return (stateString.Substring(0, stateString.Length - 2), goalDistance); //skipes two last two characters of the string. They are always the same.
+			}
+		}
+
 		public Trie<int> createDB(string problemFile, DomainDependentSolver domainSpecificSolver, long numberOfSamples, TimeSpan maxTime, bool storeDB = true)
 		{
 			System.Diagnostics.Stopwatch watch = System.Diagnostics.Stopwatch.StartNew();
@@ -101,12 +121,14 @@ namespace PADD.StatesDB
 		public List<SASState> goalPath;
 
 		HeuristicSearchEngine goalPathFinder;
+		DomainDependentSolver domainSolver;
 
 		public RandomWalksFromGoalPathStateSpaceEnumerator(SASProblem problem, DomainDependentSolver domainDependentSolver) 
 			: base(problem)
 		{
 			domainDependentSolver.SetProblem(problem);
 			this.goalPathFinder = new HillClimbingSearch(problem, new HeuristicWrapper(domainDependentSolver));
+			domainSolver = domainDependentSolver;
 			goalPath = findGoalPath();
 			StateSpaceEnumeratos = goalPath.Select(s =>
 			{
@@ -119,6 +141,16 @@ namespace PADD.StatesDB
 
 		List<SASState> findGoalPath()
 		{
+			if (domainSolver.canFindPlans)
+			{
+				domainSolver.Search();
+				var plan = domainSolver.getPDDLPlan();
+
+				var sasPlan = plan.Select(s => s.Replace("(", "").Replace(")", "")).Select(s => (IOperator)problem.GetOperators().Where(op => op.GetName() == s).Single()).ToList();
+				SolutionPlan p = new SolutionPlan(sasPlan);
+				return p.getSequenceOfStates(problem.GetInitialState()).Select(state => (SASState)state).ToList();
+			}
+
 			var initialState = goalPathFinder.problem.GetInitialState();
 			goalPathFinder.Search(quiet: true);
 			return goalPathFinder.GetSolution().getSequenceOfStates(initialState).Select(state => (SASState)state).ToList();

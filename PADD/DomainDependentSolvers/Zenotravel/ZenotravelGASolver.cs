@@ -29,7 +29,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 			hillClimber.setProblem(problem);
 		}
 
-		public ZenotravelGASolver(Random r, int populationSize = 50, int maxGenerationsWithoutImprovement = 20) : base(r)
+		public ZenotravelGASolver(Random r, int populationSize = 100, int maxGenerationsWithoutImprovement = 20) : base(r)
 		{
 			this.populationSize = populationSize;
 			this.maxGenerationsWithoutImprovement = maxGenerationsWithoutImprovement;

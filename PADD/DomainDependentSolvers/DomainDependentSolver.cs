@@ -12,6 +12,8 @@ namespace PADD.DomainDependentSolvers
 		public SASProblem sasProblem;
 		public List<SASVariable> allVariables;
 
+		public bool canFindPlans { get; protected set; }
+
 		public abstract double Search(bool quiet = false);
 
 		/// <summary>
@@ -37,5 +39,10 @@ namespace PADD.DomainDependentSolvers
 			return allVariables[variable].valuesSymbolicMeaning[state.GetValue(variable)];
 		}
 
+
+		public DomainDependentSolver()
+		{
+			this.canFindPlans = true;
+		}
 	}
 }

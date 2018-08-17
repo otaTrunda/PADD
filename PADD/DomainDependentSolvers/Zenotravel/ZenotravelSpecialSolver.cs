@@ -80,7 +80,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 			{
 				var persons = item.Value.Select(id => problem.personsByIDs[id]).ToList();
 				var result = singleSolver.solveSingle(problem, problem.planesByIDs[item.Key], persons);
-				if (returnPlan)
+				//if (returnPlan)
 				{
 					resultingPlans.Add(item.Key, (result.plan, persons));
 					//Console.WriteLine(string.Join(" ", result.plan) + ",\t" + result.length);
@@ -113,6 +113,14 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 				if (item.fuelReserve == 0)
 					actionsMovingUnusedPlanesToTheirDestinations++;
 			}
+
+			int currentLength = length + actionsMovingUnusedPlanesToTheirDestinations;
+			int pddlLength = translateToPDDLPlan(resultingPlans, problem.planesByIDs.Values.Where(p => !assignmentAsDictionary.ContainsKey(p.ID)).ToList()).Count;
+			if (currentLength != pddlLength)
+			{
+				Console.WriteLine("error");
+			}
+
 
 			if (returnPlan)
 			{
@@ -156,21 +164,22 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 			{
 				if (!result.ContainsKey(assignment[i]))
 					result.Add(assignment[i], new HashSet<int>());
-				result[assignment[i]].Add(problem.allPersonsIDs[i]);
+				result[assignment[i]].Add(problem.nonBordedPersonsIDs[i]);
 			}
+			foreach (var item in problem.bordedPersonsIDs)
+			{
+				int planeID = problem.personsByIDs[item].location;
+				if (!result.ContainsKey(planeID))
+					result.Add(planeID, new HashSet<int>());
+				result[planeID].Add(item);
+			}
+
 			return result;
 		}
 
 		protected Dictionary<int, HashSet<int>> translateAssignment<T>(List<T> assignment, Func<T, int> selector, ZenoTravelProblem problem)
 		{
-			Dictionary<int, HashSet<int>> result = new Dictionary<int, HashSet<int>>();
-			for (int i = 0; i < assignment.Count; i++)
-			{
-				if (!result.ContainsKey(selector(assignment[i])))
-					result.Add(selector(assignment[i]), new HashSet<int>());
-				result[selector(assignment[i])].Add(problem.allPersonsIDs[i]);
-			}
-			return result;
+			return translateAssignment(assignment.Select(r => selector(r)).ToArray(), problem);
 		}
 
 
@@ -259,7 +268,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 		{
 			List<string> result = new List<string>();
 
-			HashSet<int> hasBoarded = new HashSet<int>();
+			HashSet<int> hasBoarded = persons.Where(p => p.isBoarded).Select(p => p.ID).ToHashSet();
 			HashSet<int> hasExited = new HashSet<int>();
 			int planeLoc = plane.location;
 			int planeFuel = plane.fuelReserve;
@@ -447,15 +456,15 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 				}
 			} while (newLeaves.Count > 0);
 
-			startLeaves.Add(isolated);	//isolated vertices also need to be visited
-
-			List<HashSet<int>> endLeaves = new List<HashSet<int>>();
+						List<HashSet<int>> endLeaves = new List<HashSet<int>>();
 			HashSet<int> allEndLeaves = new HashSet<int>();
 			ignoredNodes = allStartLeaves;
 			foreach (var item in visitedNodes)
 				ignoredNodes.Remove(item);
 			ignoredNodes.AddRange(isolated);
-			
+
+			endLeaves.Add(isolated);  //isolated vertices also need to be visited
+
 			do
 			{
 				newLeaves = findLeaves(allEndLeaves, isForStartingLeaves: false, ignoredNodes);
@@ -465,6 +474,8 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 					allEndLeaves.AddRange(newLeaves);
 				}
 			} while (newLeaves.Count > 0);
+
+			
 
 			return (startLeaves, endLeaves);
 		}
@@ -676,7 +687,8 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 		{
 			List<HashSet<int>> result = new List<HashSet<int>>();
 			var departureLoc = new HashSet<int>();
-			departureLoc.Add(persons.Single().location);
+			if (!persons.Single().isBoarded)
+				departureLoc.Add(persons.Single().location);
 
 			var arivalLoc = new HashSet<int>();
 			arivalLoc.Add(persons.Single().destination);
@@ -701,7 +713,8 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 			foreach (var item in easyPersons)
 			{
 				var departureLoc = new HashSet<int>();
-				departureLoc.Add(item.location);
+				if (!item.isBoarded)
+					departureLoc.Add(item.location);
 				result.Add(departureLoc);
 			}
 			return result;

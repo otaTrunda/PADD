@@ -10,7 +10,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 	{
 		protected int genomeLength,
 			geneMinVal,	//inclusive
-			geneMaxVal; //exclusive
+			geneMaxVal; //inclusive
 
 		protected Random r;
 
@@ -112,8 +112,9 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 		protected int[] greedyPostprocess(int[] item)
 		{
 			//persons whose destination is the same as target destination of some plane are assigned to that plane
-			foreach (var person in problem.personsByIDs.Values)
+			foreach (var ID in problem.nonBordedPersonsIDs)
 			{
+				var person = problem.personsByIDs[ID];
 				if (problem.planesByTheirTargetDestination.ContainsKey(person.destination))
 				{
 					var suitablePlanes = problem.planesByTheirTargetDestination[person.destination];
@@ -124,8 +125,9 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 			}
 
 			//persons whose original location is the same as location of some plane are assigned to that plane
-			foreach (var person in problem.personsByIDs.Values)
+			foreach (var ID in problem.nonBordedPersonsIDs)
 			{
+				var person = problem.personsByIDs[ID];
 				if (problem.planesByTheirOriginalLocation.ContainsKey(person.location))
 				{
 					var suitablePlanes = problem.planesByTheirOriginalLocation[person.location];
@@ -139,20 +141,26 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 
 		protected int getPersonsIndexInSolution(int personID)
 		{
-			return problem.allPersonsIDs.IndexOf(personID);
+			if (problem.personsByIDs[personID].isBoarded)
+				throw new ArgumentException();
+			return problem.nonBordedPersonsIDs.IndexOf(personID);
 		}
 
 		public override int solve(ZenoTravelProblem problem)
 		{
-			this.genomeLength = problem.personsByIDs.Keys.Count;
+			this.genomeLength = problem.nonBordedPersonsIDs.Count;
 			this.geneMinVal = problem.planesByIDs.Keys.Min();
 			this.geneMaxVal = problem.planesByIDs.Keys.Max();
 			this.problem = problem;
 
 			var result = new int[0];
-			if (problem.personsByIDs.Count > 0)
+			if (problem.nonBordedPersonsIDs.Count > 0)
 				result = doLocalSearch();
+
 			var value = eval(result, returnPlan: true);
+
+			//var value1 = eval(new int[] { 2, 2, 2 } , returnPlan: true);
+
 			this.PDDL_plan = value.Item2;
 			return value.Item1;
 		}

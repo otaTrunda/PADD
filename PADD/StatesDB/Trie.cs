@@ -10,7 +10,7 @@ namespace PADD.StatesDB
 	/// A trie that allows to search by characters.
 	/// </summary>
 	public class Trie<LeafElement>
-		where LeafElement : IEquatable<LeafElement>
+		where LeafElement : IEquatable<LeafElement>, IComparable<LeafElement>
 	{
 		private TrieNode root;
 
@@ -30,9 +30,16 @@ namespace PADD.StatesDB
 			public void setElement(LeafElement element)
 			{
 				if (this.hasElement && !this.element.Equals(element))
-					throw new Exception();
+				{
+					LeafElement min = this.element.CompareTo(element) < 0 ? this.element : element;
+					//throw new Exception();
+					this.element = min;
+				}
+				else
+				{
+					this.element = element;
+				}
 				this.hasElement = true;
-				this.element = element;
 			}
 
 			public void addSuccessor(char key)

@@ -11,6 +11,11 @@ namespace PADD
     /// </summary>
     public class SASState : IState
     {
+		public string toStringWithMeanings()
+		{
+			return string.Join(", ", Enumerable.Range(0, this.stateValues.Length).Select(i => parentProblem.variablesData[i].valuesSymbolicMeaning[stateValues[i]]));
+		}
+
         /// <summary>
         /// Reference to the parent SAS+ planning problem.
         /// </summary>

@@ -14,6 +14,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 		public List<int> allPersonsIDs;
 		public Dictionary<int, List<int>> planesByTheirTargetDestination;
 		public Dictionary<int, List<int>> planesByTheirOriginalLocation;
+		public List<int> nonBordedPersonsIDs, bordedPersonsIDs;
 
 		private static string[] delimiters = new string[] { "(", ",", " ", ")", "Atom" };
 		private static Func<string, List<string>> splitSAS = new Func<string, List<string>>(f => f.Split(delimiters, StringSplitOptions.RemoveEmptyEntries).ToList());
@@ -117,12 +118,13 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 		/// </summary>
 		private void preprocess()
 		{
-			var toRemove = personsByIDs.Keys.Where(k => personsByIDs[k].location == personsByIDs[k].destination || personsByIDs[k].destination == -1).ToList();
+	
+			var toRemove = personsByIDs.Keys.Where(k => (!personsByIDs[k].isBoarded && personsByIDs[k].location == personsByIDs[k].destination) || personsByIDs[k].destination == -1).ToList();
 			foreach (var item in toRemove)
 				personsByIDs.Remove(item);
 			
 			toRemove.Clear();
-			var groups = personsByIDs.Values.GroupBy(person => (person.location, person.destination)).Where(group => group.Count() > 1).Select(g => g.ToList());
+			var groups = personsByIDs.Values.GroupBy(person => (person.location, person.destination, person.isBoarded)).Where(group => group.Count() > 1).Select(g => g.ToList());
 			foreach (var item in groups)
 			{
 				Person representatve = item.First();
@@ -137,6 +139,8 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 				personsByIDs.Remove(item);
 
 			allPersonsIDs = personsByIDs.Keys.OrderBy(k => k).ToList();
+			nonBordedPersonsIDs = allPersonsIDs.Where(r => !personsByIDs[r].isBoarded).ToList();
+			bordedPersonsIDs = allPersonsIDs.Where(r => personsByIDs[r].isBoarded).ToList();
 
 			planesByTheirTargetDestination = planesByIDs.Values.Where(p => p.isDestinationSet).Select(p => (p.destination, p.ID))
 				.GroupBy(p => p.destination).ToDictionary(p => p.Key, p => p.Select(r => r.ID).ToList());

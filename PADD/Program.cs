@@ -27,12 +27,14 @@ namespace PADD
 		[STAThread]
 		static void Main(string[] args)
 		{
-			
+			//visualizeKnowledgeGraphs(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "pddl", "pfile1.pddl"));
+
+			//testZenoSolver();
 			//solveDomain(Path.Combine(SAS_all_WithoutAxioms, "zenotravel"), new DomainDependentSolvers.Zenotravel.ZenotravelSolver());
 			//solveDomain(Path.Combine(SAS_all_WithoutAxioms, "visitall"), new DomainDependentSolvers.VisitAll.VisitAllGreedySolver());
 			//solveDomain(Path.Combine(SAS_all_WithoutAxioms, "blocks"), new DomainDependentSolvers.BlocksWorld.BlocksWorldSolver(), submitPlans: true);
 			//return;
-			
+
 
 			if (args.Length == 1 && args[0] == "combineResults")
 			{
@@ -52,7 +54,7 @@ namespace PADD
 				//visualizeKnowledgeGraphs(Path.Combine(SAS_all_WithoutAxioms, "visitall", "problem12.sas"));
 				//visualizeKnowledgeGraphs(Path.Combine(SAS_all_WithoutAxioms, "blocks", "probBLOCKS-4-1.sas"));
 				//visualizeKnowledgeGraphs(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "pfile3.sas"));
-				visualizeKnowledgeGraphs(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "pddl", "pfile3.pddl"));
+				visualizeKnowledgeGraphs(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "pddl", "pfile1.pddl"));
 				//visualizeKnowledgeGraphs(Path.Combine(SAS_all_WithoutAxioms, "blocks", "pddl", "probBLOCKS-7-1.pddl"));
 				//visualizeKnowledgeGraphs(Path.Combine(SAS_all_WithoutAxioms, "gripper", "pddl", "prob10.pddl"));
 			}
@@ -64,7 +66,8 @@ namespace PADD
 				//createStatesDB(Path.Combine(SAS_all_WithoutAxioms, "blocks", "probBLOCKS-7-1.sas"), new DomainDependentSolvers.BlocksWorld.BlocksWorldSolver());
 				//createStatesDB(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "pfile3.sas"), new DomainDependentSolvers.Zenotravel.ZenotravelSolver());
 
-				createStatesDBForDomain(Path.Combine(SAS_all_WithoutAxioms, "zenotravel"), Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "trainingSamples"), new DomainDependentSolvers.Zenotravel.ZenotravelSolver(), 100);
+				//createStatesDBForDomain(Path.Combine(SAS_all_WithoutAxioms, "zenotravel"), Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "trainingSamples"), new DomainDependentSolvers.Zenotravel.ZenotravelSolver(), 10000);
+				createStatesDBForDomain(Path.Combine(SAS_all_WithoutAxioms, "zenotravel"), "B:\\trainingSamplesLarge", new DomainDependentSolvers.Zenotravel.ZenotravelSolver(), 1000000);
 			}
 
 			if (args.Length == 3 && args[0] == "createHistograms_Results")
@@ -94,7 +97,7 @@ namespace PADD
 				if (!int.TryParse(problemInfo["upperBound"], out maxBound))
 					maxBound = int.MaxValue;
 				int problemID = 0;
-				if (!int.TryParse(problemInfo["problemID"], out problemID))
+				if (!problemInfo.ContainsKey("problemID") || !int.TryParse(problemInfo["problemID"], out problemID))
 					problemID = -1;
 				Console.WriteLine(Path.GetFileNameWithoutExtension(item) + "\t" + minBound + "\t" + maxBound + "\t" + planLength);
 				var planFile = Path.Combine(plansFolder, Path.ChangeExtension(Path.GetFileName(item), "txt"));
@@ -111,6 +114,21 @@ namespace PADD
 					Console.WriteLine("-------------");
 				}
 			}	
+		}
+
+		static void testZenoSolver()
+		{
+			var problemPath = Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "pfile10.sas");
+			SASProblem problem = SASProblem.CreateFromFile(problemPath);
+			var solver = new DomainDependentSolvers.Zenotravel.ZenotravelSolver();
+			string stateString = "[1 5 3 1 0 3 4 2x3 4 2 1 0 2 ]";
+
+			var state = SASState.parse(stateString, problem);
+			problem.SetInitialState(state);
+
+			solver.SetProblem(problem);
+			var res = solver.Search();
+			Console.WriteLine(res);
 		}
 
 		static void createStatesDB(string problemFile, DomainDependentSolver domainSpecificSolver)
@@ -140,6 +158,8 @@ namespace PADD
 			long samplesPerFile = totalSamples / problemFiles.Count;
 
 			Utils.FileSystemUtils.createDirIfNonExisting(outputFolder);
+			long samplesGenerated = 0;
+			long toBeGenerated = samplesPerFile * problemFiles.Count;
 
 			using (var writter = new StreamWriter(Path.Combine(outputFolder, "samples.tsv")))
 			{
@@ -152,19 +172,29 @@ namespace PADD
 					var initialState = sasProblem.GetInitialState();
 					StatesEnumerator e = new RandomWalksFromGoalPathStateSpaceEnumerator(sasProblem, solver);
 					DBCreator c = new DBCreator(e);
-					var DB = c.createDB(item, solver, samplesPerFile, TimeSpan.FromHours(1));
-					foreach (var sample in DB.getAllElements())
+					var samples = c.createSamples(item, solver, samplesPerFile, TimeSpan.FromHours(5));
+					foreach (var sample in samples)
 					{
+						samplesGenerated++;
+						if (samplesGenerated % 100 == 0)
+							Console.WriteLine("Samples generated: " + samplesGenerated + " out of " + toBeGenerated + " (" + ((double)samplesGenerated/toBeGenerated*100).ToString("0.00") + " %");
+
 						writter.Write(currentID + "\t");
-						writter.Write(sample.value + "\t");
+						writter.Write(sample.val + "\t");
 						writter.Write(sample.key + "\t");
-						writter.Write(Path.GetDirectoryName(domainFolder) + "\t");
-						writter.Write(Path.GetFileName(item));
+						writter.Write(Path.GetFileName(domainFolder) + "\t");
+						writter.WriteLine(Path.GetFileName(item));
 						if (storeObjectGraphs)
 						{
 							SASState s = SASState.parse(sample.key, sasProblem);
-							sasProblem.SetInitialState(s);
+							sasProblem.SetInitialState(s);							
 							var graph = KnowledgeExtraction.computeObjectGraph(sasProblem).toMSAGLGraph();
+
+							/*
+							Console.WriteLine(sample.key + "\t" + s.toStringWithMeanings());
+							Utils.GraphVisualization.GraphVis.showGraph(graph);
+							*/
+
 							string graphPath = Path.Combine(outputFolder, "graphs", currentID.ToString() + ".bin");
 							Utils.FileSystemUtils.createDirIfNonExisting(Path.Combine(outputFolder, "graphs"));
 							using (var stream = new FileStream(graphPath, FileMode.Create))
