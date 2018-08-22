@@ -6,56 +6,56 @@ using MathNet.Numerics;
 
 namespace PADD
 {
-    public abstract class Heuristic
-    {
-        protected SASProblem problem;
-        protected abstract double evaluate(IState state);
-        public abstract string getDescription();
+	public abstract class Heuristic
+	{
+		protected SASProblem problem;
+		protected abstract double evaluate(IState state);
+		public abstract string getDescription();
 
-        /// <summary>
-        /// If true, the instance will store information about how many times the heuristic has been called and what is the minimal and average value of all heuristic calls. These results may be accessed through "statistics". If set to false, evaluation should be slightly faster.
-        /// </summary>
-        public bool doMeasures = true;
+		/// <summary>
+		/// If true, the instance will store information about how many times the heuristic has been called and what is the minimal and average value of all heuristic calls. These results may be accessed through "statistics". If set to false, evaluation should be slightly faster.
+		/// </summary>
+		public bool doMeasures = true;
 
 		public override string ToString()
-        {
-            return getDescription();
-        }
+		{
+			return getDescription();
+		}
 
-        public HeuristicStatistics statistics = new HeuristicStatistics();
+		public HeuristicStatistics statistics = new HeuristicStatistics();
 
-        public IOperator getBestStateIndex(Dictionary<IOperator, IState> states)
-        {
-            IOperator best = null;
-            double bestValue = int.MaxValue;
-            foreach (var item in states.Keys)
-            {
-                double val = evaluate(states[item]);
-                if (val < bestValue)
-                {
-                    best = item;
-                    bestValue = val;
-                }
-            }
-            return best;
-        }
-    
-        public double getValue(IState state)
-        {
-            if (doMeasures)
-            {
-                double val = evaluate(state);
-				if (!double.IsInfinity(val))	//infinity heuristic indicates dead-end. we don't want those included in computation of average heuristic value
-				{   
+		public IOperator getBestStateIndex(Dictionary<IOperator, IState> states)
+		{
+			IOperator best = null;
+			double bestValue = int.MaxValue;
+			foreach (var item in states.Keys)
+			{
+				double val = evaluate(states[item]);
+				if (val < bestValue)
+				{
+					best = item;
+					bestValue = val;
+				}
+			}
+			return best;
+		}
+
+		public double getValue(IState state)
+		{
+			if (doMeasures)
+			{
+				double val = evaluate(state);
+				if (!double.IsInfinity(val))    //infinity heuristic indicates dead-end. we don't want those included in computation of average heuristic value
+				{
 					statistics.heuristicCalls++;
 					statistics.sumOfHeuristicVals += val;
 					if (val < statistics.bestHeuristicValue)
 						statistics.bestHeuristicValue = val;
 				}
-                return val;
-            }
-            else return evaluate(state);
-        }
+				return val;
+			}
+			else return evaluate(state);
+		}
 
 		/// <summary>
 		/// Sets the value of FF heuristic for the state on which the next "getValue" will be called.
@@ -65,128 +65,128 @@ namespace PADD
 		}
 	}
 
-    public class HeuristicStatistics
-    {
-        public double bestHeuristicValue;
-        public double sumOfHeuristicVals;
-        public long heuristicCalls;
+	public class HeuristicStatistics
+	{
+		public double bestHeuristicValue;
+		public double sumOfHeuristicVals;
+		public long heuristicCalls;
 
-        public double getAverageHeurValue()
-        {
-            return sumOfHeuristicVals / (heuristicCalls + 1);
-        }
+		public double getAverageHeurValue()
+		{
+			return sumOfHeuristicVals / (heuristicCalls + 1);
+		}
 
-        public HeuristicStatistics()
-        {
-            heuristicCalls = 0;
-            bestHeuristicValue = double.MaxValue;
-            sumOfHeuristicVals = 0d;
-        }
-    }
+		public HeuristicStatistics()
+		{
+			heuristicCalls = 0;
+			bestHeuristicValue = double.MaxValue;
+			sumOfHeuristicVals = 0d;
+		}
+	}
 
-    class BlindHeuristic : Heuristic
-    {
-        protected override double evaluate(IState state)
-        {
-            return 0;
-        }
+	class BlindHeuristic : Heuristic
+	{
+		protected override double evaluate(IState state)
+		{
+			return 0;
+		}
 
-        public override string getDescription()
-        {
-            return "Blind heuristic";
-        }
-    }
+		public override string getDescription()
+		{
+			return "Blind heuristic";
+		}
+	}
 
-    class NotAccomplishedGoalCount : Heuristic
-    {
-        protected override double evaluate(IState state)
-        {
-            return state.GetNotAccomplishedGoalsCount();
-        }
+	class NotAccomplishedGoalCount : Heuristic
+	{
+		protected override double evaluate(IState state)
+		{
+			return state.GetNotAccomplishedGoalsCount();
+		}
 
-        public override string getDescription()
-        {
-            return "Not Accomplished Goals Count heuristic";
-        }
+		public override string getDescription()
+		{
+			return "Not Accomplished Goals Count heuristic";
+		}
 
-        public NotAccomplishedGoalCount()
-        {
-        }
-    }
+		public NotAccomplishedGoalCount()
+		{
+		}
+	}
 
-    class AbstractStateSizeHeuristic : Heuristic
-    {
-        protected override double evaluate(IState state)
-        {
-            if (state is SASState)
-            {
-                return state.GetNotAccomplishedGoalsCount();
-            }
-            else
-            {
-                SASStateRedBlack s = (SASStateRedBlack)state;
-                return 10000 - 10 * s.Size();
-            }
-        }
+	class AbstractStateSizeHeuristic : Heuristic
+	{
+		protected override double evaluate(IState state)
+		{
+			if (state is SASState)
+			{
+				return state.GetNotAccomplishedGoalsCount();
+			}
+			else
+			{
+				SASStateRedBlack s = (SASStateRedBlack)state;
+				return 10000 - 10 * s.Size();
+			}
+		}
 
-        public override string getDescription()
-        {
-            return "Abstract state size heuristic";
-        }
+		public override string getDescription()
+		{
+			return "Abstract state size heuristic";
+		}
 
-        public AbstractStateSizeHeuristic(SASProblem d)
-        {
-            this.problem = d;
-        }
-    }
+		public AbstractStateSizeHeuristic(SASProblem d)
+		{
+			this.problem = d;
+		}
+	}
 
-    class DeleteRelaxationHeuristic_Perfect : Heuristic
-    {
-        private SASProblemRedBlack rbProblem;
-        private AStarSearch ast;
+	class DeleteRelaxationHeuristic_Perfect : Heuristic
+	{
+		private SASProblemRedBlack rbProblem;
+		private AStarSearch ast;
 
-        public override string getDescription()
-        {
-            return "Perfect delete relaxation heuristic";
-        }
-        
-        protected override double evaluate(IState state)
-        {
-            rbProblem.SetInitialState(new SASStateRedBlack((SASState)state, rbProblem));
-            this.ast = new AStarSearch(rbProblem, new AbstractStateSizeHeuristic(rbProblem));
-            return ast.Search(true);
-        }
+		public override string getDescription()
+		{
+			return "Perfect delete relaxation heuristic";
+		}
 
-        public DeleteRelaxationHeuristic_Perfect(SASProblem d)
-        {
-            this.problem = d;
-            this.rbProblem = SASProblemRedBlack.CreateFromFile(d.GetInputFilePath());
-            rbProblem.MakeAllAbstracted();
-        }
-    }
+		protected override double evaluate(IState state)
+		{
+			rbProblem.SetInitialState(new SASStateRedBlack((SASState)state, rbProblem));
+			this.ast = new AStarSearch(rbProblem, new AbstractStateSizeHeuristic(rbProblem));
+			return ast.Search(true);
+		}
 
-    class PlannigGraphLayersHeuristic : Heuristic
-    {
-        private SASProblemRedBlack rbProblem;
+		public DeleteRelaxationHeuristic_Perfect(SASProblem d)
+		{
+			this.problem = d;
+			this.rbProblem = SASProblemRedBlack.CreateFromFile(d.GetInputFilePath());
+			rbProblem.MakeAllAbstracted();
+		}
+	}
 
-        protected override double evaluate(IState state)
-        {
-            int result = 0;
-            IState s = new SASStateRedBlack((SASState)state, rbProblem);
-            while (!problem.IsGoalState(s))
-            {
-                var transitions = rbProblem.GetApplicableRelevantTransitions(s);
-                if (transitions == null || transitions.Count == 0)
-                    return int.MaxValue / 2;
-                
-                foreach (var item in transitions)
-                {
-                    s = item.GetOperator().Apply(s);
-                }
-                //s = Operator.apply(op, s);
-                result++;
-            }
-            /*
+	class PlannigGraphLayersHeuristic : Heuristic
+	{
+		private SASProblemRedBlack rbProblem;
+
+		protected override double evaluate(IState state)
+		{
+			int result = 0;
+			IState s = new SASStateRedBlack((SASState)state, rbProblem);
+			while (!problem.IsGoalState(s))
+			{
+				var transitions = rbProblem.GetApplicableRelevantTransitions(s);
+				if (transitions == null || transitions.Count == 0)
+					return int.MaxValue / 2;
+
+				foreach (var item in transitions)
+				{
+					s = item.GetOperator().Apply(s);
+				}
+				//s = Operator.apply(op, s);
+				result++;
+			}
+			/*
             PlanningGraphComputation pgc = new PlanningGraphComputation(this.problem);
             pgc.computePlanningGraph(state);
             if (pgc.OpsLayers.Count != result)
@@ -194,135 +194,135 @@ namespace PADD
                 Console.WriteLine("chyba");
             }
              */
-            return result;
-        }
+			return result;
+		}
 
-        public int getValue1Overestimating(IState state)
-        {
-            int result = 0;
-            IState s = new SASStateRedBlack((SASState)state, rbProblem);
-            while (!problem.IsGoalState(s))
-            {
-                var succ = problem.GetApplicableRelevantTransition(s);
-                if (succ == null)
-                    return int.MaxValue / 2;
-                /*
+		public int getValue1Overestimating(IState state)
+		{
+			int result = 0;
+			IState s = new SASStateRedBlack((SASState)state, rbProblem);
+			while (!problem.IsGoalState(s))
+			{
+				var succ = problem.GetApplicableRelevantTransition(s);
+				if (succ == null)
+					return int.MaxValue / 2;
+				/*
                 foreach (var item in operators)
                 {
                     s = Operator.apply(item, s);
                 }*/
-                s = succ.GetOperator().Apply(s);
-                result++;
-            }
-            return result;
-        }
+				s = succ.GetOperator().Apply(s);
+				result++;
+			}
+			return result;
+		}
 
-        public override string getDescription()
-        {
-            return "PlannigGraph Layers Count heuristic";
-        }
+		public override string getDescription()
+		{
+			return "PlannigGraph Layers Count heuristic";
+		}
 
-        public PlannigGraphLayersHeuristic(SASProblem d)
-        {
-            this.problem = d;
-            this.rbProblem = SASProblemRedBlack.CreateFromFile(d.GetInputFilePath());
-            rbProblem.MakeAllAbstracted();
-        }
-    }
+		public PlannigGraphLayersHeuristic(SASProblem d)
+		{
+			this.problem = d;
+			this.rbProblem = SASProblemRedBlack.CreateFromFile(d.GetInputFilePath());
+			rbProblem.MakeAllAbstracted();
+		}
+	}
 
-    class PlanningGraphComputation
-    {
-        private SASProblemRedBlack rbProblem;
-        public List<IState> stateLayers;
-        public List<List<IOperator>> OpsLayers;
-        public Dictionary<int, Dictionary<int, Dictionary<int, List<int>>>> supportOp;
-        public bool isCutOff = false;
-        private const int cutOffLimit = 100;
+	class PlanningGraphComputation
+	{
+		private SASProblemRedBlack rbProblem;
+		public List<IState> stateLayers;
+		public List<List<IOperator>> OpsLayers;
+		public Dictionary<int, Dictionary<int, Dictionary<int, List<int>>>> supportOp;
+		public bool isCutOff = false;
+		private const int cutOffLimit = 100;
 
-        /// <summary>
-        /// Returns list of indices of all operators that can accomplish the given fact in the given fact-layer. 
-        /// Operators are described by their indices in the previous op-layer.
-        /// If the fact is already present in the previous fact-layer, this method returns null.
-        /// </summary>
-        /// <param name="layer"></param>
-        /// <param name="variable"></param>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public List<int> getSupport(int layer, int variable, int value)
-        {
-            if (!supportOp.ContainsKey(layer) ||
-                !supportOp[layer].ContainsKey(variable) ||
-                !supportOp[layer][variable].ContainsKey(value))
-                return null;
-            return supportOp[layer][variable][value];
-        }
+		/// <summary>
+		/// Returns list of indices of all operators that can accomplish the given fact in the given fact-layer. 
+		/// Operators are described by their indices in the previous op-layer.
+		/// If the fact is already present in the previous fact-layer, this method returns null.
+		/// </summary>
+		/// <param name="layer"></param>
+		/// <param name="variable"></param>
+		/// <param name="value"></param>
+		/// <returns></returns>
+		public List<int> getSupport(int layer, int variable, int value)
+		{
+			if (!supportOp.ContainsKey(layer) ||
+				!supportOp[layer].ContainsKey(variable) ||
+				!supportOp[layer][variable].ContainsKey(value))
+				return null;
+			return supportOp[layer][variable][value];
+		}
 
-        /// <summary>
-        /// Only adds a support for newly accomplished facts. If the fact has already been accomplished before, then this method should not be called on that fact.
-        /// Support is an operator that accomplished the fact. Operator is described by its index in the previous op-layer.
-        /// </summary>
-        /// <param name="layer"></param>
-        /// <param name="variable"></param>
-        /// <param name="value"></param>
-        /// <param name="support"></param>
-        private void addSupport(int layer, int variable, int value, int support)
-        {
-            if (!supportOp.ContainsKey(layer))
-                supportOp.Add(layer, new Dictionary<int, Dictionary<int, List<int>>>());
-            if (!supportOp[layer].ContainsKey(variable))
-                supportOp[layer].Add(variable, new Dictionary<int, List<int>>());
-            if (!supportOp[layer][variable].ContainsKey(value))
-                supportOp[layer][variable].Add(value, new List<int>());
-            supportOp[layer][variable][value].Add(support);     
-        }
+		/// <summary>
+		/// Only adds a support for newly accomplished facts. If the fact has already been accomplished before, then this method should not be called on that fact.
+		/// Support is an operator that accomplished the fact. Operator is described by its index in the previous op-layer.
+		/// </summary>
+		/// <param name="layer"></param>
+		/// <param name="variable"></param>
+		/// <param name="value"></param>
+		/// <param name="support"></param>
+		private void addSupport(int layer, int variable, int value, int support)
+		{
+			if (!supportOp.ContainsKey(layer))
+				supportOp.Add(layer, new Dictionary<int, Dictionary<int, List<int>>>());
+			if (!supportOp[layer].ContainsKey(variable))
+				supportOp[layer].Add(variable, new Dictionary<int, List<int>>());
+			if (!supportOp[layer][variable].ContainsKey(value))
+				supportOp[layer][variable].Add(value, new List<int>());
+			supportOp[layer][variable][value].Add(support);
+		}
 
-        public void computePlanningGraph(IState state)
-        {
-            stateLayers.Clear();
-            OpsLayers.Clear();
-            supportOp.Clear();
-            isCutOff = false;
-            IState s = new SASStateRedBlack((SASState)state, rbProblem);
-            stateLayers.Add(s);
+		public void computePlanningGraph(IState state)
+		{
+			stateLayers.Clear();
+			OpsLayers.Clear();
+			supportOp.Clear();
+			isCutOff = false;
+			IState s = new SASStateRedBlack((SASState)state, rbProblem);
+			stateLayers.Add(s);
 
-            while (!rbProblem.IsGoalState(stateLayers[stateLayers.Count-1]))
-            {
-                bool addedSomething = false;
-                s = stateLayers[stateLayers.Count-1].Clone();
+			while (!rbProblem.IsGoalState(stateLayers[stateLayers.Count - 1]))
+			{
+				bool addedSomething = false;
+				s = stateLayers[stateLayers.Count - 1].Clone();
 
-                List<IOperator> newOpLayer = new List<IOperator>();
-                var transitions = rbProblem.GetApplicableRelevantTransitions(s);
-                for (int o = 0; o < transitions.Count; o++)
-                {
-                    var op = (SASOperator)transitions.GetAppliedOperator(o);
-                    s = op.Apply(s);
-                    foreach (var effect in op.GetEffects())
-                    {
-                        SASState sasState = (SASState)stateLayers[stateLayers.Count - 1];
-                        if (!sasState.HasValue(effect.GetEff().variable, effect.GetEff().value))
-                        {
-                            addSupport(OpsLayers.Count, effect.GetEff().variable, effect.GetEff().value, o);
-                            addedSomething = true;
-                        }
-                    }
-                    newOpLayer.Add(op);
-                }
+				List<IOperator> newOpLayer = new List<IOperator>();
+				var transitions = rbProblem.GetApplicableRelevantTransitions(s);
+				for (int o = 0; o < transitions.Count; o++)
+				{
+					var op = (SASOperator)transitions.GetAppliedOperator(o);
+					s = op.Apply(s);
+					foreach (var effect in op.GetEffects())
+					{
+						SASState sasState = (SASState)stateLayers[stateLayers.Count - 1];
+						if (!sasState.HasValue(effect.GetEff().variable, effect.GetEff().value))
+						{
+							addSupport(OpsLayers.Count, effect.GetEff().variable, effect.GetEff().value, o);
+							addedSomething = true;
+						}
+					}
+					newOpLayer.Add(op);
+				}
 
-                OpsLayers.Add(newOpLayer);
-                stateLayers.Add(s);
+				OpsLayers.Add(newOpLayer);
+				stateLayers.Add(s);
 				if (!addedSomething)
 				{
 					isCutOff = true;
 					break;
 				}
-                if (stateLayers.Count > cutOffLimit)
-                {
-                    isCutOff = true;
-                    break;
-                }
-            }
+				if (stateLayers.Count > cutOffLimit)
+				{
+					isCutOff = true;
+					break;
+				}
+			}
 
-            /*
+			/*
             for (int i = 0; i < rbDom.getVariablesCount(); i++)
             {
                 for (int j = 0; j < rbDom.variablesDomainsRange[i]; j++)
@@ -334,111 +334,111 @@ namespace PADD
 
                 }
             }*/
-        }
+		}
 
-        public PlanningGraphComputation (IPlanningProblem d)
-	    {
-            this.rbProblem = SASProblemRedBlack.CreateFromFile(((SASProblem)d).GetInputFilePath());
-            rbProblem.MakeAllAbstracted();
-            this.OpsLayers = new List<List<IOperator>>();
-            this.stateLayers = new List<IState>();
-            this.supportOp = new Dictionary<int, Dictionary<int, Dictionary<int, List<int>>>>();
-	    }
-    }
+		public PlanningGraphComputation(IPlanningProblem d)
+		{
+			this.rbProblem = SASProblemRedBlack.CreateFromFile(((SASProblem)d).GetInputFilePath());
+			rbProblem.MakeAllAbstracted();
+			this.OpsLayers = new List<List<IOperator>>();
+			this.stateLayers = new List<IState>();
+			this.supportOp = new Dictionary<int, Dictionary<int, Dictionary<int, List<int>>>>();
+		}
+	}
 
-    class FFHeuristic : Heuristic
-    {
+	class FFHeuristic : Heuristic
+	{
 		private double hint = -1;
 
-        private PlanningGraphComputation PG;
-        //private Red_BlackDomain rbDom;
+		private PlanningGraphComputation PG;
+		//private Red_BlackDomain rbDom;
 
-        //Dalo by se asi urychlit: misto dictionary pouzit normalne pole, mit tam vsechny promenne (ne jen ty potrebne), ale u tech nepotrebnych by ten list byl prazdny
-        //Ty listy by se nevytvarely vzdycky znoval, ale pouze by se Clearovaly. Navic se daji ty listy nahradit HashSet aby addNewGoalRequest bylo rychlejsi
+		//Dalo by se asi urychlit: misto dictionary pouzit normalne pole, mit tam vsechny promenne (ne jen ty potrebne), ale u tech nepotrebnych by ten list byl prazdny
+		//Ty listy by se nevytvarely vzdycky znoval, ale pouze by se Clearovaly. Navic se daji ty listy nahradit HashSet aby addNewGoalRequest bylo rychlejsi
 
-        private Dictionary<int, List<int>> notAchievedGoals = new Dictionary<int, List<int>>(),
-                notAchievedGoalsNew = new Dictionary<int, List<int>>(),
-                dummyVar;
-        private List<SASOperator> relaxedPlan = new List<SASOperator>();
+		private Dictionary<int, List<int>> notAchievedGoals = new Dictionary<int, List<int>>(),
+				notAchievedGoalsNew = new Dictionary<int, List<int>>(),
+				dummyVar;
+		private List<SASOperator> relaxedPlan = new List<SASOperator>();
 
-        private void addNewGoalRequest(Dictionary<int, List<int>> notAchievedGoals, int variable, int value)
-        {
-            if (!notAchievedGoals.ContainsKey(variable))
-            {
-                notAchievedGoals.Add(variable, new List<int>());
-                notAchievedGoals[variable].Add(value);
-                return;
-            }
-            if (!notAchievedGoals[variable].Contains(value))
-            {
-                notAchievedGoals[variable].Add(value);
-            }
-        }
+		private void addNewGoalRequest(Dictionary<int, List<int>> notAchievedGoals, int variable, int value)
+		{
+			if (!notAchievedGoals.ContainsKey(variable))
+			{
+				notAchievedGoals.Add(variable, new List<int>());
+				notAchievedGoals[variable].Add(value);
+				return;
+			}
+			if (!notAchievedGoals[variable].Contains(value))
+			{
+				notAchievedGoals[variable].Add(value);
+			}
+		}
 
-        public List<SASOperator> getRelaxedPlan(IState state)
-        {
-            relaxedPlan.Clear();
+		public List<SASOperator> getRelaxedPlan(IState state)
+		{
+			relaxedPlan.Clear();
 
-            PG.computePlanningGraph(state);
+			PG.computePlanningGraph(state);
 
-            if (PG.isCutOff)
-                return relaxedPlan;
+			if (PG.isCutOff)
+				return relaxedPlan;
 
-            notAchievedGoals.Clear();
-            notAchievedGoalsNew.Clear();
-            foreach (var item in problem.GetGoalConditions())
-            {
-                notAchievedGoalsNew.Add(item.variable, new List<int>());
-                notAchievedGoalsNew[item.variable].Add(item.value);
-            }
-            for (int i = PG.stateLayers.Count - 1; i >= 0; i--)
-            {
-                dummyVar = notAchievedGoals;
-                notAchievedGoals = notAchievedGoalsNew;
-                notAchievedGoalsNew = dummyVar;
-                    //value swapping using the third variable as a placeholder
-                notAchievedGoalsNew.Clear();
+			notAchievedGoals.Clear();
+			notAchievedGoalsNew.Clear();
+			foreach (var item in problem.GetGoalConditions())
+			{
+				notAchievedGoalsNew.Add(item.variable, new List<int>());
+				notAchievedGoalsNew[item.variable].Add(item.value);
+			}
+			for (int i = PG.stateLayers.Count - 1; i >= 0; i--)
+			{
+				dummyVar = notAchievedGoals;
+				notAchievedGoals = notAchievedGoalsNew;
+				notAchievedGoalsNew = dummyVar;
+				//value swapping using the third variable as a placeholder
+				notAchievedGoalsNew.Clear();
 
-                foreach (var variable in notAchievedGoals.Keys)
-                {
-                    foreach (var value in notAchievedGoals[variable])
-                    {
-                        var support = PG.getSupport(i, variable, value);
-                        if (support == null)
-                        {
-                            addNewGoalRequest(notAchievedGoalsNew, variable, value);
-                        }
-                        else
-                        {
-                            foreach (var supp in support)
-                            {
-                                SASOperator op = (SASOperator)PG.OpsLayers[i][supp];
-                                relaxedPlan.Insert(0, op);
+				foreach (var variable in notAchievedGoals.Keys)
+				{
+					foreach (var value in notAchievedGoals[variable])
+					{
+						var support = PG.getSupport(i, variable, value);
+						if (support == null)
+						{
+							addNewGoalRequest(notAchievedGoalsNew, variable, value);
+						}
+						else
+						{
+							foreach (var supp in support)
+							{
+								SASOperator op = (SASOperator)PG.OpsLayers[i][supp];
+								relaxedPlan.Insert(0, op);
 
-                                var preconds = op.GetPreconditions();
-                                for (int precondIndex = 0; precondIndex < preconds.Count; precondIndex++)
-                                {
-                                    addNewGoalRequest(notAchievedGoalsNew, preconds[precondIndex].variable, preconds[precondIndex].value);
-                                }
+								var preconds = op.GetPreconditions();
+								for (int precondIndex = 0; precondIndex < preconds.Count; precondIndex++)
+								{
+									addNewGoalRequest(notAchievedGoalsNew, preconds[precondIndex].variable, preconds[precondIndex].value);
+								}
 
-                                foreach (var effect in op.GetEffects())
-                                {
-                                    foreach (var effCond in effect.GetConditions())
-                                    {
-                                        addNewGoalRequest(notAchievedGoalsNew, effCond.variable, effCond.value);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+								foreach (var effect in op.GetEffects())
+								{
+									foreach (var effCond in effect.GetConditions())
+									{
+										addNewGoalRequest(notAchievedGoalsNew, effCond.variable, effCond.value);
+									}
+								}
+							}
+						}
+					}
+				}
+			}
 
-            return relaxedPlan;
-        }
+			return relaxedPlan;
+		}
 
-        protected override double evaluate(IState state)
-        {
+		protected override double evaluate(IState state)
+		{
 			if (hint != -1)
 			{
 				double res = hint;
@@ -446,77 +446,77 @@ namespace PADD
 				return res;
 			}
 
-            PG.computePlanningGraph(state);
-            int result = 0;
+			PG.computePlanningGraph(state);
+			int result = 0;
 
 			if (PG.isCutOff)
 				return double.PositiveInfinity;
 
-            notAchievedGoals.Clear();
-            notAchievedGoalsNew.Clear();
-            foreach (var item in problem.GetGoalConditions())
-            {
-                notAchievedGoalsNew.Add(item.variable, new List<int>());
-                notAchievedGoalsNew[item.variable].Add(item.value);
-            }
-            for (int i = PG.stateLayers.Count-1; i >= 0; i--)
-            {
-                dummyVar = notAchievedGoals;
-                notAchievedGoals = notAchievedGoalsNew;
-                notAchievedGoalsNew = dummyVar;
-                    //value swapping using the third variable as a placeholder
-                notAchievedGoalsNew.Clear();
+			notAchievedGoals.Clear();
+			notAchievedGoalsNew.Clear();
+			foreach (var item in problem.GetGoalConditions())
+			{
+				notAchievedGoalsNew.Add(item.variable, new List<int>());
+				notAchievedGoalsNew[item.variable].Add(item.value);
+			}
+			for (int i = PG.stateLayers.Count - 1; i >= 0; i--)
+			{
+				dummyVar = notAchievedGoals;
+				notAchievedGoals = notAchievedGoalsNew;
+				notAchievedGoalsNew = dummyVar;
+				//value swapping using the third variable as a placeholder
+				notAchievedGoalsNew.Clear();
 
-                foreach (var variable in notAchievedGoals.Keys)
-                {
-                    foreach (var value in notAchievedGoals[variable])
-                    {
-                        var support = PG.getSupport(i, variable, value);
-                        if (support == null)
-                        {
-                            addNewGoalRequest(notAchievedGoalsNew, variable, value);
-                        }
-                        else
-                        {
-                            foreach (var supp in support)
-                            {
-                                result += support.Count;
-                                SASOperator op = (SASOperator)PG.OpsLayers[i][supp];
+				foreach (var variable in notAchievedGoals.Keys)
+				{
+					foreach (var value in notAchievedGoals[variable])
+					{
+						var support = PG.getSupport(i, variable, value);
+						if (support == null)
+						{
+							addNewGoalRequest(notAchievedGoalsNew, variable, value);
+						}
+						else
+						{
+							foreach (var supp in support)
+							{
+								result += support.Count;
+								SASOperator op = (SASOperator)PG.OpsLayers[i][supp];
 
-                                var preconds = op.GetPreconditions();
-                                for (int precondIndex = 0; precondIndex < preconds.Count; precondIndex++)
-			                    {
-                                    addNewGoalRequest(notAchievedGoalsNew, preconds[precondIndex].variable, preconds[precondIndex].value);
-                                }
+								var preconds = op.GetPreconditions();
+								for (int precondIndex = 0; precondIndex < preconds.Count; precondIndex++)
+								{
+									addNewGoalRequest(notAchievedGoalsNew, preconds[precondIndex].variable, preconds[precondIndex].value);
+								}
 
-                                foreach (var effect in op.GetEffects())
-                                {
-                                    foreach (var effCond in effect.GetConditions())
-                                    {
-                                        addNewGoalRequest(notAchievedGoalsNew, effCond.variable, effCond.value);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+								foreach (var effect in op.GetEffects())
+								{
+									foreach (var effCond in effect.GetConditions())
+									{
+										addNewGoalRequest(notAchievedGoalsNew, effCond.variable, effCond.value);
+									}
+								}
+							}
+						}
+					}
+				}
+			}
 
-            return result;
-        }
+			return result;
+		}
 
-        public override string getDescription()
-        {
-            return "Fast Forward heuristic";
-        }
+		public override string getDescription()
+		{
+			return "Fast Forward heuristic";
+		}
 
-        public FFHeuristic(SASProblem d)
-        {
-            this.problem = d;
-            //this.rbDom = Red_BlackDomain.createFromFile(d.getProblemName());
-            //rbDom.makeAllAbstracted();
-            this.PG = new PlanningGraphComputation(d);
-        }
+		public FFHeuristic(SASProblem d)
+		{
+			this.problem = d;
+			//this.rbDom = Red_BlackDomain.createFromFile(d.getProblemName());
+			//rbDom.makeAllAbstracted();
+			this.PG = new PlanningGraphComputation(d);
+		}
 
 		public override void sethFFValueForNextState(double ffHeurVal)
 		{
@@ -524,275 +524,275 @@ namespace PADD
 		}
 	}
 
-    class RBHeuristic : Heuristic
-    {
-        KnowledgeHolder domainKnowledge;
-        FFHeuristic ffHeuristic;
-        private int planValue;
-        List<SASOperator> relaxedPlan,
-            unrelaxedPlan;
-        ///// <summary>
-        ///// R = set of currentlly achieved red values, B = set of black variables reacheable according to R
-        ///// </summary>
-        Dictionary<int, HashSet<int>> R, B;
-        Dictionary<int, int> toAccomplish;
-        IState currentState;
+	class RBHeuristic : Heuristic
+	{
+		KnowledgeHolder domainKnowledge;
+		FFHeuristic ffHeuristic;
+		private int planValue;
+		List<SASOperator> relaxedPlan,
+			unrelaxedPlan;
+		///// <summary>
+		///// R = set of currentlly achieved red values, B = set of black variables reacheable according to R
+		///// </summary>
+		Dictionary<int, HashSet<int>> R, B;
+		Dictionary<int, int> toAccomplish;
+		IState currentState;
 
-        private void accomplish()
-        {
+		private void accomplish()
+		{
 
-        }
+		}
 
-        private void unrelax()
-        {
-            unrelaxedPlan.Clear();
-            unrelaxedPlan.Add(relaxedPlan[0]);
-            currentState = relaxedPlan[0].Apply(currentState);
-            for (int i = 1; i < relaxedPlan.Count; i++)
-            {
-                toAccomplish.Clear();
+		private void unrelax()
+		{
+			unrelaxedPlan.Clear();
+			unrelaxedPlan.Add(relaxedPlan[0]);
+			currentState = relaxedPlan[0].Apply(currentState);
+			for (int i = 1; i < relaxedPlan.Count; i++)
+			{
+				toAccomplish.Clear();
 
-                var preconds = relaxedPlan[i].GetPreconditions();
-                for (int j = 0; j < preconds.Count; j++)
-                {
-                    if (!problem.IsVariableAbstracted(preconds[j].variable))
-                    {
-                        toAccomplish.Add(preconds[j].variable, preconds[j].value);
-                    }
-                }
-                accomplish();
-                unrelaxedPlan.Add(relaxedPlan[i]);
-                currentState = relaxedPlan[i].Apply(currentState);
-            }
-            toAccomplish.Clear();
-            foreach (var item in problem.GetGoalConditions())
-            {
-                if (!problem.IsVariableAbstracted(item.variable))
-                    toAccomplish.Add(item.variable, item.value);
-            }
-            accomplish();
-        }
+				var preconds = relaxedPlan[i].GetPreconditions();
+				for (int j = 0; j < preconds.Count; j++)
+				{
+					if (!problem.IsVariableAbstracted(preconds[j].variable))
+					{
+						toAccomplish.Add(preconds[j].variable, preconds[j].value);
+					}
+				}
+				accomplish();
+				unrelaxedPlan.Add(relaxedPlan[i]);
+				currentState = relaxedPlan[i].Apply(currentState);
+			}
+			toAccomplish.Clear();
+			foreach (var item in problem.GetGoalConditions())
+			{
+				if (!problem.IsVariableAbstracted(item.variable))
+					toAccomplish.Add(item.variable, item.value);
+			}
+			accomplish();
+		}
 
-        private void reset()
-        {
-            planValue = 0;
-            foreach (var item in R.Values)
-            {
-                item.Clear();
-            }
+		private void reset()
+		{
+			planValue = 0;
+			foreach (var item in R.Values)
+			{
+				item.Clear();
+			}
 
-            foreach (var item in B.Values)
-            {
-                item.Clear();
-            }
-        }
+			foreach (var item in B.Values)
+			{
+				item.Clear();
+			}
+		}
 
-        private void init(SASProblem d)
-        {
-            this.domainKnowledge = KnowledgeHolder.compute(d);
-            this.ffHeuristic = new FFHeuristic(d);
-            this.toAccomplish = new Dictionary<int, int>();
-            //R = new Dictionary<int, HashSet<int>>();
-            //B = new Dictionary<int, HashSet<int>>();
-            //for (int i = 0; i < d.getVariablesCount(); i++)
-            //{
-            //    if (d.isAbstracted(i))
-            //    {
-            //        R.Add(i, new HashSet<int>());
-            //        R[i].Add(d.initialState.getValue(i));
-            //    }
-            //    else
-            //    {
-            //        B.Add(i, new HashSet<int>());
-            //        B[i].Add(d.initialState.getValue(i));
-            //    }
-            //}
-        }
+		private void init(SASProblem d)
+		{
+			this.domainKnowledge = KnowledgeHolder.compute(d);
+			this.ffHeuristic = new FFHeuristic(d);
+			this.toAccomplish = new Dictionary<int, int>();
+			//R = new Dictionary<int, HashSet<int>>();
+			//B = new Dictionary<int, HashSet<int>>();
+			//for (int i = 0; i < d.getVariablesCount(); i++)
+			//{
+			//    if (d.isAbstracted(i))
+			//    {
+			//        R.Add(i, new HashSet<int>());
+			//        R[i].Add(d.initialState.getValue(i));
+			//    }
+			//    else
+			//    {
+			//        B.Add(i, new HashSet<int>());
+			//        B[i].Add(d.initialState.getValue(i));
+			//    }
+			//}
+		}
 
-        protected override double evaluate(IState state)
-        {
-            reset();
-            this.currentState = state;
-            relaxedPlan = ffHeuristic.getRelaxedPlan(state);
-            unrelax();
+		protected override double evaluate(IState state)
+		{
+			reset();
+			this.currentState = state;
+			relaxedPlan = ffHeuristic.getRelaxedPlan(state);
+			unrelax();
 
-            return planValue;
-            //TODO            
-        }
+			return planValue;
+			//TODO            
+		}
 
-        public override string getDescription()
-        {
-            return "Red-Black Heuristic";
-        }
+		public override string getDescription()
+		{
+			return "Red-Black Heuristic";
+		}
 
-        public RBHeuristic(SASProblem d)
-        {
-            init(d);
-        }
-    }
+		public RBHeuristic(SASProblem d)
+		{
+			init(d);
+		}
+	}
 
-    class WeightedHeuristic : Heuristic
-    {
-        private Heuristic h;
-        private int weight;
+	class WeightedHeuristic : Heuristic
+	{
+		private Heuristic h;
+		private int weight;
 
 		public WeightedHeuristic(Heuristic h, int weight)
-        {
-            this.h = h;
-            this.weight = weight;
-        }
+		{
+			this.h = h;
+			this.weight = weight;
+		}
 
-        protected override double evaluate(IState state)
-        {
-            return weight * h.getValue(state);
-        }
+		protected override double evaluate(IState state)
+		{
+			return weight * h.getValue(state);
+		}
 
-        public override string getDescription()
-        {
-            return "weighted " + h.getDescription() + ". Weight = " + weight;
-        }
-    }
+		public override string getDescription()
+		{
+			return "weighted " + h.getDescription() + ". Weight = " + weight;
+		}
+	}
 
-    #region Noisy heuristics
+	#region Noisy heuristics
 
-    class NoisyHeuristic : Heuristic
-    {
-        NoiseGenerator g;
-        Heuristic h;
+	class NoisyHeuristic : Heuristic
+	{
+		NoiseGenerator g;
+		Heuristic h;
 
-        public NoisyHeuristic(Heuristic h, NoiseGenerator generator)
-        {
-            this.h = h;
-            this.g = generator;
-        }
+		public NoisyHeuristic(Heuristic h, NoiseGenerator generator)
+		{
+			this.h = h;
+			this.g = generator;
+		}
 
-        protected override double evaluate(IState state)
-        {
-            double val = h.getValue(state);
-            return val + g.generateNoise(val);
-        }
+		protected override double evaluate(IState state)
+		{
+			double val = h.getValue(state);
+			return val + g.generateNoise(val);
+		}
 
-        public override string getDescription()
-        {
-            return "Noisy heuristic(" + h.getDescription() +" + " + g.getDescription() + ")";
-        }
-    }
+		public override string getDescription()
+		{
+			return "Noisy heuristic(" + h.getDescription() + " + " + g.getDescription() + ")";
+		}
+	}
 
-    abstract class NoiseGenerator
-    {
-        protected Random r = new Random();
-        public abstract double generateNoise(double argument);
+	abstract class NoiseGenerator
+	{
+		protected Random r = new Random();
+		public abstract double generateNoise(double argument);
 
-        public abstract string getDescription();
+		public abstract string getDescription();
 
-        public static NoiseGenerator createInstance(NoiseGenerationType type, double parameter)
-        {
-            switch (type)   
-            {
-                case NoiseGenerationType.constantUniform:
-                    return new ConstantUniformNoiseGenerator(parameter);
-                case NoiseGenerationType.ProportionalUniform:
-                    return new ProportionalUniformNoiseGenerator(parameter);
-                case NoiseGenerationType.ConstantNormal:
-                    return new ConstantNormalNoiseGenerator(parameter);
-                case NoiseGenerationType.ProportionalNormal:
-                    return new ProportionalNormalNoiseGenerator(parameter);
-                default:
-                    return null;
-                    break;
-            }
-        }
-    }
+		public static NoiseGenerator createInstance(NoiseGenerationType type, double parameter)
+		{
+			switch (type)
+			{
+				case NoiseGenerationType.constantUniform:
+					return new ConstantUniformNoiseGenerator(parameter);
+				case NoiseGenerationType.ProportionalUniform:
+					return new ProportionalUniformNoiseGenerator(parameter);
+				case NoiseGenerationType.ConstantNormal:
+					return new ConstantNormalNoiseGenerator(parameter);
+				case NoiseGenerationType.ProportionalNormal:
+					return new ProportionalNormalNoiseGenerator(parameter);
+				default:
+					return null;
+					break;
+			}
+		}
+	}
 
-    enum NoiseGenerationType
-    {
-        constantUniform, ProportionalUniform, ConstantNormal, ProportionalNormal
-    }
+	enum NoiseGenerationType
+	{
+		constantUniform, ProportionalUniform, ConstantNormal, ProportionalNormal
+	}
 
-    class ConstantUniformNoiseGenerator : NoiseGenerator
-    {
-        double intervalRadius;
+	class ConstantUniformNoiseGenerator : NoiseGenerator
+	{
+		double intervalRadius;
 
-        public override double generateNoise(double argument)
-        {
-            double val = r.NextDouble() * intervalRadius * 2 - intervalRadius;
-            return val;
-        }
+		public override double generateNoise(double argument)
+		{
+			double val = r.NextDouble() * intervalRadius * 2 - intervalRadius;
+			return val;
+		}
 
-        public ConstantUniformNoiseGenerator(double intervalRadius)
-        {
-            this.intervalRadius = intervalRadius;
-        }
+		public ConstantUniformNoiseGenerator(double intervalRadius)
+		{
+			this.intervalRadius = intervalRadius;
+		}
 
-        public override string getDescription()
-        {
-            return "U[-" + intervalRadius + ", " + intervalRadius + "]";
-        }
-    }
+		public override string getDescription()
+		{
+			return "U[-" + intervalRadius + ", " + intervalRadius + "]";
+		}
+	}
 
-    class ProportionalUniformNoiseGenerator : NoiseGenerator
-    {
-        double proportion;
+	class ProportionalUniformNoiseGenerator : NoiseGenerator
+	{
+		double proportion;
 
-        public override double generateNoise(double argument)
-        {
-            double intervalRadius = argument * proportion;
-            double val = r.NextDouble() * intervalRadius * 2 - intervalRadius;
-            return val;
-        }
+		public override double generateNoise(double argument)
+		{
+			double intervalRadius = argument * proportion;
+			double val = r.NextDouble() * intervalRadius * 2 - intervalRadius;
+			return val;
+		}
 
-        public ProportionalUniformNoiseGenerator(double proportion)
-        {
-            this.proportion = proportion;
-        }
-        public override string getDescription()
-        {
-            return "U[-" + (proportion*100) + "%, " + (proportion*100) + "%]";
-        }
-    }
+		public ProportionalUniformNoiseGenerator(double proportion)
+		{
+			this.proportion = proportion;
+		}
+		public override string getDescription()
+		{
+			return "U[-" + (proportion * 100) + "%, " + (proportion * 100) + "%]";
+		}
+	}
 
-    class ConstantNormalNoiseGenerator : NoiseGenerator
-    {
-        double stdDev;
+	class ConstantNormalNoiseGenerator : NoiseGenerator
+	{
+		double stdDev;
 
-        public override double generateNoise(double argument)
-        {
-            double val = MathNet.Numerics.Distributions.Normal.Sample(0, stdDev);
-            return val;
-        }
+		public override double generateNoise(double argument)
+		{
+			double val = MathNet.Numerics.Distributions.Normal.Sample(0, stdDev);
+			return val;
+		}
 
-        public ConstantNormalNoiseGenerator(double stdDev)
-        {
-            this.stdDev = stdDev;
-        }
+		public ConstantNormalNoiseGenerator(double stdDev)
+		{
+			this.stdDev = stdDev;
+		}
 
-        public override string getDescription()
-        {
-            return "N[0, " + stdDev +"]";
-        }
-    }
+		public override string getDescription()
+		{
+			return "N[0, " + stdDev + "]";
+		}
+	}
 
-    class ProportionalNormalNoiseGenerator : NoiseGenerator
-    {
-        double proportion;
+	class ProportionalNormalNoiseGenerator : NoiseGenerator
+	{
+		double proportion;
 
-        public override double generateNoise(double argument)
-        {
-            double stdDev = argument * proportion;
-            double val = MathNet.Numerics.Distributions.Normal.Sample(0, stdDev);
-            return val;
-        }
+		public override double generateNoise(double argument)
+		{
+			double stdDev = argument * proportion;
+			double val = MathNet.Numerics.Distributions.Normal.Sample(0, stdDev);
+			return val;
+		}
 
-        public ProportionalNormalNoiseGenerator(double proportion)
-        {
-            this.proportion = proportion;
-        }
+		public ProportionalNormalNoiseGenerator(double proportion)
+		{
+			this.proportion = proportion;
+		}
 
-        public override string getDescription()
-        {
-            return "N[0, " + (proportion*100) + "%]";
-        }
-    }
+		public override string getDescription()
+		{
+			return "N[0, " + (proportion * 100) + "%]";
+		}
+	}
 
 	#endregion Noisy heuristics 
 
@@ -1092,7 +1092,7 @@ namespace PADD
 		{
 			this.heur = new FFHeuristic(p);
 			var features = FeaturesCalculator.generateFeaturesFromProblem(p);
-			features.Add(0);	//feature dependent on the state;
+			features.Add(0);    //feature dependent on the state;
 			nnInputs = features.Select(d => (float)d).ToList();
 		}
 
@@ -1106,6 +1106,35 @@ namespace PADD
 		public override void sethFFValueForNextState(double heurVal)
 		{
 			this.nextFFHeurResult = heurVal;
+		}
+	}
+
+	class SimpleFFNetHeuristic : Heuristic
+	{
+		SASProblem problem;
+		SASState originalState;
+
+
+		public SimpleFFNetHeuristic(string featuresGeneratorPath, string savedNetworkPath, SASProblem problem)
+		{
+			this.problem = problem;
+			originalState = (SASState)problem.GetInitialState();
+			//var labelingData = Utils.UtilsMethods.
+		}
+
+		public override string getDescription()
+		{
+			return "FF-net heuristic";
+		}
+
+		protected override double evaluate(IState state)
+		{
+			problem.SetInitialState(state);
+
+
+			var msaglGraph = KnowledgeExtraction.computeObjectGraph(problem);
+			//MyLabeledGraph f = MyLabeledGraph.createFromMSAGLGraph(msaglGraph.toMSAGLGraph())
+			return 0d;
 		}
 	}
 

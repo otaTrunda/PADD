@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "API_tool", "API_tool\API_to
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Utilities", "Utils\Utilities.csproj", "{EF4AA8F1-02E6-479C-82AA-8A9EDC52ABE7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NeuralNetTrainer", "..\..\GIT_REPOS\NeuralNetTrainer\NeuralNetTrainer\NeuralNetTrainer.csproj", "{6B6477A7-C9AF-4B61-8E4E-9573B7CA60A8}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		..\..\GIT_REPOS\brightwire\BrightWire.CUDA.Source\BrightWire.CUDA.Source.projitems*{50bcb2ab-e8ca-4974-b136-49a98d5e34cb}*SharedItemsImports = 4
@@ -102,6 +104,18 @@ Global
 		{EF4AA8F1-02E6-479C-82AA-8A9EDC52ABE7}.Release|x64.Build.0 = Release|Any CPU
 		{EF4AA8F1-02E6-479C-82AA-8A9EDC52ABE7}.Release|x86.ActiveCfg = Release|Any CPU
 		{EF4AA8F1-02E6-479C-82AA-8A9EDC52ABE7}.Release|x86.Build.0 = Release|Any CPU
+		{6B6477A7-C9AF-4B61-8E4E-9573B7CA60A8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6B6477A7-C9AF-4B61-8E4E-9573B7CA60A8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6B6477A7-C9AF-4B61-8E4E-9573B7CA60A8}.Debug|x64.ActiveCfg = Debug|x64
+		{6B6477A7-C9AF-4B61-8E4E-9573B7CA60A8}.Debug|x64.Build.0 = Debug|x64
+		{6B6477A7-C9AF-4B61-8E4E-9573B7CA60A8}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{6B6477A7-C9AF-4B61-8E4E-9573B7CA60A8}.Debug|x86.Build.0 = Debug|Any CPU
+		{6B6477A7-C9AF-4B61-8E4E-9573B7CA60A8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6B6477A7-C9AF-4B61-8E4E-9573B7CA60A8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6B6477A7-C9AF-4B61-8E4E-9573B7CA60A8}.Release|x64.ActiveCfg = Release|x64
+		{6B6477A7-C9AF-4B61-8E4E-9573B7CA60A8}.Release|x64.Build.0 = Release|x64
+		{6B6477A7-C9AF-4B61-8E4E-9573B7CA60A8}.Release|x86.ActiveCfg = Release|Any CPU
+		{6B6477A7-C9AF-4B61-8E4E-9573B7CA60A8}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
