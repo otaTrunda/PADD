@@ -19,6 +19,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Utilities", "Utils\Utilitie
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NeuralNetTrainer", "..\..\GIT_REPOS\NeuralNetTrainer\NeuralNetTrainer\NeuralNetTrainer.csproj", "{6B6477A7-C9AF-4B61-8E4E-9573B7CA60A8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Utils", "..\..\GIT_REPOS\NeuralNetTrainer\Utils\Utils.csproj", "{0483CF4E-3B0C-4D2F-9683-699F90304A8A}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		..\..\GIT_REPOS\brightwire\BrightWire.CUDA.Source\BrightWire.CUDA.Source.projitems*{50bcb2ab-e8ca-4974-b136-49a98d5e34cb}*SharedItemsImports = 4
@@ -34,16 +36,16 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{F420BDD3-CE9C-4424-B5E1-8AD0F4143A02}.Debug|Any CPU.ActiveCfg = Debug|x86
-		{F420BDD3-CE9C-4424-B5E1-8AD0F4143A02}.Debug|Any CPU.Build.0 = Debug|x86
-		{F420BDD3-CE9C-4424-B5E1-8AD0F4143A02}.Debug|x64.ActiveCfg = Debug|x86
-		{F420BDD3-CE9C-4424-B5E1-8AD0F4143A02}.Debug|x64.Build.0 = Debug|x86
+		{F420BDD3-CE9C-4424-B5E1-8AD0F4143A02}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F420BDD3-CE9C-4424-B5E1-8AD0F4143A02}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F420BDD3-CE9C-4424-B5E1-8AD0F4143A02}.Debug|x64.ActiveCfg = Debug|x64
+		{F420BDD3-CE9C-4424-B5E1-8AD0F4143A02}.Debug|x64.Build.0 = Debug|x64
 		{F420BDD3-CE9C-4424-B5E1-8AD0F4143A02}.Debug|x86.ActiveCfg = Debug|x86
 		{F420BDD3-CE9C-4424-B5E1-8AD0F4143A02}.Debug|x86.Build.0 = Debug|x86
-		{F420BDD3-CE9C-4424-B5E1-8AD0F4143A02}.Release|Any CPU.ActiveCfg = Release|x86
-		{F420BDD3-CE9C-4424-B5E1-8AD0F4143A02}.Release|Any CPU.Build.0 = Release|x86
-		{F420BDD3-CE9C-4424-B5E1-8AD0F4143A02}.Release|x64.ActiveCfg = Release|x86
-		{F420BDD3-CE9C-4424-B5E1-8AD0F4143A02}.Release|x64.Build.0 = Release|x86
+		{F420BDD3-CE9C-4424-B5E1-8AD0F4143A02}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F420BDD3-CE9C-4424-B5E1-8AD0F4143A02}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F420BDD3-CE9C-4424-B5E1-8AD0F4143A02}.Release|x64.ActiveCfg = Release|x64
+		{F420BDD3-CE9C-4424-B5E1-8AD0F4143A02}.Release|x64.Build.0 = Release|x64
 		{F420BDD3-CE9C-4424-B5E1-8AD0F4143A02}.Release|x86.ActiveCfg = Release|x86
 		{F420BDD3-CE9C-4424-B5E1-8AD0F4143A02}.Release|x86.Build.0 = Release|x86
 		{50BCB2AB-E8CA-4974-B136-49A98D5E34CB}.Debug|Any CPU.ActiveCfg = Debug|x64
@@ -116,6 +118,18 @@ Global
 		{6B6477A7-C9AF-4B61-8E4E-9573B7CA60A8}.Release|x64.Build.0 = Release|x64
 		{6B6477A7-C9AF-4B61-8E4E-9573B7CA60A8}.Release|x86.ActiveCfg = Release|Any CPU
 		{6B6477A7-C9AF-4B61-8E4E-9573B7CA60A8}.Release|x86.Build.0 = Release|Any CPU
+		{0483CF4E-3B0C-4D2F-9683-699F90304A8A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0483CF4E-3B0C-4D2F-9683-699F90304A8A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0483CF4E-3B0C-4D2F-9683-699F90304A8A}.Debug|x64.ActiveCfg = Debug|x64
+		{0483CF4E-3B0C-4D2F-9683-699F90304A8A}.Debug|x64.Build.0 = Debug|x64
+		{0483CF4E-3B0C-4D2F-9683-699F90304A8A}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{0483CF4E-3B0C-4D2F-9683-699F90304A8A}.Debug|x86.Build.0 = Debug|Any CPU
+		{0483CF4E-3B0C-4D2F-9683-699F90304A8A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0483CF4E-3B0C-4D2F-9683-699F90304A8A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0483CF4E-3B0C-4D2F-9683-699F90304A8A}.Release|x64.ActiveCfg = Release|x64
+		{0483CF4E-3B0C-4D2F-9683-699F90304A8A}.Release|x64.Build.0 = Release|x64
+		{0483CF4E-3B0C-4D2F-9683-699F90304A8A}.Release|x86.ActiveCfg = Release|Any CPU
+		{0483CF4E-3B0C-4D2F-9683-699F90304A8A}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

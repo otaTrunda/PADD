@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using MathNet.Numerics;
+using NeuralNetTrainer.TrainingSamples;
+using Utils;
+using Utils.Graphs;
 
 namespace PADD
 {
@@ -1111,15 +1114,21 @@ namespace PADD
 
 	class SimpleFFNetHeuristic : Heuristic
 	{
-		SASProblem problem;
-		SASState originalState;
-
+		IState originalState;
+		Func<Microsoft.Msagl.Drawing.Node, float[]> labelingFunc;
+		int labelSize;
+		GraphsFeatureGenerator gen;
+		List<(float[,] weights, float[] biases)> netParams;
 
 		public SimpleFFNetHeuristic(string featuresGeneratorPath, string savedNetworkPath, SASProblem problem)
 		{
 			this.problem = problem;
-			originalState = (SASState)problem.GetInitialState();
-			//var labelingData = Utils.UtilsMethods.
+			originalState = problem.GetInitialState();
+			var labelingData = UtilsMethods.getLabelingFunction(KnowledgeExtraction.computeObjectGraph(problem).toMSAGLGraph());
+			this.labelingFunc = labelingData.labelingFunc;
+			this.labelSize = labelingData.labelSize;
+			this.gen = GraphsFeatureGenerator.load(featuresGeneratorPath);
+			netParams = NeuralNetTrainer.Network.loadParams(savedNetworkPath);
 		}
 
 		public override string getDescription()
@@ -1129,12 +1138,17 @@ namespace PADD
 
 		protected override double evaluate(IState state)
 		{
+			this.originalState = problem.GetInitialState();
 			problem.SetInitialState(state);
-
-
+			
 			var msaglGraph = KnowledgeExtraction.computeObjectGraph(problem);
-			//MyLabeledGraph f = MyLabeledGraph.createFromMSAGLGraph(msaglGraph.toMSAGLGraph())
-			return 0d;
+			MyLabeledGraph graph = MyLabeledGraph.createFromMSAGLGraph(msaglGraph.toMSAGLGraph(), this.labelingFunc, this.labelSize);
+			var features = gen.getFeatures(graph);
+			var netOutput = NeuralNetTrainer.Network.executeByParams(netParams, features);
+
+			problem.SetInitialState(originalState);
+
+			return netOutput.Single();
 		}
 	}
 

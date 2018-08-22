@@ -27,6 +27,9 @@ namespace PADD
 		[STAThread]
 		static void Main(string[] args)
 		{
+			testFFNetHeuristic();
+
+
 			//visualizeKnowledgeGraphs(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "pddl", "pfile1.pddl"));
 
 			//testZenoSolver();
@@ -74,6 +77,23 @@ namespace PADD
 			{
 				CreateHistograms_Results(args.Skip(1).ToArray());
 			}
+		}
+
+		private static void testFFNetHeuristic()
+		{
+			string problem = "pfile10.sas";
+			string state = "[1 2x3 1 6 5 4 3x0 2x2 1 2";
+
+			SASProblem p = SASProblem.CreateFromFile(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", problem));
+
+			SASState s = SASState.parse(state, p);
+
+			Heuristic h = new SimpleFFNetHeuristic(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "trainingSamples", "TODO.bin"),
+				Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "trainingSamples", "trainedNet_params.bin"), p);
+
+			var value = h.getValue(s);
+
+
 		}
 
 		static void solveDomain(string domainFolder, DomainDependentSolver solver, bool submitPlans = false)

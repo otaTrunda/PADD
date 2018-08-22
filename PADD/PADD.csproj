@@ -57,6 +57,24 @@
   <PropertyGroup>
     <StartupObject>PADD.Program</StartupObject>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <PlatformTarget>x64</PlatformTarget>
+    <OutputPath>bin\x64\Debug\</OutputPath>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <PlatformTarget>x64</PlatformTarget>
+    <OutputPath>bin\x64\Release\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <OutputPath>bin\Debug\</OutputPath>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <OutputPath>bin\Release\</OutputPath>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="CudaBlas, Version=8.0.22.0, Culture=neutral, PublicKeyToken=539d54d12e99fedb, processorArchitecture=AMD64">
       <HintPath>..\packages\ManagedCuda-CUBLAS.8.0.22\lib\net46\CudaBlas.dll</HintPath>
@@ -90,6 +108,18 @@
     </Reference>
     <Reference Include="protobuf-net, Version=2.3.0.0, Culture=neutral, PublicKeyToken=257b51d87d2e4d67, processorArchitecture=MSIL">
       <HintPath>..\packages\protobuf-net.2.3.17\lib\net40\protobuf-net.dll</HintPath>
+    </Reference>
+    <Reference Include="QuickGraph, Version=3.6.61114.0, Culture=neutral, PublicKeyToken=f3fb40175eec2af3, processorArchitecture=MSIL">
+      <HintPath>..\packages\QuickGraph.3.6.61119.7\lib\net4\QuickGraph.dll</HintPath>
+    </Reference>
+    <Reference Include="QuickGraph.Data, Version=3.6.61114.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\QuickGraph.3.6.61119.7\lib\net4\QuickGraph.Data.dll</HintPath>
+    </Reference>
+    <Reference Include="QuickGraph.Graphviz, Version=3.6.61114.0, Culture=neutral, PublicKeyToken=f3fb40175eec2af3, processorArchitecture=MSIL">
+      <HintPath>..\packages\QuickGraph.3.6.61119.7\lib\net4\QuickGraph.Graphviz.dll</HintPath>
+    </Reference>
+    <Reference Include="QuickGraph.Serialization, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\QuickGraph.3.6.61119.7\lib\net4\QuickGraph.Serialization.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
@@ -239,6 +269,14 @@
     <ProjectReference Include="..\..\..\GIT_REPOS\brightwire\BrightWire.Net4\BrightWire.Net4.csproj">
       <Project>{fd8aaef6-2edb-446c-bb19-5ebee5cde982}</Project>
       <Name>BrightWire.Net4</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\GIT_REPOS\NeuralNetTrainer\NeuralNetTrainer\NeuralNetTrainer.csproj">
+      <Project>{6B6477A7-C9AF-4B61-8E4E-9573B7CA60A8}</Project>
+      <Name>NeuralNetTrainer</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\GIT_REPOS\NeuralNetTrainer\Utils\Utils.csproj">
+      <Project>{0483cf4e-3b0c-4d2f-9683-699f90304a8a}</Project>
+      <Name>Utils</Name>
     </ProjectReference>
     <ProjectReference Include="..\Utils\Utilities.csproj">
       <Project>{ef4aa8f1-02e6-479c-82aa-8a9edc52abe7}</Project>
