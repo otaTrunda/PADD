@@ -15,7 +15,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProblemDownload", "ProblemD
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "API_tool", "API_tool\API_tool.csproj", "{C7D9AC83-A8A0-4D74-BC91-D3185E7CEC8A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Utils", "Utils\Utils.csproj", "{EF4AA8F1-02E6-479C-82AA-8A9EDC52ABE7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Utilities", "Utils\Utilities.csproj", "{EF4AA8F1-02E6-479C-82AA-8A9EDC52ABE7}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution

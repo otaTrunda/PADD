@@ -1797,7 +1797,7 @@ namespace PADD
 		}
 
 		/// <summary>
-		/// Just to write integer, to be compatible with console.writeln()
+		/// Just to write integer, to be compatible with console.writeln(int x)
 		/// </summary>
 		public void Log(int x)
 		{
