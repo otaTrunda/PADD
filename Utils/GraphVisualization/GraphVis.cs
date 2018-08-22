@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Msagl.Drawing;
 
-namespace Utils.GraphVisualization
+namespace PADDUtils.GraphVisualization
 {
 	public partial class GraphVis : Form
 	{

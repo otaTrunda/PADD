@@ -1,4 +1,4 @@
-﻿namespace Utils.GraphVisualization
+﻿namespace PADDUtils.GraphVisualization
 {
 	partial class GraphVis
 	{

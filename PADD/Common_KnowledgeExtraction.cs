@@ -150,7 +150,7 @@ namespace PADD
 		/// <returns></returns>
 		public static PDDLProblem translateSASProblemToPDDL(SASProblem s)
 		{
-			var pddlProblemPath = Utils.FileSystemUtils.getPDDLProblemPath(s.GetInputFilePath());
+			var pddlProblemPath = PADDUtils.FileSystemUtils.getPDDLProblemPath(s.GetInputFilePath());
 			string originalText = System.IO.File.ReadAllText(pddlProblemPath.problemFile);
 
 			string PDDLStateInitRegion = originalText.Split(new string[] { "(:init" }, StringSplitOptions.RemoveEmptyEntries).Skip(1).First().

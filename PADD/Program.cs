@@ -154,10 +154,10 @@ namespace PADD
 
 		static void createStatesDBForDomain(string domainFolder, string outputFolder, DomainDependentSolver solver, long totalSamples, bool storeObjectGraphs = true)
 		{
-			var problemFiles = Utils.FileSystemUtils.enumerateProblemFiles(domainFolder).ToList();
+			var problemFiles = PADDUtils.FileSystemUtils.enumerateProblemFiles(domainFolder).ToList();
 			long samplesPerFile = totalSamples / problemFiles.Count;
 
-			Utils.FileSystemUtils.createDirIfNonExisting(outputFolder);
+			PADDUtils.FileSystemUtils.createDirIfNonExisting(outputFolder);
 			long samplesGenerated = 0;
 			long toBeGenerated = samplesPerFile * problemFiles.Count;
 
@@ -196,7 +196,7 @@ namespace PADD
 							*/
 
 							string graphPath = Path.Combine(outputFolder, "graphs", currentID.ToString() + ".bin");
-							Utils.FileSystemUtils.createDirIfNonExisting(Path.Combine(outputFolder, "graphs"));
+							PADDUtils.FileSystemUtils.createDirIfNonExisting(Path.Combine(outputFolder, "graphs"));
 							using (var stream = new FileStream(graphPath, FileMode.Create))
 							{
 								graph.WriteToStream(stream);
