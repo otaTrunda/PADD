@@ -34,15 +34,25 @@ namespace PADD.StatesDB
 			enumerator.problem = SASProblem.CreateFromFile(problemFile);
 			var states = enumerator.enumerateStates();
 			var problem = SASProblem.CreateFromFile(problemFile);
+			HashSet<string> alreadyGenerated = new HashSet<string>();
+			int hashSetHits = 0;
+
 			foreach (var state in states)
 			{
-				samples++;
-				if (samples > numberOfSamples || watch.Elapsed > maxTime)
+				if (samples > numberOfSamples || watch.Elapsed > maxTime || hashSetHits > alreadyGenerated.Count)
 					break;
+
+				string stateString = state.ToString();
+				if (alreadyGenerated.Contains(stateString))
+				{
+					hashSetHits++;
+					continue;
+				}
+				alreadyGenerated.Add(stateString);
+				samples++;
 				problem.SetInitialState(state);
 				domainSpecificSolver.SetProblem(problem);
 				int goalDistance = (int)Math.Floor(domainSpecificSolver.Search(quiet: true));
-				var stateString = state.ToString();
 				yield return (stateString.Substring(0, stateString.Length - 2), goalDistance); //skipes two last two characters of the string. They are always the same.
 			}
 		}

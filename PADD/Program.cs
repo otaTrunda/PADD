@@ -89,23 +89,20 @@ namespace PADD
 
 			SASState s = SASState.parse(state, p);
 
-			Heuristic h = new SimpleFFNetHeuristic(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "trainingSamples", "graphFeaturesGen_4_Generator.bin"),
+			Heuristic h = new SimpleFFNetHeuristic(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "trainingSamples", "graphFeaturesGen_Generator.bin"),
 				Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "trainingSamples", "trainedNet_params.bin"), p);
 
 			var value = h.getValue(s);
-
-
 		}
 
-		private static void runPlanner(string problem, Heuristic h)
+		private static int runPlanner(string problem, Heuristic h)
 		{
 			SASProblem p = SASProblem.CreateFromFile(problem);
 			HeuristicSearchEngine engine = new AStarSearch(p, h);
 
 			var plan = engine.Search();
 
-			HeuristicSearchEngine engine2 = new AStarSearch(p, new FFHeuristic(p));
-			var plan2 = engine2.Search();
+			return plan;
 
 		}
 
