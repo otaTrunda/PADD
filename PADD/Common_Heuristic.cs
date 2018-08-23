@@ -1142,7 +1142,11 @@ namespace PADD
 			problem.SetInitialState(state);
 			
 			var msaglGraph = KnowledgeExtraction.computeObjectGraph(problem);
+			PADDUtils.GraphVisualization.GraphVis.showGraph(msaglGraph.toMSAGLGraph());
 			MyLabeledGraph graph = MyLabeledGraph.createFromMSAGLGraph(msaglGraph.toMSAGLGraph(), this.labelingFunc, this.labelSize);
+			var mmg = graph.toMSAGLGraph(true);
+			PADDUtils.GraphVisualization.GraphVis.showGraph(mmg);
+
 			var features = gen.getFeatures(graph);
 			var netOutput = NeuralNetTrainer.Network.executeByParams(netParams, features);
 

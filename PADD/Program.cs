@@ -81,18 +81,31 @@ namespace PADD
 
 		private static void testFFNetHeuristic()
 		{
-			string problem = "pfile10.sas";
-			string state = "[1 2x3 1 6 5 4 3x0 2x2 1 2";
+			string problem = "pfile1.sas";
+			//string state = "[1 2x3 1 6 5 4 3x0 2x2 1 2";
+			string state = "[0 2 1 0";
 
 			SASProblem p = SASProblem.CreateFromFile(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", problem));
 
 			SASState s = SASState.parse(state, p);
 
-			Heuristic h = new SimpleFFNetHeuristic(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "trainingSamples", "TODO.bin"),
+			Heuristic h = new SimpleFFNetHeuristic(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "trainingSamples", "graphFeaturesGen_4_Generator.bin"),
 				Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "trainingSamples", "trainedNet_params.bin"), p);
 
 			var value = h.getValue(s);
 
+
+		}
+
+		private static void runPlanner(string problem, Heuristic h)
+		{
+			SASProblem p = SASProblem.CreateFromFile(problem);
+			HeuristicSearchEngine engine = new AStarSearch(p, h);
+
+			var plan = engine.Search();
+
+			HeuristicSearchEngine engine2 = new AStarSearch(p, new FFHeuristic(p));
+			var plan2 = engine2.Search();
 
 		}
 
