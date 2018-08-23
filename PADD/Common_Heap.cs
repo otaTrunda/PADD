@@ -2162,7 +2162,8 @@ namespace PADD.Heaps
 
         public Value removeMin()
         {
-            return structure.RemoveMin();
+			throw new Exception();
+            //return structure.RemoveMin();
 
             /*
             var t = structure.First();
