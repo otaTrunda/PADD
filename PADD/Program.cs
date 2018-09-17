@@ -5,6 +5,7 @@ using System.Text;
 using System.IO;
 using PADD.StatesDB;
 using PADD.DomainDependentSolvers;
+using Utils.DataTransformations;
 
 namespace PADD
 {
@@ -27,8 +28,10 @@ namespace PADD
 		[STAThread]
 		static void Main(string[] args)
 		{
-			testFFNetHeuristic();
-
+			//for (int i = 1; i < 21; i++)
+			{
+				testFFNetHeuristic(8);
+			}
 
 			//visualizeKnowledgeGraphs(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "pddl", "pfile1.pddl"));
 
@@ -79,31 +82,86 @@ namespace PADD
 			}
 		}
 
-		private static void testFFNetHeuristic()
+		static double computeFFHeuristic(string stateString)
 		{
-			string problem = "pfile1.sas";
-			//string state = "[1 2x3 1 6 5 4 3x0 2x2 1 2";
-			string state = "[0 2 1 0";
+			var splitted = stateString.Split('_');
+			string domainName = splitted[0];
+			string problemName = splitted[1];
+			string stateAsString = splitted[2];
 
+			string sasProblemPath = Path.Combine(@"C:\Users\Trunda_Otakar\Documents\Visual Studio 2017\Projects\PADD - NEW\PADD\PADD\bin\tests\benchmarksSAS_ALL_withoutAxioms", domainName, problemName);
+			SASProblem p = SASProblem.CreateFromFile(sasProblemPath);
+			SASState state = SASState.parse(stateAsString, p);
+
+			FFHeuristic h = new FFHeuristic(p);
+
+			return h.getValue(state);
+		}
+
+		private static void testFFNetHeuristic(int fileNumber)
+		{
+			bool storeSamples = true;
+			string problem = "pfile" + fileNumber + ".sas";
+			string state = "[1 0 2 0 3 2x4 3 0 5 1 3";
+
+			//string samplesFolder = Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "trainingSamples");
+			string samplesFolder = @"B:\trainingSamplesLarge";
+
+			int subgraphSize = 4;
+			NormalizationType normalization = NormalizationType.Covariance;
+			bool useSqrt = true;
+			bool useFFasFeature = true;
 			SASProblem p = SASProblem.CreateFromFile(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", problem));
 
 			SASState s = SASState.parse(state, p);
 
-			Heuristic h = new SimpleFFNetHeuristic(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "trainingSamples", "graphFeaturesGen_Generator.bin"),
-				Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "trainingSamples", "trainedNet_params.bin"), p);
+			string generatorsPath = Path.Combine(samplesFolder, subgraphSize.ToString() + (useFFasFeature ? "F" : "") + NormalizationTypeHelper.ToChar(normalization) + (useSqrt ? "S" : ""), "graphFeaturesGen_Generator.bin");
+			string savedNetPath = Path.Combine(samplesFolder, subgraphSize.ToString() + (useFFasFeature ? "F" : "") + NormalizationTypeHelper.ToChar(normalization) + (useSqrt ? "S" : ""), "trainedNet_params.bin");
 
+			SimpleFFNetHeuristic h = storeSamples ?
+				new SimpleFFNetHeuristic(generatorsPath, savedNetPath, p, useFFasFeature, useSqrt, new DomainDependentSolvers.Zenotravel.ZenotravelSolver()) :
+				new SimpleFFNetHeuristic(generatorsPath, savedNetPath, p, useFFasFeature, useSqrt);
 			var value = h.getValue(s);
+
+			var heur = h;
+			//var heur = new FFHeuristic(p);
+			//var heur = new WeightedHeuristic(h, 10);
+			//var heur = new SumHeuristic(new List<Heuristic>() { h, new FFHeuristic(SASProblem.CreateFromFile(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", problem))) });
+			//var heur = new MaxHeuristic(new List<Heuristic>() { h, new FFHeuristic(SASProblem.CreateFromFile(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", problem))) });
+			//var heur = new MinHeuristic(new List<Heuristic>() { h, new FFHeuristic(SASProblem.CreateFromFile(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", problem))) });
+
+			Console.WriteLine();
+			var result = runPlanner(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", problem), heur, useTwoQueues: false);
+
+			if (storeSamples)
+			{
+				var newSamples = h.newSamples;
+				string newSamplesFileName = ("additionalSamples_" + DateTime.Now.ToString() + ".bin").Replace(":", "").Replace(" ", "");
+				Utils.Serialization.Serialize(newSamples, newSamplesFileName);
+			}
+
+			var netOutputs = h.newSamples.Select(q => h.getValue(SASState.parse(q.userData.Split('_').Last(), p)));
+
 		}
 
-		private static int runPlanner(string problem, Heuristic h)
+		private static int runPlanner(string problem, Heuristic h, bool useTwoQueues = false)
 		{
 			SASProblem p = SASProblem.CreateFromFile(problem);
-			HeuristicSearchEngine engine = new AStarSearch(p, h);
 
-			var plan = engine.Search();
-
-			return plan;
-
+			if (useTwoQueues)
+			{
+				MultipleOpenListsAStar engine = new MultipleOpenListsAStar(p, new List<Heuristic>() { h, new FFHeuristic(p) });
+				engine.timeLimit = TimeSpan.FromMinutes(10);
+				var plan = engine.Search();
+				return plan;
+			}
+			else
+			{
+				AStarSearch engine = new AStarSearch(p, h);
+				engine.timeLimit = TimeSpan.FromMinutes(10);
+				var plan = engine.Search();
+				return plan;
+			}
 		}
 
 		static void solveDomain(string domainFolder, DomainDependentSolver solver, bool submitPlans = false)

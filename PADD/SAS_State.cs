@@ -13,7 +13,7 @@ namespace PADD
     {
 		public string toStringWithMeanings()
 		{
-			return string.Join(", ", Enumerable.Range(0, this.stateValues.Length).Select(i => parentProblem.variablesData[i].valuesSymbolicMeaning[stateValues[i]]));
+			return string.Join(", ", Enumerable.Range(0, this.stateValues.Length).Select(i => parentProblem.variablesData[i].valuesSymbolicMeaning[stateValues[i]].Replace("Atom", "")));
 		}
 
         /// <summary>

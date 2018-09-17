@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using MathNet.Numerics;
+using NeuralNetTrainer;
 using NeuralNetTrainer.TrainingSamples;
 using Utils;
 using Utils.Graphs;
@@ -656,6 +657,66 @@ namespace PADD
 		}
 	}
 
+	class SumHeuristic : Heuristic
+	{
+		private List<Heuristic> h;
+
+		public SumHeuristic(List<Heuristic> h)
+		{
+			this.h = h;
+		}
+
+		protected override double evaluate(IState state)
+		{
+			return h.Sum(s => s.getValue(state));
+		}
+
+		public override string getDescription()
+		{
+			return "sum of (" + string.Join(", ", h.Select(s => s.getDescription())) + ")";
+		}
+	}
+
+	class MaxHeuristic : Heuristic
+	{
+		private List<Heuristic> h;
+
+		public MaxHeuristic(List<Heuristic> h)
+		{
+			this.h = h;
+		}
+
+		protected override double evaluate(IState state)
+		{
+			return h.Max(s => s.getValue(state));
+		}
+
+		public override string getDescription()
+		{
+			return "max of (" + string.Join(", ", h.Select(s => s.getDescription())) + ")";
+		}
+	}
+
+	class MinHeuristic : Heuristic
+	{
+		private List<Heuristic> h;
+
+		public MinHeuristic(List<Heuristic> h)
+		{
+			this.h = h;
+		}
+
+		protected override double evaluate(IState state)
+		{
+			return h.Min(s => s.getValue(state));
+		}
+
+		public override string getDescription()
+		{
+			return "min of (" + string.Join(", ", h.Select(s => s.getDescription())) + ")";
+		}
+	}
+
 	#region Noisy heuristics
 
 	class NoisyHeuristic : Heuristic
@@ -1119,8 +1180,15 @@ namespace PADD
 		int labelSize;
 		GraphsFeatureGenerator gen;
 		List<(float[,] weights, float[] biases)> netParams;
+		Utils.DataTransformations.DataNormalizer normalizer;
+		public List<TrainingSample> newSamples;
+		DomainDependentSolvers.DomainDependentSolver solver;
+		bool storeStates = false;
+		bool useFFHeuristicAsFeature = false;
+		bool useSqrt = false;
+		FFHeuristic ffH;
 
-		public SimpleFFNetHeuristic(string featuresGeneratorPath, string savedNetworkPath, SASProblem problem)
+		public SimpleFFNetHeuristic(string featuresGeneratorPath, string savedNetworkPath, SASProblem problem, bool useFFHeuristicAsFeature, bool useSqrt)
 		{
 			this.problem = problem;
 			originalState = problem.GetInitialState();
@@ -1128,7 +1196,28 @@ namespace PADD
 			this.labelingFunc = labelingData.labelingFunc;
 			this.labelSize = labelingData.labelSize;
 			this.gen = GraphsFeatureGenerator.load(featuresGeneratorPath);
-			netParams = NeuralNetTrainer.Network.loadParams(savedNetworkPath);
+			var parms = NeuralNetTrainer.Network.loadParams(savedNetworkPath);
+			netParams = parms.Item1;
+			normalizer = Utils.DataTransformations.DataNormalizer.loadFromParams(parms.Item2);
+			this.useFFHeuristicAsFeature = useFFHeuristicAsFeature;
+			if (this.useFFHeuristicAsFeature)
+				this.ffH = new FFHeuristic(problem);
+			this.useSqrt = useSqrt;
+		}
+
+		/// <summary>
+		/// If the solver is given, the heuristic will store all states on which it was evaluated as samples (it will store its features as well as target, for computing the target, the <paramref name="solver"/> will be used).
+		/// </summary>
+		/// <param name="featuresGeneratorPath"></param>
+		/// <param name="savedNetworkPath"></param>
+		/// <param name="problem"></param>
+		/// <param name="solver"></param>
+		public SimpleFFNetHeuristic(string featuresGeneratorPath, string savedNetworkPath, SASProblem problem, bool useFFHeuristicAsFeature, bool useSqrt, DomainDependentSolvers.DomainDependentSolver solver) :
+			this(featuresGeneratorPath, savedNetworkPath, problem, useFFHeuristicAsFeature, useSqrt)
+		{
+			this.solver = solver;
+			this.storeStates = true;
+			this.newSamples = new List<TrainingSample>();
 		}
 
 		public override string getDescription()
@@ -1142,17 +1231,47 @@ namespace PADD
 			problem.SetInitialState(state);
 			
 			var msaglGraph = KnowledgeExtraction.computeObjectGraph(problem);
-			PADDUtils.GraphVisualization.GraphVis.showGraph(msaglGraph.toMSAGLGraph());
+			//PADDUtils.GraphVisualization.GraphVis.showGraph(msaglGraph.toMSAGLGraph());
 			MyLabeledGraph graph = MyLabeledGraph.createFromMSAGLGraph(msaglGraph.toMSAGLGraph(), this.labelingFunc, this.labelSize);
-			var mmg = graph.toMSAGLGraph(true);
-			PADDUtils.GraphVisualization.GraphVis.showGraph(mmg);
+			//var mmg = graph.toMSAGLGraph(true);
+			//PADDUtils.GraphVisualization.GraphVis.showGraph(mmg);
 
-			var features = gen.getFeatures(graph);
-			var netOutput = NeuralNetTrainer.Network.executeByParams(netParams, features);
+			var features = getFeatures(state, graph);
+
+			if (storeStates)
+			{
+				solver.SetProblem(problem);
+				var realGoalDistance = solver.Search(quiet:true);
+				var targets = new float[] { (float)realGoalDistance };
+				var splitted = problem.GetInputFilePath().Split(System.IO.Path.DirectorySeparatorChar);
+				string stateInfo = splitted[splitted.Length - 2] + "_" + splitted[splitted.Length - 1] + "_" + state.ToString();
+				TrainingSample s = new TrainingSample(features, targets);
+				s.userData = stateInfo;
+				newSamples.Add(s);
+			}
+			if (normalizer != null)
+				features = normalizer.Transform(features, true);
+			
+			var netOutput = Network.executeByParams(netParams, features);
+			if (normalizer != null)
+				netOutput = normalizer.ReverseTransform(netOutput, false);
+
+			if (useSqrt)
+				netOutput = netOutput.Select(q => q * q).ToArray();
 
 			problem.SetInitialState(originalState);
-
 			return netOutput.Single();
+		}
+
+		protected float[] getFeatures(IState state, MyLabeledGraph graph)
+		{
+			var features = gen.getFeatures(graph);
+			if (useFFHeuristicAsFeature)
+			{
+				var ffVal = ffH.getValue(state);
+				features = features.Append((float)ffVal).ToArray();
+			}
+			return features;
 		}
 	}
 

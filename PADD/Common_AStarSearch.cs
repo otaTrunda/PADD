@@ -92,6 +92,8 @@ namespace PADD
         public IHeap<double, IState> openNodes;
         protected Dictionary<IState, StateInformation> gValues;
         protected Dictionary<IState, IState> predecessor;
+		protected double maxGVal = -1;
+
 
         public TimeSpan searchTime;
         public TimeSpan timeLimit = TimeSpan.FromMinutes(5);
@@ -199,7 +201,8 @@ namespace PADD
         public override int Search(bool quiet = false)
         {
 			Stopwatch loggingWatch = Stopwatch.StartNew();
-			TimeSpan loggingInterval = TimeSpan.FromMinutes(5);
+			//TimeSpan loggingInterval = TimeSpan.FromMinutes(5);
+			TimeSpan loggingInterval = TimeSpan.FromSeconds(10);
 
 			bool printHeapContent = false;
 
@@ -261,13 +264,13 @@ namespace PADD
 					Console.WriteLine(HeurValOfexpandedNode + "\t" + currentState.ToString());
 					foreach (var item in openNodes.getAllElements().OrderBy(item => item.k))
 					{
-						Console.WriteLine(item.k + "\t" + item.v.ToString());
+						Console.WriteLine(item.k + "\t" + (item.v as SASState).ToString()); // toStringWithMeanings());;
 					}
-					Console.WriteLine("expanded node:\t" + currentState.ToString());
+					
 					Console.WriteLine("heuristic calls:\t" + heuristic.statistics.heuristicCalls + "\tsumValue:\t" + heuristic.statistics.sumOfHeuristicVals + "\tavgValue:\t" + heuristic.statistics.getAverageHeurValue());
-				}		
+				}
 #endif
-
+				//Console.WriteLine("expanded node:\t" + (currentState as SASState).toStringWithMeanings());
 				addToClosedList(currentState);
                 if (problem.IsGoalState(currentState))
                 {
@@ -284,6 +287,8 @@ namespace PADD
                     return GVAL;
                 }
                 int currentGValue = gValues[currentState].gValue;
+				if (currentGValue > maxGVal)
+					maxGVal = currentGValue;
                 var successors = problem.GetAllSuccessors(currentState);
                 foreach (var succ in successors)
                 {
@@ -386,6 +391,7 @@ namespace PADD
         {
             PrintMessage("Closed nodes: " + (gValues.Where(item => item.Value.isClosed).Count()) +
                         "\tOpen nodes: " + openNodes.size() +
+						"\tMax GVal: " + maxGVal +
                         //"\tHeuristic calls: " + heuristic.heuristicCalls +
                         "\tMin heuristic: " + heuristic.statistics.bestHeuristicValue +
                         "\tAvg heuristic: " + heuristic.statistics.getAverageHeurValue().ToString("0.###"), quiet);
@@ -527,6 +533,7 @@ namespace PADD
 		{
 			PrintMessage("Closed nodes: " + (gValues.Count) +
 			"\tOpen nodes: (" + string.Join(", ", openLists.Select(op => op.size())) + ")" +
+			"\tMax GVal: " + maxGVal +
 			//"\tHeuristic calls: " + heuristic.heuristicCalls +
 			"\tMin heuristic: (" + string.Join(", ", heurs.Select(h => h.statistics.bestHeuristicValue)) + ")" +
 			"\tAvg heuristic: (" + string.Join(", ", heurs.Select(h => h.statistics.getAverageHeurValue().ToString("0.###"))) + ")"
