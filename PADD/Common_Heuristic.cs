@@ -6,6 +6,7 @@ using MathNet.Numerics;
 using NeuralNetTrainer;
 using NeuralNetTrainer.TrainingSamples;
 using Utils;
+using Utils.DataTransformations;
 using Utils.Graphs;
 
 namespace PADD
@@ -1180,15 +1181,15 @@ namespace PADD
 		int labelSize;
 		GraphsFeatureGenerator gen;
 		List<(float[,] weights, float[] biases)> netParams;
-		Utils.DataTransformations.DataNormalizer normalizer;
+		DataNormalizer normalizer;
 		public List<TrainingSample> newSamples;
 		DomainDependentSolvers.DomainDependentSolver solver;
 		bool storeStates = false;
 		bool useFFHeuristicAsFeature = false;
-		bool useSqrt = false;
+		TargetTransformationType targeTransformation;
 		FFHeuristic ffH;
 
-		public SimpleFFNetHeuristic(string featuresGeneratorPath, string savedNetworkPath, SASProblem problem, bool useFFHeuristicAsFeature, bool useSqrt)
+		public SimpleFFNetHeuristic(string featuresGeneratorPath, string savedNetworkPath, SASProblem problem, bool useFFHeuristicAsFeature, TargetTransformationType targeTransformation)
 		{
 			this.problem = problem;
 			originalState = problem.GetInitialState();
@@ -1202,7 +1203,7 @@ namespace PADD
 			this.useFFHeuristicAsFeature = useFFHeuristicAsFeature;
 			if (this.useFFHeuristicAsFeature)
 				this.ffH = new FFHeuristic(problem);
-			this.useSqrt = useSqrt;
+			this.targeTransformation = targeTransformation;
 		}
 
 		/// <summary>
@@ -1212,8 +1213,8 @@ namespace PADD
 		/// <param name="savedNetworkPath"></param>
 		/// <param name="problem"></param>
 		/// <param name="solver"></param>
-		public SimpleFFNetHeuristic(string featuresGeneratorPath, string savedNetworkPath, SASProblem problem, bool useFFHeuristicAsFeature, bool useSqrt, DomainDependentSolvers.DomainDependentSolver solver) :
-			this(featuresGeneratorPath, savedNetworkPath, problem, useFFHeuristicAsFeature, useSqrt)
+		public SimpleFFNetHeuristic(string featuresGeneratorPath, string savedNetworkPath, SASProblem problem, bool useFFHeuristicAsFeature, TargetTransformationType targeTransformation, DomainDependentSolvers.DomainDependentSolver solver) :
+			this(featuresGeneratorPath, savedNetworkPath, problem, useFFHeuristicAsFeature, targeTransformation)
 		{
 			this.solver = solver;
 			this.storeStates = true;
@@ -1256,8 +1257,7 @@ namespace PADD
 			if (normalizer != null)
 				netOutput = normalizer.ReverseTransform(netOutput, false);
 
-			if (useSqrt)
-				netOutput = netOutput.Select(q => q * q).ToArray();
+			netOutput = TargetTransformationTypeHelper.reverseTransform(netOutput, targeTransformation);
 
 			problem.SetInitialState(originalState);
 			return netOutput.Single();

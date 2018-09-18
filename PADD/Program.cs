@@ -109,18 +109,20 @@ namespace PADD
 
 			int subgraphSize = 4;
 			NormalizationType normalization = NormalizationType.Covariance;
-			bool useSqrt = true;
+			TargetTransformationType targeTransformation = TargetTransformationType.Sqrt;
 			bool useFFasFeature = true;
 			SASProblem p = SASProblem.CreateFromFile(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", problem));
 
 			SASState s = SASState.parse(state, p);
 
-			string generatorsPath = Path.Combine(samplesFolder, subgraphSize.ToString() + (useFFasFeature ? "F" : "") + NormalizationTypeHelper.ToChar(normalization) + (useSqrt ? "S" : ""), "graphFeaturesGen_Generator.bin");
-			string savedNetPath = Path.Combine(samplesFolder, subgraphSize.ToString() + (useFFasFeature ? "F" : "") + NormalizationTypeHelper.ToChar(normalization) + (useSqrt ? "S" : ""), "trainedNet_params.bin");
+			string generatorsPath = Path.Combine(samplesFolder, subgraphSize.ToString() + (useFFasFeature ? "F" : "") + NormalizationTypeHelper.ToChar(normalization) +
+				TargetTransformationTypeHelper.ToChar(targeTransformation), "graphFeaturesGen_Generator.bin");
+			string savedNetPath = Path.Combine(samplesFolder, subgraphSize.ToString() + (useFFasFeature ? "F" : "") + NormalizationTypeHelper.ToChar(normalization) +
+				TargetTransformationTypeHelper.ToChar(targeTransformation), "trainedNet_params.bin");
 
 			SimpleFFNetHeuristic h = storeSamples ?
-				new SimpleFFNetHeuristic(generatorsPath, savedNetPath, p, useFFasFeature, useSqrt, new DomainDependentSolvers.Zenotravel.ZenotravelSolver()) :
-				new SimpleFFNetHeuristic(generatorsPath, savedNetPath, p, useFFasFeature, useSqrt);
+				new SimpleFFNetHeuristic(generatorsPath, savedNetPath, p, useFFasFeature, targeTransformation, new DomainDependentSolvers.Zenotravel.ZenotravelSolver()) :
+				new SimpleFFNetHeuristic(generatorsPath, savedNetPath, p, useFFasFeature, targeTransformation);
 			var value = h.getValue(s);
 
 			var heur = h;
@@ -136,12 +138,16 @@ namespace PADD
 			if (storeSamples)
 			{
 				var newSamples = h.newSamples;
+				//h.newSamples = Utils.Serialization.Deserialize<List<NeuralNetTrainer.TrainingSample>>("additionalSamples_17.Sep1832200PM.bin");
 				string newSamplesFileName = ("additionalSamples_" + DateTime.Now.ToString() + ".bin").Replace(":", "").Replace(" ", "");
 				Utils.Serialization.Serialize(newSamples, newSamplesFileName);
 			}
-
-			var netOutputs = h.newSamples.Select(q => h.getValue(SASState.parse(q.userData.Split('_').Last(), p)));
-
+			/*
+			var currentNewSamples = new List<NeuralNetTrainer.TrainingSample>(h.newSamples);
+			var netOutputs = currentNewSamples.Select(q => h.getValue(SASState.parse(q.userData.Split('_').Last(), p))).ToList();
+			var targetOutputs = h.newSamples.Zip(netOutputs, (a, b) => a.targets.Single() + "\t" + b);
+			File.WriteAllLines("newSamplesHH.tsv", targetOutputs);
+			*/
 		}
 
 		private static int runPlanner(string problem, Heuristic h, bool useTwoQueues = false)
