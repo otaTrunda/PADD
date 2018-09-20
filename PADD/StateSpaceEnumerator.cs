@@ -178,7 +178,8 @@ namespace PADD
 
 			protected void setSearchResults()
 			{
-				this.results.expandedNodesCount = this.gValues.Count + this.openNodes.size();
+				this.results.closedNodes = this.gValues.Count;
+				this.results.openNodesCount = this.openNodes.size();
 				this.results.timeInSeconds = (int)stopwatch.Elapsed.TotalSeconds;
 				this.results.solutionFound = false;
 				results.planLength = -1;

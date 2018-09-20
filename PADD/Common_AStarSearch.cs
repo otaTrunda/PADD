@@ -15,8 +15,9 @@ namespace PADD
         public string domainName;
         public string problemName;
         public string algorithm;
-        public int expandedNodesCount;
-        public string heuristicName;
+        public int closedNodes;
+		public int openNodesCount;
+		public string heuristicName;
         public int timeInSeconds;
         public bool solutionFound;
         public int planLength;
@@ -28,11 +29,11 @@ namespace PADD
             string delimiter = ";";
 
             StringBuilder sb = new StringBuilder();
-            sb.Append(problemID);
-            sb.Append(delimiter);
+            //sb.Append(problemID);
+            //sb.Append(delimiter);
 
-            sb.Append(randomWalkLength);
-            sb.Append(delimiter);
+            //sb.Append(randomWalkLength);
+            //sb.Append(delimiter);
 
             sb.Append(domainName);
             sb.Append(delimiter);
@@ -49,10 +50,13 @@ namespace PADD
             sb.Append(timeInSeconds);
             sb.Append(delimiter);
 
-            sb.Append(expandedNodesCount);
+            sb.Append(closedNodes);
             sb.Append(delimiter);
 
-            sb.Append(solutionFound);
+			sb.Append(openNodesCount);
+			sb.Append(delimiter);
+
+			sb.Append(solutionFound);
             sb.Append(delimiter);
 
             sb.Append(planLength);
@@ -173,10 +177,15 @@ namespace PADD
 
         protected void setSearchResults()
         {
-            this.results.expandedNodesCount = this.gValues.Count + this.openNodes.size();
-            this.results.timeInSeconds = (int)stopwatch.Elapsed.TotalSeconds;
+			this.results.closedNodes = gValues.Where(item => item.Value.isClosed).Count();
+			this.results.openNodesCount = this.openNodes.size();
+			this.results.timeInSeconds = (int)stopwatch.Elapsed.TotalSeconds;
             this.results.solutionFound = false;
-            results.planLength = -1;
+			this.results.algorithm = this.getDescription();
+			this.results.avgHeuristicValue = this.heuristic.statistics.getAverageHeurValue();
+			results.bestHeuristicValue = this.heuristic.statistics.bestHeuristicValue;
+			results.problemName = this.problem.GetProblemName();
+			results.heuristicName = this.heuristic.getDescription();
         }
 
 		protected virtual IState popFromOpenList()
@@ -620,8 +629,9 @@ namespace PADD
                     case SearchStatus.TimeLimitExceeded:
                     case SearchStatus.MemoryLimitExceeded:
                         results.planLength = result;
-                        results.expandedNodesCount = openNodes.size() + gValues.Count();
-                        results.solutionFound = searchStatus == SearchStatus.SolutionFound;
+                        results.closedNodes = gValues.Count();
+						results.openNodesCount = openNodes.size();
+						results.solutionFound = searchStatus == SearchStatus.SolutionFound;
                         results.timeInSeconds = (int)searchTime.TotalSeconds;
                         return result;
 

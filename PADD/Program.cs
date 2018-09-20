@@ -14,25 +14,30 @@ namespace PADD
         public static Random r = new Random(123);
 		public static Logger logger = new Logger();
 
-		private static string SAS_allFolder = "./../tests/benchmarksSAS_ALL";
-		private static string SAS_all_WithoutAxioms = "./../tests/benchmarksSAS_ALL_withoutAxioms";
-		private static string mediumDomainsFolder = "./../tests/benchmarksSAS_ALL - medium";
-        private static string mediumDomainsFolderFirstHalf = "./../tests/benchmarksSAS_ALL - medium1";
-        private static string mediumDomainsFolderSecondHalf = "./../tests/benchmarksSAS_ALL - medium2";
-        private static string small_and_mediumDomainsFolder = "./../tests/benchmarksSAS_ALL - small+medium";
-        private static string freeLunchSmall = "../tests/FreeLunchBenchmarks - small";
+		private static string benchmarksTestFolder = Environment.GetEnvironmentVariable("SASProblems");
+
+		private static string SAS_allFolder = Path.Combine(benchmarksTestFolder, "benchmarksSAS_ALL");
+		private static string SAS_all_WithoutAxioms = Path.Combine(benchmarksTestFolder, "benchmarksSAS_ALL_withoutAxioms");
+		private static string mediumDomainsFolder = Path.Combine(benchmarksTestFolder, "benchmarksSAS_ALL - medium");
+        private static string mediumDomainsFolderFirstHalf = Path.Combine(benchmarksTestFolder, "benchmarksSAS_ALL - medium1");
+        private static string mediumDomainsFolderSecondHalf = Path.Combine(benchmarksTestFolder, "benchmarksSAS_ALL - medium2");
+        private static string small_and_mediumDomainsFolder = Path.Combine(benchmarksTestFolder, "benchmarksSAS_ALL - small+medium");
+        private static string freeLunchSmall = Path.Combine(benchmarksTestFolder, "FreeLunchBenchmarks - small");
 		
-        private static string testFilesFolder = "../tests/test";
-		private static string test2FilesFolder = "../tests/test2";
+        private static string testFilesFolder = Path.Combine(benchmarksTestFolder, "test");
+		private static string test2FilesFolder = Path.Combine(benchmarksTestFolder, "test2");
 
 		[STAThread]
 		static void Main(string[] args)
 		{
-			//for (int i = 1; i < 21; i++)
+			//testFFNetHeuristic(8);
+			
+			for (int i = 1; i < 21; i++)
 			{
-				testFFNetHeuristic(8);
+				testFFNetHeuristic(i);
 			}
-
+			
+			return;
 			//visualizeKnowledgeGraphs(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "pddl", "pfile1.pddl"));
 
 			//testZenoSolver();
@@ -109,11 +114,11 @@ namespace PADD
 
 			int subgraphSize = 4;
 			NormalizationType normalization = NormalizationType.Covariance;
-			TargetTransformationType targeTransformation = TargetTransformationType.Sqrt;
+			TargetTransformationType targeTransformation = TargetTransformationType.Log;
 			bool useFFasFeature = true;
 			SASProblem p = SASProblem.CreateFromFile(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", problem));
 
-			SASState s = SASState.parse(state, p);
+			//SASState s = SASState.parse(state, p);
 
 			string generatorsPath = Path.Combine(samplesFolder, subgraphSize.ToString() + (useFFasFeature ? "F" : "") + NormalizationTypeHelper.ToChar(normalization) +
 				TargetTransformationTypeHelper.ToChar(targeTransformation), "graphFeaturesGen_Generator.bin");
@@ -123,7 +128,7 @@ namespace PADD
 			SimpleFFNetHeuristic h = storeSamples ?
 				new SimpleFFNetHeuristic(generatorsPath, savedNetPath, p, useFFasFeature, targeTransformation, new DomainDependentSolvers.Zenotravel.ZenotravelSolver()) :
 				new SimpleFFNetHeuristic(generatorsPath, savedNetPath, p, useFFasFeature, targeTransformation);
-			var value = h.getValue(s);
+			//var value = h.getValue(s);
 
 			var heur = h;
 			//var heur = new FFHeuristic(p);
@@ -131,10 +136,11 @@ namespace PADD
 			//var heur = new SumHeuristic(new List<Heuristic>() { h, new FFHeuristic(SASProblem.CreateFromFile(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", problem))) });
 			//var heur = new MaxHeuristic(new List<Heuristic>() { h, new FFHeuristic(SASProblem.CreateFromFile(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", problem))) });
 			//var heur = new MinHeuristic(new List<Heuristic>() { h, new FFHeuristic(SASProblem.CreateFromFile(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", problem))) });
+			//var heur = new WeightedHeuristic(new SumHeuristic(new List<Heuristic>() { h, new FFHeuristic(SASProblem.CreateFromFile(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", problem))) }), 0.5);
 
 			Console.WriteLine();
 			var result = runPlanner(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", problem), heur, useTwoQueues: false);
-
+			File.AppendAllLines("results.txt", new[] { result.ToString() } );
 			if (storeSamples)
 			{
 				var newSamples = h.newSamples;
@@ -150,7 +156,7 @@ namespace PADD
 			*/
 		}
 
-		private static int runPlanner(string problem, Heuristic h, bool useTwoQueues = false)
+		private static SearchResults runPlanner(string problem, Heuristic h, bool useTwoQueues = false)
 		{
 			SASProblem p = SASProblem.CreateFromFile(problem);
 
@@ -159,14 +165,16 @@ namespace PADD
 				MultipleOpenListsAStar engine = new MultipleOpenListsAStar(p, new List<Heuristic>() { h, new FFHeuristic(p) });
 				engine.timeLimit = TimeSpan.FromMinutes(10);
 				var plan = engine.Search();
-				return plan;
+				engine.results.domainName = Path.GetFileName(Path.GetDirectoryName(problem));
+				return engine.results;
 			}
 			else
 			{
 				AStarSearch engine = new AStarSearch(p, h);
 				engine.timeLimit = TimeSpan.FromMinutes(10);
 				var plan = engine.Search();
-				return plan;
+				engine.results.domainName = Path.GetFileName(Path.GetDirectoryName(problem));
+				return engine.results;
 			}
 		}
 

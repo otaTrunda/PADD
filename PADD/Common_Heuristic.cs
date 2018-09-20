@@ -639,9 +639,9 @@ namespace PADD
 	class WeightedHeuristic : Heuristic
 	{
 		private Heuristic h;
-		private int weight;
+		private double weight;
 
-		public WeightedHeuristic(Heuristic h, int weight)
+		public WeightedHeuristic(Heuristic h, double weight)
 		{
 			this.h = h;
 			this.weight = weight;
@@ -1182,7 +1182,8 @@ namespace PADD
 		GraphsFeatureGenerator gen;
 		List<(float[,] weights, float[] biases)> netParams;
 		DataNormalizer normalizer;
-		public List<TrainingSample> newSamples;
+		public List<(TrainingSample, double output)> newSamples;
+
 		DomainDependentSolvers.DomainDependentSolver solver;
 		bool storeStates = false;
 		bool useFFHeuristicAsFeature = false;
@@ -1197,9 +1198,9 @@ namespace PADD
 			this.labelingFunc = labelingData.labelingFunc;
 			this.labelSize = labelingData.labelSize;
 			this.gen = GraphsFeatureGenerator.load(featuresGeneratorPath);
-			var parms = NeuralNetTrainer.Network.loadParams(savedNetworkPath);
+			var parms = Network.loadParams(savedNetworkPath);
 			netParams = parms.Item1;
-			normalizer = Utils.DataTransformations.DataNormalizer.loadFromParams(parms.Item2);
+			normalizer = DataNormalizer.loadFromParams(parms.Item2);
 			this.useFFHeuristicAsFeature = useFFHeuristicAsFeature;
 			if (this.useFFHeuristicAsFeature)
 				this.ffH = new FFHeuristic(problem);
@@ -1218,7 +1219,7 @@ namespace PADD
 		{
 			this.solver = solver;
 			this.storeStates = true;
-			this.newSamples = new List<TrainingSample>();
+			this.newSamples = new List<(TrainingSample, double output)>();
 		}
 
 		public override string getDescription()
@@ -1239,6 +1240,7 @@ namespace PADD
 
 			var features = getFeatures(state, graph);
 
+			TrainingSample s = null;
 			if (storeStates)
 			{
 				solver.SetProblem(problem);
@@ -1246,9 +1248,8 @@ namespace PADD
 				var targets = new float[] { (float)realGoalDistance };
 				var splitted = problem.GetInputFilePath().Split(System.IO.Path.DirectorySeparatorChar);
 				string stateInfo = splitted[splitted.Length - 2] + "_" + splitted[splitted.Length - 1] + "_" + state.ToString();
-				TrainingSample s = new TrainingSample(features, targets);
+				s = new TrainingSample(features, targets);
 				s.userData = stateInfo;
-				newSamples.Add(s);
 			}
 			if (normalizer != null)
 				features = normalizer.Transform(features, true);
@@ -1258,6 +1259,11 @@ namespace PADD
 				netOutput = normalizer.ReverseTransform(netOutput, false);
 
 			netOutput = TargetTransformationTypeHelper.reverseTransform(netOutput, targeTransformation);
+
+			if (storeStates)
+			{
+				newSamples.Add((s, netOutput.Single()));
+			}
 
 			problem.SetInitialState(originalState);
 			return netOutput.Single();
