@@ -284,8 +284,12 @@
       <Project>{6B6477A7-C9AF-4B61-8E4E-9573B7CA60A8}</Project>
       <Name>NeuralNetTrainer</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\GIT_REPOS\NeuralNetTrainer\Utils\Utils.csproj">
+    <ProjectReference Include="..\..\..\GIT_REPOS\NeuralNetTrainer\SolutionSpecificUtils\SolutionSpecificUtils.csproj">
       <Project>{0483cf4e-3b0c-4d2f-9683-699f90304a8a}</Project>
+      <Name>SolutionSpecificUtils</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\GIT_REPOS\Utils\Utils\Utils.csproj">
+      <Project>{60585d47-3e07-4e6f-b786-19f602841885}</Project>
       <Name>Utils</Name>
     </ProjectReference>
     <ProjectReference Include="..\Utils\Utilities.csproj">

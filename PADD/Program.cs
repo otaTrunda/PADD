@@ -5,7 +5,7 @@ using System.Text;
 using System.IO;
 using PADD.StatesDB;
 using PADD.DomainDependentSolvers;
-using Utils.DataTransformations;
+using SolutionSpecificUtils.DataTransformations;
 
 namespace PADD
 {
@@ -30,15 +30,16 @@ namespace PADD
 		[STAThread]
 		static void Main(string[] args)
 		{
-			//testFFNetHeuristic(8);
+			//testFFNetHeuristic(8, HeuristicType.net); return;
 			
 			for (int i = 1; i < 21; i++)
 			{
-				testFFNetHeuristic(i);
+				testFFNetHeuristic(i, HeuristicType.net);
 			}
 			
 			return;
-			//visualizeKnowledgeGraphs(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "pddl", "pfile1.pddl"));
+			
+			visualizeKnowledgeGraphs(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "pddl", "pfile1.pddl"));
 
 			//testZenoSolver();
 			//solveDomain(Path.Combine(SAS_all_WithoutAxioms, "zenotravel"), new DomainDependentSolvers.Zenotravel.ZenotravelSolver());
@@ -103,18 +104,18 @@ namespace PADD
 			return h.getValue(state);
 		}
 
-		private static void testFFNetHeuristic(int fileNumber)
+		private static void testFFNetHeuristic(int fileNumber, HeuristicType type)
 		{
-			bool storeSamples = true;
+			bool storeSamples = false;
 			string problem = "pfile" + fileNumber + ".sas";
 			string state = "[1 0 2 0 3 2x4 3 0 5 1 3";
 
 			//string samplesFolder = Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "trainingSamples");
-			string samplesFolder = @"B:\trainingSamplesLarge";
+			string samplesFolder = @"B:\trainingSamplesLarge2";
 
 			int subgraphSize = 4;
 			NormalizationType normalization = NormalizationType.Covariance;
-			TargetTransformationType targeTransformation = TargetTransformationType.Log;
+			TargetTransformationType targeTransformation = TargetTransformationType.SqrtLog;
 			bool useFFasFeature = true;
 			SASProblem p = SASProblem.CreateFromFile(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", problem));
 
@@ -128,18 +129,39 @@ namespace PADD
 			SimpleFFNetHeuristic h = storeSamples ?
 				new SimpleFFNetHeuristic(generatorsPath, savedNetPath, p, useFFasFeature, targeTransformation, new DomainDependentSolvers.Zenotravel.ZenotravelSolver()) :
 				new SimpleFFNetHeuristic(generatorsPath, savedNetPath, p, useFFasFeature, targeTransformation);
-			//var value = h.getValue(s);
+			//var value = h.getValue(s);	//only works for pfile8.sas The value should be close to 10
 
-			var heur = h;
-			//var heur = new FFHeuristic(p);
-			//var heur = new WeightedHeuristic(h, 10);
-			//var heur = new SumHeuristic(new List<Heuristic>() { h, new FFHeuristic(SASProblem.CreateFromFile(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", problem))) });
-			//var heur = new MaxHeuristic(new List<Heuristic>() { h, new FFHeuristic(SASProblem.CreateFromFile(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", problem))) });
-			//var heur = new MinHeuristic(new List<Heuristic>() { h, new FFHeuristic(SASProblem.CreateFromFile(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", problem))) });
-			//var heur = new WeightedHeuristic(new SumHeuristic(new List<Heuristic>() { h, new FFHeuristic(SASProblem.CreateFromFile(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", problem))) }), 0.5);
+			Heuristic heur = h;
+			bool useTwoQueues = false;
+
+			switch (type)
+			{
+				case HeuristicType.FF:
+					heur = new FFHeuristic(p);
+					break;
+				case HeuristicType.net:
+					break;
+				case HeuristicType.sum:
+					heur = new SumHeuristic(new List<Heuristic>() { h, new FFHeuristic(SASProblem.CreateFromFile(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", problem))) });
+					break;
+				case HeuristicType.max:
+					heur = new MaxHeuristic(new List<Heuristic>() { h, new FFHeuristic(SASProblem.CreateFromFile(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", problem))) });
+					break;
+				case HeuristicType.min:
+					heur = new MinHeuristic(new List<Heuristic>() { h, new FFHeuristic(SASProblem.CreateFromFile(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", problem))) });
+					break;
+				case HeuristicType.weighted10:
+					new WeightedHeuristic(h, 10);
+					break;
+				case HeuristicType.doubleList:
+					useTwoQueues = true;
+					break;
+				default:
+					break;
+			}
 
 			Console.WriteLine();
-			var result = runPlanner(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", problem), heur, useTwoQueues: false);
+			var result = runPlanner(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", problem), heur, useTwoQueues: useTwoQueues);
 			File.AppendAllLines("results.txt", new[] { result.ToString() } );
 			if (storeSamples)
 			{
@@ -1940,6 +1962,17 @@ namespace PADD
 		heurFile_Mean,
 		doubleListFF_FileMedian,
 		doubleListFF_FileMean,
+	}
+
+	public enum HeuristicType
+	{
+		FF,
+		net,
+		sum,
+		max,
+		min,
+		weighted10,
+		doubleList
 	}
 
 	public enum StatesHistogramType

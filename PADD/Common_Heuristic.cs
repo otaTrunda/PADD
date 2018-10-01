@@ -5,9 +5,9 @@ using System.Text;
 using MathNet.Numerics;
 using NeuralNetTrainer;
 using NeuralNetTrainer.TrainingSamples;
-using Utils;
-using Utils.DataTransformations;
-using Utils.Graphs;
+using SolutionSpecificUtils;
+using SolutionSpecificUtils.DataTransformations;
+using SolutionSpecificUtils.Graphs;
 
 namespace PADD
 {

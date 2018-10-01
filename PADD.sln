@@ -19,7 +19,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Utilities", "Utils\Utilitie
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NeuralNetTrainer", "..\..\GIT_REPOS\NeuralNetTrainer\NeuralNetTrainer\NeuralNetTrainer.csproj", "{6B6477A7-C9AF-4B61-8E4E-9573B7CA60A8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Utils", "..\..\GIT_REPOS\NeuralNetTrainer\Utils\Utils.csproj", "{0483CF4E-3B0C-4D2F-9683-699F90304A8A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Utils", "..\..\GIT_REPOS\Utils\Utils\Utils.csproj", "{60585D47-3E07-4E6F-B786-19F602841885}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SolutionSpecificUtils", "..\..\GIT_REPOS\NeuralNetTrainer\SolutionSpecificUtils\SolutionSpecificUtils.csproj", "{0483CF4E-3B0C-4D2F-9683-699F90304A8A}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
@@ -118,8 +120,20 @@ Global
 		{6B6477A7-C9AF-4B61-8E4E-9573B7CA60A8}.Release|x64.Build.0 = Release|x64
 		{6B6477A7-C9AF-4B61-8E4E-9573B7CA60A8}.Release|x86.ActiveCfg = Release|Any CPU
 		{6B6477A7-C9AF-4B61-8E4E-9573B7CA60A8}.Release|x86.Build.0 = Release|Any CPU
-		{0483CF4E-3B0C-4D2F-9683-699F90304A8A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0483CF4E-3B0C-4D2F-9683-699F90304A8A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{60585D47-3E07-4E6F-B786-19F602841885}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{60585D47-3E07-4E6F-B786-19F602841885}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{60585D47-3E07-4E6F-B786-19F602841885}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{60585D47-3E07-4E6F-B786-19F602841885}.Debug|x64.Build.0 = Debug|Any CPU
+		{60585D47-3E07-4E6F-B786-19F602841885}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{60585D47-3E07-4E6F-B786-19F602841885}.Debug|x86.Build.0 = Debug|Any CPU
+		{60585D47-3E07-4E6F-B786-19F602841885}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{60585D47-3E07-4E6F-B786-19F602841885}.Release|Any CPU.Build.0 = Release|Any CPU
+		{60585D47-3E07-4E6F-B786-19F602841885}.Release|x64.ActiveCfg = Release|Any CPU
+		{60585D47-3E07-4E6F-B786-19F602841885}.Release|x64.Build.0 = Release|Any CPU
+		{60585D47-3E07-4E6F-B786-19F602841885}.Release|x86.ActiveCfg = Release|Any CPU
+		{60585D47-3E07-4E6F-B786-19F602841885}.Release|x86.Build.0 = Release|Any CPU
+		{0483CF4E-3B0C-4D2F-9683-699F90304A8A}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{0483CF4E-3B0C-4D2F-9683-699F90304A8A}.Debug|Any CPU.Build.0 = Debug|x64
 		{0483CF4E-3B0C-4D2F-9683-699F90304A8A}.Debug|x64.ActiveCfg = Debug|x64
 		{0483CF4E-3B0C-4D2F-9683-699F90304A8A}.Debug|x64.Build.0 = Debug|x64
 		{0483CF4E-3B0C-4D2F-9683-699F90304A8A}.Debug|x86.ActiveCfg = Debug|Any CPU
