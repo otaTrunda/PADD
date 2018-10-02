@@ -147,11 +147,11 @@ namespace PADD
 		/// <param name="gValue"></param>
 		/// <param name="pred"></param>
 		/// <returns></returns>
-		protected virtual bool addToOpenList(IState s, int gValue, IState pred)
+		protected virtual bool addToOpenList(IState s, int gValue, IState pred, IOperator op = null)
         {
             if (!gValues.ContainsKey(s))
             {
-                double hValue = heuristic.getValue(s);
+                double hValue = heuristic.getValue(s, pred, op);
                 gValues.Add(s, new StateInformation(gValue));
                 predecessor.Add(s, pred);
 				if (!double.IsInfinity(hValue))	//infinity heuristic indicates dead-end
@@ -166,7 +166,7 @@ namespace PADD
                 predecessor[s] = pred;
 				if (!f.isClosed)
 				{
-					double hValue = heuristic.getValue(s);
+					double hValue = heuristic.getValue(s, pred, op);
 					if (!double.IsInfinity(hValue)) //infinity heuristic indicates dead-end
 						openNodes.insert(gValue + hValue + hValue / 10000, s);	//breaking ties in favor of nodes that have lesser heuristic estimates
 					return true;
@@ -317,7 +317,7 @@ namespace PADD
                     int gVal = currentGValue + succ.GetOperator().GetCost();
                     try
                     {
-                        addToOpenList(state, gVal, currentState);
+                        addToOpenList(state, gVal, currentState, succ.GetOperator());
                     }
                     catch (OutOfMemoryException)
                     {
@@ -448,7 +448,7 @@ namespace PADD
 			}
 		}
 
-		protected override bool addToOpenList(IState s, int gValue, IState pred)
+		protected override bool addToOpenList(IState s, int gValue, IState pred, IOperator op = null)
 		{
 			if (!gValues.ContainsKey(s))
 			{
@@ -560,7 +560,7 @@ namespace PADD
             this.f_limit = limit;
         }
 
-        protected override bool addToOpenList(IState s, int gValue, IState pred)
+        protected override bool addToOpenList(IState s, int gValue, IState pred, IOperator op = null)
         {
             if (gValue > f_limit)
                 return false;
@@ -646,7 +646,7 @@ namespace PADD
             }
         }
 
-        protected override bool addToOpenList(IState s, int gValue, IState pred)
+        protected override bool addToOpenList(IState s, int gValue, IState pred, IOperator op = null)
         {
             if (gValue > limit)
                 return false;

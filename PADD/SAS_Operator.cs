@@ -274,6 +274,20 @@ namespace PADD
 			return result;
 		}
 
+
+
+		public override int GetHashCode()
+		{
+			return this.GetOrderIndex();
+		}
+
+		public override bool Equals(object obj)
+		{
+			var @operator = obj as SASOperator;
+			return @operator != null &&
+				   operatorName == @operator.operatorName &&
+				   operatorOrderIndex == @operator.operatorOrderIndex;
+		}
 	}
 
     /// <summary>
@@ -536,11 +550,11 @@ namespace PADD
             this.effect = effect;
         }
 
-        /// <summary>
-        /// Gets the effect conditions.
-        /// </summary>
-        /// <returns>Conditions of the effect.</returns>
-        public SASOperatorPreconditions GetConditions()
+		/// <summary>
+		/// Gets the effect conditions.
+		/// </summary>
+		/// <returns>Conditions of the effect.</returns>
+		public SASOperatorPreconditions GetConditions()
         {
             return conditions;
         }
@@ -554,12 +568,12 @@ namespace PADD
             return effect;
         }
 
-        /// <summary>
-        /// Checks whether the effect can actually be applied to the given state (in case of conditional effect).
-        /// </summary>
-        /// <param name="state">SAS+ state.</param>
-        /// <returns>True if the effect can be applied on the given state, false otherwise.</returns>
-        public bool IsApplicable(SASState state)
+		/// <summary>
+		/// Checks whether the effect can actually be applied to the given state (in case of conditional effect).
+		/// </summary>
+		/// <param name="state">SAS+ state.</param>
+		/// <returns>True if the effect can be applied on the given state, false otherwise.</returns>
+		public bool IsApplicable(SASState state)
         {
             return conditions.IsApplicable(state);
         }
@@ -606,5 +620,7 @@ namespace PADD
 
             return sb.ToString();
         }
-    }
+
+		
+	}
 }

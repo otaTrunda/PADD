@@ -15,10 +15,17 @@ namespace PADD
 	{
 		protected SASProblem problem;
 		protected abstract double evaluate(IState state);
+
+		protected virtual double evaluate(IState state, IState predecessor, IOperator op)
+		{
+			return evaluate(state);
+		}
+
 		public abstract string getDescription();
 
 		/// <summary>
-		/// If true, the instance will store information about how many times the heuristic has been called and what is the minimal and average value of all heuristic calls. These results may be accessed through "statistics". If set to false, evaluation should be slightly faster.
+		/// If true, the instance will store information about how many times the heuristic has been called and what is the minimal and average value of all heuristic calls. 
+		/// These results may be accessed through "statistics". If set to false, evaluation should be slightly faster.
 		/// </summary>
 		public bool doMeasures = true;
 
@@ -45,11 +52,11 @@ namespace PADD
 			return best;
 		}
 
-		public double getValue(IState state)
+		public double getValue(IState state, IState predecessor = null, IOperator op = null)
 		{
 			if (doMeasures)
 			{
-				double val = evaluate(state);
+				double val = evaluate(state, predecessor, op);
 				if (!double.IsInfinity(val))    //infinity heuristic indicates dead-end. we don't want those included in computation of average heuristic value
 				{
 					statistics.heuristicCalls++;
@@ -67,6 +74,14 @@ namespace PADD
 		/// </summary>
 		public virtual void sethFFValueForNextState(double heurVal)
 		{
+		}
+
+		public Heuristic()
+		{
+			doMeasures = false;
+#if DEBUG
+			doMeasures = true;
+#endif
 		}
 	}
 
@@ -1189,6 +1204,7 @@ namespace PADD
 		bool useFFHeuristicAsFeature = false;
 		TargetTransformationType targeTransformation;
 		FFHeuristic ffH;
+		public Dictionary<IOperator, List<List<float>>> diffsByOps = new Dictionary<IOperator, List<List<float>>>();
 
 		public SimpleFFNetHeuristic(string featuresGeneratorPath, string savedNetworkPath, SASProblem problem, bool useFFHeuristicAsFeature, TargetTransformationType targeTransformation)
 		{
@@ -1229,6 +1245,11 @@ namespace PADD
 
 		protected override double evaluate(IState state)
 		{
+			throw new NotImplementedException();
+		}
+
+		protected override double evaluate(IState state, IState predecessor, IOperator op)
+		{
 			this.originalState = problem.GetInitialState();
 			problem.SetInitialState(state);
 			
@@ -1239,6 +1260,19 @@ namespace PADD
 			//PADDUtils.GraphVisualization.GraphVis.showGraph(mmg);
 
 			var features = getFeatures(state, graph);
+
+			if (predecessor != null)
+			{
+				problem.SetInitialState(predecessor);
+				var msaglGraphPred = KnowledgeExtraction.computeObjectGraph(problem);
+				MyLabeledGraph graphPred = MyLabeledGraph.createFromMSAGLGraph(msaglGraphPred.toMSAGLGraph(), this.labelingFunc, this.labelSize);
+				var predFeatures = getFeatures(predecessor, graphPred);
+
+				var diff = features.Zip(predFeatures, (curr, pred) => curr - pred).ToList();
+				if (!diffsByOps.ContainsKey(op))
+					diffsByOps.Add(op, new List<List<float>>());
+				diffsByOps[op].Add(diff);
+			}
 
 			TrainingSample s = null;
 			if (storeStates)

@@ -64,4 +64,47 @@ namespace PADD
 
 
     }
+
+	/// <summary>
+	/// Should give similar results as AStar with weighted heuristic with weight going to infinity.
+	/// </summary>
+	internal class GreedyBFS : AStarSearch
+	{
+		public GreedyBFS(IPlanningProblem d, Heuristic h) : base(d, h)
+		{
+		}
+
+		protected override bool addToOpenList(IState s, int gValue, IState pred, IOperator op = null)
+		{
+			if (!gValues.ContainsKey(s))
+			{
+				double hValue = heuristic.getValue(s);
+				gValues.Add(s, new StateInformation(gValue));
+				predecessor.Add(s, pred);
+				if (!double.IsInfinity(hValue)) //infinity heuristic indicates dead-end
+					openNodes.insert(hValue, s);  //breaking ties in favor of nodes that have lesser heuristic estimates. Heuristic value should always be less than 10000 (!!!)
+				return true;
+			}
+			if (gValues[s].gValue > gValue)
+			{
+				StateInformation f = gValues[s];
+				f.gValue = gValue;
+				gValues[s] = f;
+				predecessor[s] = pred;
+				if (!f.isClosed)
+				{
+					double hValue = heuristic.getValue(s);
+					if (!double.IsInfinity(hValue)) //infinity heuristic indicates dead-end
+						openNodes.insert(hValue, s);  //breaking ties in favor of nodes that have lesser heuristic estimates
+					return true;
+				}
+			}
+			return false;
+		}
+
+		public override string getDescription()
+		{
+			return "Greedy Best-first search";
+		}
+	}
 }

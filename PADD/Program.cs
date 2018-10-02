@@ -111,20 +111,20 @@ namespace PADD
 			string state = "[1 0 2 0 3 2x4 3 0 5 1 3";
 
 			//string samplesFolder = Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "trainingSamples");
-			string samplesFolder = @"B:\trainingSamplesLarge2";
+			string samplesFolder = @"B:\trainingSamplesLarge";
 
 			int subgraphSize = 4;
 			NormalizationType normalization = NormalizationType.Covariance;
-			TargetTransformationType targeTransformation = TargetTransformationType.SqrtLog;
+			TargetTransformationType targeTransformation = TargetTransformationType.LogLog;
 			bool useFFasFeature = true;
 			SASProblem p = SASProblem.CreateFromFile(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", problem));
 
 			//SASState s = SASState.parse(state, p);
 
 			string generatorsPath = Path.Combine(samplesFolder, subgraphSize.ToString() + (useFFasFeature ? "F" : "") + NormalizationTypeHelper.ToChar(normalization) +
-				TargetTransformationTypeHelper.ToChar(targeTransformation), "graphFeaturesGen_Generator.bin");
+				TargetTransformationTypeHelper.ToChar(targeTransformation), "0.02", "graphFeaturesGen_Generator.bin");
 			string savedNetPath = Path.Combine(samplesFolder, subgraphSize.ToString() + (useFFasFeature ? "F" : "") + NormalizationTypeHelper.ToChar(normalization) +
-				TargetTransformationTypeHelper.ToChar(targeTransformation), "trainedNet_params.bin");
+				TargetTransformationTypeHelper.ToChar(targeTransformation), "0.02", "trainedNet_params.bin");
 
 			SimpleFFNetHeuristic h = storeSamples ?
 				new SimpleFFNetHeuristic(generatorsPath, savedNetPath, p, useFFasFeature, targeTransformation, new DomainDependentSolvers.Zenotravel.ZenotravelSolver()) :
@@ -162,6 +162,9 @@ namespace PADD
 
 			Console.WriteLine();
 			var result = runPlanner(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", problem), heur, useTwoQueues: useTwoQueues);
+			var containsOnlySame = h.diffsByOps.Keys.All(op => h.diffsByOps[op].Select(x => x.Take(x.Count - 1)).All(x => x.Zip(h.diffsByOps[op].First(), (f, c) => f - c).Sum() == 0));
+			Console.WriteLine("only same: " + containsOnlySame);
+
 			File.AppendAllLines("results.txt", new[] { result.ToString() } );
 			if (storeSamples)
 			{
@@ -193,6 +196,7 @@ namespace PADD
 			else
 			{
 				AStarSearch engine = new AStarSearch(p, h);
+				//AStarSearch engine = new GreedyBFS(p, h);
 				engine.timeLimit = TimeSpan.FromMinutes(10);
 				var plan = engine.Search();
 				engine.results.domainName = Path.GetFileName(Path.GetDirectoryName(problem));
