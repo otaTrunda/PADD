@@ -5,9 +5,9 @@ using System.Text;
 using MathNet.Numerics;
 using NeuralNetTrainer;
 using NeuralNetTrainer.TrainingSamples;
-using SolutionSpecificUtils;
-using SolutionSpecificUtils.DataTransformations;
-using SolutionSpecificUtils.Graphs;
+using NeuralNetSpecificUtils;
+using NeuralNetSpecificUtils.DataTransformations;
+using NeuralNetSpecificUtils.Graphs;
 
 namespace PADD
 {
@@ -1216,7 +1216,7 @@ namespace PADD
 			this.gen = GraphsFeatureGenerator.load(featuresGeneratorPath);
 			var parms = Network.loadParams(savedNetworkPath);
 			netParams = parms.Item1;
-			normalizer = DataNormalizer.loadFromParams(parms.Item2);
+			normalizer = DataNormalizer.LoadFromParams(parms.Item2);
 			this.useFFHeuristicAsFeature = useFFHeuristicAsFeature;
 			if (this.useFFHeuristicAsFeature)
 				this.ffH = new FFHeuristic(problem);
@@ -1260,7 +1260,7 @@ namespace PADD
 			//PADDUtils.GraphVisualization.GraphVis.showGraph(mmg);
 
 			var features = getFeatures(state, graph);
-
+			/*
 			if (predecessor != null)
 			{
 				problem.SetInitialState(predecessor);
@@ -1273,7 +1273,7 @@ namespace PADD
 					diffsByOps.Add(op, new List<List<float>>());
 				diffsByOps[op].Add(diff);
 			}
-
+			*/
 			TrainingSample s = null;
 			if (storeStates)
 			{
@@ -1292,7 +1292,7 @@ namespace PADD
 			if (normalizer != null)
 				netOutput = normalizer.ReverseTransform(netOutput, false);
 
-			netOutput = TargetTransformationTypeHelper.reverseTransform(netOutput, targeTransformation);
+			netOutput = TargetTransformationTypeHelper.ReverseTransform(netOutput, targeTransformation);
 
 			if (storeStates)
 			{

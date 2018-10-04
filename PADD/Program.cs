@@ -5,7 +5,7 @@ using System.Text;
 using System.IO;
 using PADD.StatesDB;
 using PADD.DomainDependentSolvers;
-using SolutionSpecificUtils.DataTransformations;
+using NeuralNetSpecificUtils.DataTransformations;
 
 namespace PADD
 {
@@ -31,12 +31,14 @@ namespace PADD
 		static void Main(string[] args)
 		{
 			//testFFNetHeuristic(8, HeuristicType.net); return;
-			
-			for (int i = 1; i < 21; i++)
+
+			//foreach (var item in Enum.GetValues(typeof(HeuristicType)))
 			{
-				testFFNetHeuristic(i, HeuristicType.net);
+				for (int i = 1; i < 12; i++)
+				{
+					testFFNetHeuristic(i, /*(HeuristicType)item);*/ HeuristicType.net);
+				}
 			}
-			
 			return;
 			
 			visualizeKnowledgeGraphs(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "pddl", "pfile1.pddl"));
@@ -151,7 +153,7 @@ namespace PADD
 					heur = new MinHeuristic(new List<Heuristic>() { h, new FFHeuristic(SASProblem.CreateFromFile(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", problem))) });
 					break;
 				case HeuristicType.weighted10:
-					new WeightedHeuristic(h, 10);
+					heur = new WeightedHeuristic(h, 10);
 					break;
 				case HeuristicType.doubleList:
 					useTwoQueues = true;
@@ -162,8 +164,8 @@ namespace PADD
 
 			Console.WriteLine();
 			var result = runPlanner(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", problem), heur, useTwoQueues: useTwoQueues);
-			var containsOnlySame = h.diffsByOps.Keys.All(op => h.diffsByOps[op].Select(x => x.Take(x.Count - 1)).All(x => x.Zip(h.diffsByOps[op].First(), (f, c) => f - c).Sum() == 0));
-			Console.WriteLine("only same: " + containsOnlySame);
+			//var containsOnlySame = h.diffsByOps.Keys.All(op => h.diffsByOps[op].Select(x => x.Take(x.Count - 1)).All(x => x.Zip(h.diffsByOps[op].First(), (f, c) => f - c).Sum() == 0));
+			//Console.WriteLine("only same: " + containsOnlySame);
 
 			File.AppendAllLines("results.txt", new[] { result.ToString() } );
 			if (storeSamples)
