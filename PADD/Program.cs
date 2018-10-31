@@ -27,16 +27,31 @@ namespace PADD
         private static string testFilesFolder = Path.Combine(benchmarksTestFolder, "test");
 		private static string test2FilesFolder = Path.Combine(benchmarksTestFolder, "test2");
 
+		static void iterativeLearning(int iteration, int maxMinutes)
+		{
+			Console.WriteLine($"Search iteration {iteration} started at " + DateTime.Now);
+			for (int i = 1; i < 12; i++)
+			{
+				testFFNetHeuristic(i, HeuristicType.net, iteration, maxMinutes, true);
+			}
+		}
+
 		[STAThread]
 		static void Main(string[] args)
 		{
+			if (args.Length > 0 && args[0] == "iterative")
+			{
+				iterativeLearning(int.Parse(args[1]), int.Parse(args[2]));
+				return;
+			}
+
 			//testFFNetHeuristic(8, HeuristicType.net); return;
 
 			//foreach (var item in Enum.GetValues(typeof(HeuristicType)))
 			{
-				for (int i = 1; i < 12; i++)
+				for (int i = 1; i < 15; i++)
 				{
-					testFFNetHeuristic(i, /*(HeuristicType)item);*/ HeuristicType.net);
+					testFFNetHeuristic(i, /*(HeuristicType)item);*/ HeuristicType.net, MaxTime_Minutes: 10);
 				}
 			}
 			return;
@@ -106,32 +121,32 @@ namespace PADD
 			return h.getValue(state);
 		}
 
-		private static void testFFNetHeuristic(int fileNumber, HeuristicType type)
+		private static void testFFNetHeuristic(int fileNumber, HeuristicType type, int filePrefix = 1, int MaxTime_Minutes = 1, bool storeSamples = false)
 		{
-			bool storeSamples = false;
 			string problem = "pfile" + fileNumber + ".sas";
 			string state = "[1 0 2 0 3 2x4 3 0 5 1 3";
 
 			//string samplesFolder = Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "trainingSamples");
-			string samplesFolder = @"B:\trainingSamplesLarge";
+			//string samplesFolder = @"B:\iterativeTraining";
+			string samplesFolder = @"B:\trainingSamplesLarge2";
 
 			int subgraphSize = 4;
 			NormalizationType normalization = NormalizationType.Covariance;
-			TargetTransformationType targeTransformation = TargetTransformationType.LogLog;
+			TargetTransformationType targeTransformation = TargetTransformationType.SqrtLog;
 			bool useFFasFeature = true;
 			SASProblem p = SASProblem.CreateFromFile(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", problem));
 
 			//SASState s = SASState.parse(state, p);
+			string subFolder = subgraphSize.ToString() + (useFFasFeature ? "F" : "") + NormalizationTypeHelper.ToChar(normalization) +
+				TargetTransformationTypeHelper.ToChar(targeTransformation);
 
-			string generatorsPath = Path.Combine(samplesFolder, subgraphSize.ToString() + (useFFasFeature ? "F" : "") + NormalizationTypeHelper.ToChar(normalization) +
-				TargetTransformationTypeHelper.ToChar(targeTransformation), "0.02", "graphFeaturesGen_Generator.bin");
-			string savedNetPath = Path.Combine(samplesFolder, subgraphSize.ToString() + (useFFasFeature ? "F" : "") + NormalizationTypeHelper.ToChar(normalization) +
-				TargetTransformationTypeHelper.ToChar(targeTransformation), "0.02", "trainedNet_params.bin");
+			string generatorsPath = Path.Combine(samplesFolder, subFolder, "graphFeaturesGen_Generator.bin");
+			string savedNetPath = Path.Combine(samplesFolder, subFolder, "trainedNet_params.bin");
 
 			SimpleFFNetHeuristic h = storeSamples ?
 				new SimpleFFNetHeuristic(generatorsPath, savedNetPath, p, useFFasFeature, targeTransformation, new DomainDependentSolvers.Zenotravel.ZenotravelSolver()) :
 				new SimpleFFNetHeuristic(generatorsPath, savedNetPath, p, useFFasFeature, targeTransformation);
-			//var value = h.getValue(s);	//only works for pfile8.sas The value should be close to 10
+			//var value = h.getValue(s);	//only works for pfile8.sas For testing purposes, the value should be close to 10
 
 			Heuristic heur = h;
 			bool useTwoQueues = false;
@@ -163,17 +178,15 @@ namespace PADD
 			}
 
 			Console.WriteLine();
-			var result = runPlanner(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", problem), heur, useTwoQueues: useTwoQueues);
-			//var containsOnlySame = h.diffsByOps.Keys.All(op => h.diffsByOps[op].Select(x => x.Take(x.Count - 1)).All(x => x.Zip(h.diffsByOps[op].First(), (f, c) => f - c).Sum() == 0));
-			//Console.WriteLine("only same: " + containsOnlySame);
+			var result = runPlanner(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", problem), heur, useTwoQueues: useTwoQueues, MaxTime_Minutes);
 
 			File.AppendAllLines("results.txt", new[] { result.ToString() } );
 			if (storeSamples)
 			{
 				var newSamples = h.newSamples;
 				//h.newSamples = Utils.Serialization.Deserialize<List<NeuralNetTrainer.TrainingSample>>("additionalSamples_17.Sep1832200PM.bin");
-				string newSamplesFileName = ("additionalSamples_" + DateTime.Now.ToString() + ".bin").Replace(":", "").Replace(" ", "");
-				Utils.Serialization.Serialize(newSamples, newSamplesFileName);
+				string newSamplesFileName = "additionalSamples_" + filePrefix + "_" + fileNumber + "_" + (DateTime.Now.ToString() + ".bin").Replace(":", "").Replace(" ", "");
+				Utils.Serialization.Serialize(newSamples, Path.Combine(samplesFolder, subFolder, "NewSamples", newSamplesFileName));
 			}
 			/*
 			var currentNewSamples = new List<NeuralNetTrainer.TrainingSample>(h.newSamples);
@@ -183,14 +196,14 @@ namespace PADD
 			*/
 		}
 
-		private static SearchResults runPlanner(string problem, Heuristic h, bool useTwoQueues = false)
+		private static SearchResults runPlanner(string problem, Heuristic h, bool useTwoQueues = false, int maxTimeMinutes = 10)
 		{
 			SASProblem p = SASProblem.CreateFromFile(problem);
 
 			if (useTwoQueues)
 			{
 				MultipleOpenListsAStar engine = new MultipleOpenListsAStar(p, new List<Heuristic>() { h, new FFHeuristic(p) });
-				engine.timeLimit = TimeSpan.FromMinutes(10);
+				engine.timeLimit = TimeSpan.FromMinutes(maxTimeMinutes);
 				var plan = engine.Search();
 				engine.results.domainName = Path.GetFileName(Path.GetDirectoryName(problem));
 				return engine.results;
@@ -199,7 +212,7 @@ namespace PADD
 			{
 				AStarSearch engine = new AStarSearch(p, h);
 				//AStarSearch engine = new GreedyBFS(p, h);
-				engine.timeLimit = TimeSpan.FromMinutes(10);
+				engine.timeLimit = TimeSpan.FromMinutes(maxTimeMinutes);
 				var plan = engine.Search();
 				engine.results.domainName = Path.GetFileName(Path.GetDirectoryName(problem));
 				return engine.results;
@@ -1885,6 +1898,7 @@ namespace PADD
 				return;
 
 			Console.WriteLine(MSG);
+			return;
 			string LogFileFullPath_Name = Path.Combine(logFolder, "log_" + Environment.MachineName + ".txt");
 			if (!Directory.Exists(logFolder))
 				Directory.CreateDirectory(logFolder);

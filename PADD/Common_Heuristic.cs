@@ -66,7 +66,7 @@ namespace PADD
 				}
 				return val;
 			}
-			else return evaluate(state);
+			else return evaluate(state, predecessor, op);
 		}
 
 		/// <summary>
@@ -78,7 +78,7 @@ namespace PADD
 
 		public Heuristic()
 		{
-			doMeasures = false;
+			doMeasures = true;
 #if DEBUG
 			doMeasures = true;
 #endif
@@ -1204,7 +1204,8 @@ namespace PADD
 		bool useFFHeuristicAsFeature = false;
 		TargetTransformationType targeTransformation;
 		FFHeuristic ffH;
-		public Dictionary<IOperator, List<List<float>>> diffsByOps = new Dictionary<IOperator, List<List<float>>>();
+		public Dictionary<IOperator, List<(List<float>, IState, MyLabeledGraph, float[], IState, MyLabeledGraph, float[])>> diffsByOps =
+			new Dictionary<IOperator, List<(List<float>, IState, MyLabeledGraph, float[], IState, MyLabeledGraph, float[])>>();
 
 		public SimpleFFNetHeuristic(string featuresGeneratorPath, string savedNetworkPath, SASProblem problem, bool useFFHeuristicAsFeature, TargetTransformationType targeTransformation)
 		{
@@ -1260,7 +1261,7 @@ namespace PADD
 			//PADDUtils.GraphVisualization.GraphVis.showGraph(mmg);
 
 			var features = getFeatures(state, graph);
-			/*
+			
 			if (predecessor != null)
 			{
 				problem.SetInitialState(predecessor);
@@ -1270,10 +1271,72 @@ namespace PADD
 
 				var diff = features.Zip(predFeatures, (curr, pred) => curr - pred).ToList();
 				if (!diffsByOps.ContainsKey(op))
-					diffsByOps.Add(op, new List<List<float>>());
-				diffsByOps[op].Add(diff);
+					diffsByOps.Add(op, new List<(List<float>, IState, MyLabeledGraph, float[], IState, MyLabeledGraph, float[])>());
+				
+				if (diffsByOps[op].Any(x => !Utils.ExtensionMethods.CollectionsExtenstensions.AreArraysEqual(x.Item1.ToArray(), diff.ToArray())))
+				{
+					Console.WriteLine("Operator: " + op.ToString());
+
+					Console.WriteLine("Predecessor1:\t");
+					Console.WriteLine(diffsByOps[op].First().Item2.ToString());
+					int[] vals = ((SASState)diffsByOps[op].First().Item2).GetAllValues();
+					for (int i = 0; i < vals.Length; i++)
+					{
+						Console.Write(problem.variablesData[i].GetValueSymbolicMeaning(vals[i]) + ", ");
+					}
+					Console.WriteLine();
+					Console.WriteLine("Predecessor features:\t");
+					Console.WriteLine(string.Join(" ", diffsByOps[op].First().Item4));
+					Console.WriteLine("Predecessor graph:\t");
+					PADDUtils.GraphVisualization.GraphVis.showGraph(diffsByOps[op].First().Item3.toMSAGLGraph());
+
+					Console.WriteLine("Successor1:\t");
+					Console.WriteLine(diffsByOps[op].First().Item5.ToString());
+					vals = ((SASState)diffsByOps[op].First().Item5).GetAllValues();
+					for (int i = 0; i < vals.Length; i++)
+					{
+						Console.Write(problem.variablesData[i].GetValueSymbolicMeaning(vals[i]) + ", ");
+					}
+					Console.WriteLine();
+					Console.WriteLine("Sucessor features:\t");
+					Console.WriteLine(string.Join(" ", diffsByOps[op].First().Item7));
+					Console.WriteLine("Sucessor graph:\t");
+					PADDUtils.GraphVisualization.GraphVis.showGraph(diffsByOps[op].First().Item6.toMSAGLGraph());
+					Console.WriteLine("First diff:");
+					Console.WriteLine(string.Join(" ", diffsByOps[op].First().Item1));
+
+					Console.WriteLine("Predecessor2:\t");
+					Console.WriteLine(predecessor.ToString());
+					vals = ((SASState)predecessor).GetAllValues();
+					for (int i = 0; i < vals.Length; i++)
+					{
+						Console.Write(problem.variablesData[i].GetValueSymbolicMeaning(vals[i]) + ", ");
+					}
+					Console.WriteLine();
+					Console.WriteLine("Predecessor features:\t");
+					Console.WriteLine(string.Join(" ", predFeatures));
+					Console.WriteLine("Predecessor graph:\t");
+					PADDUtils.GraphVisualization.GraphVis.showGraph(graphPred.toMSAGLGraph());
+
+					Console.WriteLine("Successor2:\t");
+					Console.WriteLine(state.ToString());
+					vals = ((SASState)state).GetAllValues();
+					for (int i = 0; i < vals.Length; i++)
+					{
+						Console.Write(problem.variablesData[i].GetValueSymbolicMeaning(vals[i]) + ", ");
+					}
+					Console.WriteLine();
+					Console.WriteLine("Sucessor features:\t");
+					Console.WriteLine(string.Join(" ", features));
+					Console.WriteLine("Sucessor graph:\t");
+					PADDUtils.GraphVisualization.GraphVis.showGraph(graph.toMSAGLGraph());
+					Console.WriteLine("Second diff:");
+					Console.WriteLine(string.Join(" ", diff));
+				}
+
+				diffsByOps[op].Add((diff, predecessor, graphPred, predFeatures, state, graph, features));
 			}
-			*/
+			
 			TrainingSample s = null;
 			if (storeStates)
 			{
