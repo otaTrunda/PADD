@@ -8,6 +8,7 @@ using NeuralNetTrainer.TrainingSamples;
 using NeuralNetSpecificUtils;
 using NeuralNetSpecificUtils.DataTransformations;
 using NeuralNetSpecificUtils.Graphs;
+using Utils.ExtensionMethods;
 
 namespace PADD
 {
@@ -1207,6 +1208,75 @@ namespace PADD
 		public Dictionary<IOperator, List<(List<float>, IState, MyLabeledGraph, float[], IState, MyLabeledGraph, float[])>> diffsByOps =
 			new Dictionary<IOperator, List<(List<float>, IState, MyLabeledGraph, float[], IState, MyLabeledGraph, float[])>>();
 
+		public Dictionary<IOperator, Dictionary<(int, List<int>), (int, Microsoft.Msagl.Drawing.Graph predGraph, Microsoft.Msagl.Drawing.Graph succGraph, float[] predecessorFeatures, string predMeaning, float[] successorFeatures, string succMeaning)>> newValsByPredecessorsVals = 
+			new Dictionary<IOperator, Dictionary<(int, List<int>), (int, Microsoft.Msagl.Drawing.Graph predGraph, Microsoft.Msagl.Drawing.Graph succGraph, float[] predecessorFeatures, string predMeaning, float[] successorFeatures, string succMeaning)>>();
+
+		private class TupleHashFunction : IEqualityComparer<(int, List<int>)>
+		{
+			private Utils.ListInt_EqualityComparer q;
+
+			public bool Equals((int, List<int>) x, (int, List<int>) y)
+			{
+				if (x.Item1 != y.Item1)
+					return false;
+				return q.Equals(x.Item2, y.Item2);
+			}
+
+			public int GetHashCode((int, List<int>) obj)
+			{
+				return q.GetHashCode(obj.Item2) + obj.Item1 * 31;
+			}
+
+			public TupleHashFunction()
+			{
+				this.q = new Utils.ListInt_EqualityComparer();
+			}
+		}
+
+		private bool storeStatistics(float[] predecessorFeatures, string predMeaning, float[] successorFeatures, string succMeaning, IOperator op, Microsoft.Msagl.Drawing.Graph predecessorGraph, Microsoft.Msagl.Drawing.Graph successorGraph)
+		{
+			if (!newValsByPredecessorsVals.ContainsKey(op))
+				newValsByPredecessorsVals.Add(op, new Dictionary<(int, List<int>), (int, Microsoft.Msagl.Drawing.Graph, Microsoft.Msagl.Drawing.Graph, float[] predecessorFeatures, string predMeaning, float[] successorFeatures, string succMeaning)>(new TupleHashFunction()));
+			for (int i = 0; i < predecessorFeatures.Length-1; i++)
+			{
+				int previousVal = (int)predecessorFeatures[i];
+				int newVal = (int)successorFeatures[i];
+				var determiningIndices = gen.indexesOfSubsets[i].OrderBy(x => x).ToList();
+				var valsOfDeterminingIndices = predecessorFeatures.ElementsAt(determiningIndices).Select(x => (int)x).ToList();
+				if (!newValsByPredecessorsVals[op].ContainsKey((i, valsOfDeterminingIndices)))
+					newValsByPredecessorsVals[op].Add((i, valsOfDeterminingIndices), (newVal, predecessorGraph, successorGraph, predecessorFeatures, predMeaning, successorFeatures, succMeaning));
+				bool isTheSame = newValsByPredecessorsVals[op][(i, valsOfDeterminingIndices)].Item1 == newVal;
+				if (!isTheSame)
+				{
+					Console.WriteLine("index " + i);
+					Console.WriteLine("determining indices " + string.Join(" ", determiningIndices));
+					Console.WriteLine("predecessor1Features " + string.Join(" ", newValsByPredecessorsVals[op][(i, valsOfDeterminingIndices)].predecessorFeatures));
+					Console.WriteLine("predecessor1 meaning: " + newValsByPredecessorsVals[op][(i, valsOfDeterminingIndices)].predMeaning);
+					Console.WriteLine("predecessor1Graph");
+					PADDUtils.GraphVisualization.GraphVis.showGraph(newValsByPredecessorsVals[op][(i, valsOfDeterminingIndices)].predGraph);
+
+					Console.WriteLine("succ1Features " + string.Join(" ", newValsByPredecessorsVals[op][(i, valsOfDeterminingIndices)].successorFeatures));
+					Console.WriteLine("succ1 meaning: " + newValsByPredecessorsVals[op][(i, valsOfDeterminingIndices)].succMeaning);
+					Console.WriteLine("succ1Graph");
+					PADDUtils.GraphVisualization.GraphVis.showGraph(newValsByPredecessorsVals[op][(i, valsOfDeterminingIndices)].succGraph);
+
+
+					Console.WriteLine("predecessor2Features " + string.Join(" ", predecessorFeatures));
+					Console.WriteLine("predecessor1 meaning: " + predMeaning);
+					Console.WriteLine("predecessor2Graph");
+					PADDUtils.GraphVisualization.GraphVis.showGraph(predecessorGraph);
+
+					Console.WriteLine("succ2Features " + string.Join(" ", successorFeatures));
+					Console.WriteLine("succ2 meaning: " + succMeaning);
+					Console.WriteLine("succ2Graph");
+					PADDUtils.GraphVisualization.GraphVis.showGraph(successorGraph);
+
+					return false;
+				}
+			}
+			return true;
+		}
+
 		public SimpleFFNetHeuristic(string featuresGeneratorPath, string savedNetworkPath, SASProblem problem, bool useFFHeuristicAsFeature, TargetTransformationType targeTransformation)
 		{
 			this.problem = problem;
@@ -1269,6 +1339,8 @@ namespace PADD
 				MyLabeledGraph graphPred = MyLabeledGraph.createFromMSAGLGraph(msaglGraphPred.toMSAGLGraph(), this.labelingFunc, this.labelSize);
 				var predFeatures = getFeatures(predecessor, graphPred);
 
+				storeStatistics(predFeatures, ((SASState)predecessor).toStringWithMeanings(), features, ((SASState)state).toStringWithMeanings(), op, graphPred.toMSAGLGraph(true), graph.toMSAGLGraph(true));
+				/*
 				var diff = features.Zip(predFeatures, (curr, pred) => curr - pred).ToList();
 				if (!diffsByOps.ContainsKey(op))
 					diffsByOps.Add(op, new List<(List<float>, IState, MyLabeledGraph, float[], IState, MyLabeledGraph, float[])>());
@@ -1333,8 +1405,8 @@ namespace PADD
 					Console.WriteLine("Second diff:");
 					Console.WriteLine(string.Join(" ", diff));
 				}
-
 				diffsByOps[op].Add((diff, predecessor, graphPred, predFeatures, state, graph, features));
+				*/
 			}
 			
 			TrainingSample s = null;
@@ -1348,9 +1420,12 @@ namespace PADD
 				s = new TrainingSample(features, targets);
 				s.userData = stateInfo;
 			}
+
+			return 0;
+
 			if (normalizer != null)
 				features = normalizer.Transform(features, true);
-			
+
 			var netOutput = Network.executeByParams(netParams, features);
 			if (normalizer != null)
 				netOutput = normalizer.ReverseTransform(netOutput, false);

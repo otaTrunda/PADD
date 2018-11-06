@@ -5,6 +5,10 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using PADD.DomainDependentSolvers;
+using NeuralNetTrainer;
+using NeuralNetTrainer.TrainingSamples;
+using NeuralNetSpecificUtils.Graphs;
+using Utils.ExtensionMethods;
 
 namespace PADD.StatesDB
 {
@@ -206,4 +210,62 @@ namespace PADD.StatesDB
 		}
 	}
 
+	public class Helper
+	{
+		Dictionary<string, SASProblem> loadedProblems;
+
+		protected SASProblem getProblem(string description)
+		{
+			if (!loadedProblems.ContainsKey(description))
+			{
+				string[] parts = description.Split('_');
+				SASProblem p = SASProblem.CreateFromFile(@"C:\Users\Trunda_Otakar\Documents\Visual Studio 2017\Projects\PADD - NEW\PADD\PADD\bin\tests\benchmarksSAS_ALL_withoutAxioms\" + parts[0] + "\\" + parts[1]);
+				loadedProblems.Add(description, p);
+			}
+			return loadedProblems[description];
+		}
+
+		/// <summary>
+		/// Takes a list of training samples (previously created from SAS-states), transforms them back to SAS-states and then back to training samples using updated procedure
+		/// </summary>
+		/// <param name="samples"></param>
+		public IEnumerable<TrainingSample> ReGenerateSamples(List<TrainingSample> samples, string storeGeneratorPath = "")
+		{
+			GraphsFeatureGenerator g = new GraphsFeatureGenerator();
+			loadedProblems = new Dictionary<string, SASProblem>();
+
+			string[] parts1 = samples.First().userData.Split('_');
+			SASProblem p1 = getProblem(parts1[0] + "_" + parts1[1]);
+			SASState s1 = SASState.parse(parts1[2], p1);
+			p1.SetInitialState(s1);
+			var sampleGraph = KnowledgeExtraction.computeObjectGraph(p1).toMSAGLGraph();
+			var labelingFunction = NeuralNetSpecificUtils.UtilsMethods.getLabelingFunction(sampleGraph);
+			var labeledGraphs = new List<MyLabeledGraph>();
+			int i = 0;
+			foreach (var item in samples)
+			{
+				i++;
+				var t = item.userData;
+				string[] parts = t.Split('_');
+				SASProblem p = getProblem(parts[0] + "_" + parts[1]);
+				SASState s = SASState.parse(parts[2], p);
+				p.SetInitialState(s);
+				var graph = KnowledgeExtraction.computeObjectGraph(p).toMSAGLGraph();
+				labeledGraphs.Add(MyLabeledGraph.createFromMSAGLGraph(graph, labelingFunction.labelingFunc, labelingFunction.labelSize));
+				if (i % 1000 == 0)
+					Console.WriteLine("Completed " + i + " out of " + samples.Count + " .Time: " + DateTime.Now.ToString());
+			}
+
+			g.train(labeledGraphs, 4);
+			if (storeGeneratorPath != "")
+				g.save(storeGeneratorPath);
+			g.save("trainedGeneratorNEW.bin");
+			foreach (var item in samples.Zip(labeledGraphs))
+			{
+				var res = new TrainingSample(g.getFeatures(item.Item2), item.Item1.targets);
+				res.userData = item.Item1.userData;
+				yield return res;
+			}
+		}
+	}
 }

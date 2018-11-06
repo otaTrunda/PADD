@@ -44,9 +44,19 @@ namespace PADD
 				iterativeLearning(int.Parse(args[1]), int.Parse(args[2]));
 				return;
 			}
+			//var res = new Helper().ReGenerateSamples(Utils.Serialization.Deserialize<List<NeuralNetTrainer.TrainingSample>>(@"B:\iterativeTraining\4FCQ\initialSamples.bin")).ToList();
+			//var res = new Helper().ReGenerateSamples(Utils.Serialization.Deserialize<List<NeuralNetTrainer.TrainingSample>>(@"B:\iterativeTraining\4FCQ\currentSamples.bin")).ToList();
+			//Utils.Serialization.Serialize(res, "re-generatedSamples.bin");
+			//visualizeKnowledgeGraphs(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "pddl", "pfile2.pddl"));
+
+			//testZenoSolver();
+			//solveDomain(Path.Combine(SAS_all_WithoutAxioms, "zenotravel"), new DomainDependentSolvers.Zenotravel.ZenotravelSolver());
+			//solveDomain(Path.Combine(SAS_all_WithoutAxioms, "visitall"), new DomainDependentSolvers.VisitAll.VisitAllGreedySolver());
+			//solveDomain(Path.Combine(SAS_all_WithoutAxioms, "blocks"), new DomainDependentSolvers.BlocksWorld.BlocksWorldSolver(), submitPlans: true);
+			//return;
+
 
 			//testFFNetHeuristic(8, HeuristicType.net); return;
-
 			//foreach (var item in Enum.GetValues(typeof(HeuristicType)))
 			{
 				for (int i = 1; i < 15; i++)
@@ -55,15 +65,6 @@ namespace PADD
 				}
 			}
 			return;
-			
-			visualizeKnowledgeGraphs(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "pddl", "pfile1.pddl"));
-
-			//testZenoSolver();
-			//solveDomain(Path.Combine(SAS_all_WithoutAxioms, "zenotravel"), new DomainDependentSolvers.Zenotravel.ZenotravelSolver());
-			//solveDomain(Path.Combine(SAS_all_WithoutAxioms, "visitall"), new DomainDependentSolvers.VisitAll.VisitAllGreedySolver());
-			//solveDomain(Path.Combine(SAS_all_WithoutAxioms, "blocks"), new DomainDependentSolvers.BlocksWorld.BlocksWorldSolver(), submitPlans: true);
-			//return;
-
 
 			if (args.Length == 1 && args[0] == "combineResults")
 			{
@@ -140,7 +141,8 @@ namespace PADD
 			string subFolder = subgraphSize.ToString() + (useFFasFeature ? "F" : "") + NormalizationTypeHelper.ToChar(normalization) +
 				TargetTransformationTypeHelper.ToChar(targeTransformation);
 
-			string generatorsPath = Path.Combine(samplesFolder, subFolder, "graphFeaturesGen_Generator.bin");
+			//string generatorsPath = Path.Combine(samplesFolder, subFolder, "graphFeaturesGen_Generator.bin");
+			string generatorsPath = Path.Combine(samplesFolder, subFolder, "trainedGeneratorNEW.bin");
 			string savedNetPath = Path.Combine(samplesFolder, subFolder, "trainedNet_params.bin");
 
 			SimpleFFNetHeuristic h = storeSamples ?

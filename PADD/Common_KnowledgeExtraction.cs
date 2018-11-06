@@ -755,7 +755,7 @@ namespace PADD
 			{
 				string predicateName = problem.GetIDManager().GetPredicatesMapping().GetStringForPredicateID(item);
 				var paramsCount = problem.GetIDManager().GetPredicatesMapping().GetNumberOfParameters(predicateName);
-				if (rigidRelations.Any(r => r.GetPrefixID() == item))// &&	paramsCount <= 1)
+				if (rigidRelations.Any(r => r.GetPrefixID() == item) && paramsCount <= 1)
 					continue;	//rigid unary predicates are treated as types. They are not needed here.
 
 				var label = getPredicateHeadID(item);
@@ -767,7 +767,7 @@ namespace PADD
 		protected void addInitialPredicates(Graph g)
 		{
 			PDDLStateDefault state = (PDDLStateDefault)problem.GetInitialState();
-			foreach (var item in state.GetPredicates())
+			foreach (var item in state.GetPredicates().Concat(problem.GetRigidRelations().Where(x => x.GetParamCount() > 1)))
 			{
 				var arity = item.GetParamCount();
 				var constantIDs = Enumerable.Range(0, arity).Select(i => item.GetParam(i)).ToList();
@@ -849,6 +849,7 @@ namespace PADD
 					Edge e = g.AddEdge(constLabel, typeLabel);
 					formatAsTypeEdge(e);
 				}
+				continue;
 				if (item.GetParamCount() == 2)
 				{
 					string const1Label = getConstLabel(item.GetParam(0), problem.GetIDManager().GetConstantsMapping());
@@ -857,7 +858,6 @@ namespace PADD
 					g.AddEdge(const1Label, relationLabel, const2Label);
 				}
 			}
-
 		}
 
 		protected string getConstLabel(int constID, PDDLConstantsMapping mapping)
