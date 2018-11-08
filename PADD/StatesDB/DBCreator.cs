@@ -231,7 +231,7 @@ namespace PADD.StatesDB
 		/// <param name="samples"></param>
 		public IEnumerable<TrainingSample> ReGenerateSamples(List<TrainingSample> samples, string storeGeneratorPath = "")
 		{
-			GraphsFeatureGenerator g = new GraphsFeatureGenerator();
+			GraphsFeatureGenerator g = GraphsFeatureGenerator.load("trainedGeneratorNEW.bin");
 			loadedProblems = new Dictionary<string, SASProblem>();
 
 			string[] parts1 = samples.First().userData.Split('_');
@@ -252,14 +252,15 @@ namespace PADD.StatesDB
 				p.SetInitialState(s);
 				var graph = KnowledgeExtraction.computeObjectGraph(p).toMSAGLGraph();
 				labeledGraphs.Add(MyLabeledGraph.createFromMSAGLGraph(graph, labelingFunction.labelingFunc, labelingFunction.labelSize));
-				if (i % 1000 == 0)
+				if (i % 10000 == 0)
 					Console.WriteLine("Completed " + i + " out of " + samples.Count + " .Time: " + DateTime.Now.ToString());
 			}
 
-			g.train(labeledGraphs, 4);
-			if (storeGeneratorPath != "")
-				g.save(storeGeneratorPath);
-			g.save("trainedGeneratorNEW.bin");
+			//g.train(labeledGraphs, 4);
+			//if (storeGeneratorPath != "")
+			//	g.save(storeGeneratorPath);
+			//g.save("trainedGeneratorNEW.bin");
+			Console.WriteLine("Transformation started");
 			foreach (var item in samples.Zip(labeledGraphs))
 			{
 				var res = new TrainingSample(g.getFeatures(item.Item2), item.Item1.targets);

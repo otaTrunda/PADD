@@ -45,8 +45,9 @@ namespace PADD
 				return;
 			}
 			//var res = new Helper().ReGenerateSamples(Utils.Serialization.Deserialize<List<NeuralNetTrainer.TrainingSample>>(@"B:\iterativeTraining\4FCQ\initialSamples.bin")).ToList();
-			//var res = new Helper().ReGenerateSamples(Utils.Serialization.Deserialize<List<NeuralNetTrainer.TrainingSample>>(@"B:\iterativeTraining\4FCQ\currentSamples.bin")).ToList();
+			//var res = new Helper().ReGenerateSamples(Utils.Serialization.Deserialize<List<NeuralNetTrainer.TrainingSample>>(@"B:\iterativeTraining\4FCQ\currentSamples - Copy.bin")).ToList();
 			//Utils.Serialization.Serialize(res, "re-generatedSamples.bin");
+			//Console.WriteLine("all DONE at " + DateTime.Now.ToString()); return;
 			//visualizeKnowledgeGraphs(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "pddl", "pfile2.pddl"));
 
 			//testZenoSolver();
@@ -128,8 +129,8 @@ namespace PADD
 			string state = "[1 0 2 0 3 2x4 3 0 5 1 3";
 
 			//string samplesFolder = Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "trainingSamples");
-			//string samplesFolder = @"B:\iterativeTraining";
-			string samplesFolder = @"B:\trainingSamplesLarge2";
+			string samplesFolder = @"B:\iterativeTraining";
+			//string samplesFolder = @"B:\trainingSamplesLarge2";
 
 			int subgraphSize = 4;
 			NormalizationType normalization = NormalizationType.Covariance;
@@ -141,8 +142,8 @@ namespace PADD
 			string subFolder = subgraphSize.ToString() + (useFFasFeature ? "F" : "") + NormalizationTypeHelper.ToChar(normalization) +
 				TargetTransformationTypeHelper.ToChar(targeTransformation);
 
-			//string generatorsPath = Path.Combine(samplesFolder, subFolder, "graphFeaturesGen_Generator.bin");
-			string generatorsPath = Path.Combine(samplesFolder, subFolder, "trainedGeneratorNEW.bin");
+			string generatorsPath = Path.Combine(samplesFolder, subFolder, "graphFeaturesGen_Generator.bin");
+			//string generatorsPath = Path.Combine(samplesFolder, subFolder, "trainedGeneratorNEW.bin");
 			string savedNetPath = Path.Combine(samplesFolder, subFolder, "trainedNet_params.bin");
 
 			SimpleFFNetHeuristic h = storeSamples ?
