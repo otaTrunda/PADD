@@ -1,0 +1,175 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{8849F7F1-7379-4D9B-9DE6-8EC3AD73A028}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>PADD_Support</RootNamespace>
+    <AssemblyName>PADD_Support</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <LangVersion>latest</LangVersion>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="GAF.47, Version=2.3.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\GAF.2.3.1\lib\net47\GAF.47.dll</HintPath>
+    </Reference>
+    <Reference Include="MathNet.Numerics, Version=4.8.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\MathNet.Numerics.4.8.1\lib\net461\MathNet.Numerics.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Msagl, Version=3.0.0.0, Culture=neutral, PublicKeyToken=640c57aa40e7ae7d, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Msagl.1.1.3\lib\net40\Microsoft.Msagl.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Msagl.Drawing, Version=3.0.0.0, Culture=neutral, PublicKeyToken=8a3d7c21d5fa1306, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Msagl.Drawing.1.1.3\lib\net40\Microsoft.Msagl.Drawing.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Msagl.GraphViewerGdi, Version=3.0.0.0, Culture=neutral, PublicKeyToken=fffc27ea4058b3a1, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Msagl.GraphViewerGDI.1.1.3\lib\net40\Microsoft.Msagl.GraphViewerGdi.dll</HintPath>
+    </Reference>
+    <Reference Include="protobuf-net, Version=2.4.0.0, Culture=neutral, PublicKeyToken=257b51d87d2e4d67, processorArchitecture=MSIL">
+      <HintPath>..\packages\protobuf-net.2.4.0\lib\net40\protobuf-net.dll</HintPath>
+    </Reference>
+    <Reference Include="QuickGraph, Version=3.6.61114.0, Culture=neutral, PublicKeyToken=f3fb40175eec2af3, processorArchitecture=MSIL">
+      <HintPath>..\packages\QuickGraph.3.6.61119.7\lib\net4\QuickGraph.dll</HintPath>
+    </Reference>
+    <Reference Include="QuickGraph.Data, Version=3.6.61114.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\QuickGraph.3.6.61119.7\lib\net4\QuickGraph.Data.dll</HintPath>
+    </Reference>
+    <Reference Include="QuickGraph.Graphviz, Version=3.6.61114.0, Culture=neutral, PublicKeyToken=f3fb40175eec2af3, processorArchitecture=MSIL">
+      <HintPath>..\packages\QuickGraph.3.6.61119.7\lib\net4\QuickGraph.Graphviz.dll</HintPath>
+    </Reference>
+    <Reference Include="QuickGraph.Serialization, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\QuickGraph.3.6.61119.7\lib\net4\QuickGraph.Serialization.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Numerics" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.ServiceModel" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="DomainDependentSolvers\BlocksWorld\BlocksWorldDrawer.cs" />
+    <Compile Include="DomainDependentSolvers\BlocksWorld\BlocksWorldProblem.cs" />
+    <Compile Include="DomainDependentSolvers\BlocksWorld\BlocksWorldSolver.cs" />
+    <Compile Include="DomainDependentSolvers\BlocksWorld\BlocksWorldVisualizer.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="DomainDependentSolvers\BlocksWorld\BlocksWorldVisualizer.Designer.cs">
+      <DependentUpon>BlocksWorldVisualizer.cs</DependentUpon>
+    </Compile>
+    <Compile Include="DomainDependentSolvers\DomainDependentSolver.cs" />
+    <Compile Include="DomainDependentSolvers\DomainType.cs" />
+    <Compile Include="DomainDependentSolvers\GripperSolver.cs" />
+    <Compile Include="DomainDependentSolvers\TSP\Edge.cs" />
+    <Compile Include="DomainDependentSolvers\TSP\GreedySolver.cs" />
+    <Compile Include="DomainDependentSolvers\TSP\SolutionPostProcessor.cs" />
+    <Compile Include="DomainDependentSolvers\TSP\TSPInput.cs" />
+    <Compile Include="DomainDependentSolvers\TSP\TSPSolution.cs" />
+    <Compile Include="DomainDependentSolvers\TSP\TSPSolver.cs" />
+    <Compile Include="DomainDependentSolvers\VisitAll\VisitAllDomain.cs" />
+    <Compile Include="DomainDependentSolvers\VisitAll\VisitAllGoalDistanceCalculator.cs" />
+    <Compile Include="DomainDependentSolvers\VisitAll\VisitAllGreedySolver.cs" />
+    <Compile Include="DomainDependentSolvers\VisitAll\VisitAllNode.cs" />
+    <Compile Include="DomainDependentSolvers\VisitAll\VisitAllSolver.cs" />
+    <Compile Include="DomainDependentSolvers\VisitAll\VisitAllState.cs" />
+    <Compile Include="DomainDependentSolvers\VisitAll\VisitAllVisForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="DomainDependentSolvers\VisitAll\VisitAllVisForm.Designer.cs">
+      <DependentUpon>VisitAllVisForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="DomainDependentSolvers\VisitAll\VisitAllVisualizer.cs" />
+    <Compile Include="DomainDependentSolvers\Zenotravel\CycleDetection.cs" />
+    <Compile Include="DomainDependentSolvers\Zenotravel\ZenoHillClimbingSolver.cs" />
+    <Compile Include="DomainDependentSolvers\Zenotravel\ZenoLocalSearchSolver.cs" />
+    <Compile Include="DomainDependentSolvers\Zenotravel\ZenotravelGASolver.cs" />
+    <Compile Include="DomainDependentSolvers\Zenotravel\ZenoTravelProblem.cs" />
+    <Compile Include="DomainDependentSolvers\Zenotravel\ZenotravelSolver.cs" />
+    <Compile Include="DomainDependentSolvers\Zenotravel\ZenotravelSpecialSolver.cs" />
+    <Compile Include="ExtensionMethods.cs" />
+    <Compile Include="Logger.cs" />
+    <Compile Include="MoreHeuristics.cs" />
+    <Compile Include="PlanSubmission.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="StatesDB\DBCreator.cs" />
+    <Compile Include="StatesDB\Trie.cs" />
+    <Compile Include="StateSpaceEnumerator.cs" />
+    <Compile Include="SupportMethods.cs" />
+    <Compile Include="TestMethods.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\GIT_REPOS\brightwire\BrightWire.CUDA.Net4.x64\BrightWire.CUDA.Net4.x64.csproj">
+      <Project>{50bcb2ab-e8ca-4974-b136-49a98d5e34cb}</Project>
+      <Name>BrightWire.CUDA.Net4.x64</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\GIT_REPOS\brightwire\BrightWire.Net4\BrightWire.Net4.csproj">
+      <Project>{fd8aaef6-2edb-446c-bb19-5ebee5cde982}</Project>
+      <Name>BrightWire.Net4</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\GIT_REPOS\NeuralNetTrainer\NeuralNetSpecificUtils\NeuralNetSpecificUtils.csproj">
+      <Project>{0483cf4e-3b0c-4d2f-9683-699f90304a8a}</Project>
+      <Name>NeuralNetSpecificUtils</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\GIT_REPOS\Utils\Utils\Utils.csproj">
+      <Project>{60585d47-3e07-4e6f-b786-19f602841885}</Project>
+      <Name>Utils</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\PADD\PADD.csproj">
+      <Project>{F420BDD3-CE9C-4424-B5E1-8AD0F4143A02}</Project>
+      <Name>PADD</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Utils\Utilities.csproj">
+      <Project>{ef4aa8f1-02e6-479c-82aa-8a9edc52abe7}</Project>
+      <Name>Utilities</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="DomainDependentSolvers\BlocksWorld\BlocksWorldVisualizer.resx">
+      <DependentUpon>BlocksWorldVisualizer.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="DomainDependentSolvers\VisitAll\VisitAllVisForm.resx">
+      <DependentUpon>VisitAllVisForm.cs</DependentUpon>
+    </EmbeddedResource>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

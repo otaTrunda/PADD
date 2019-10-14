@@ -186,7 +186,9 @@ namespace PADD
 			if (operatorEffects.Any(eff => eff.GetConditions().Count > 0))
 				throw new Exception();
 #endif
-
+			throw new NotImplementedException();
+			//TODO.. !!
+			/*
 			var result = StateSpaceEnumerator.getAllStatesMeetingConditions(fixedVariables, this.parentProblem).ToList();
 
 #if DEBUG
@@ -199,7 +201,7 @@ namespace PADD
 			}
 #endif
 			return result;
-
+			*/
 		}
 
 		/// <summary>

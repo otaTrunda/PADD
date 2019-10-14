@@ -5,7 +5,7 @@ using System.Text;
 
 namespace PADD
 {
-    class PDBHeuristic : Heuristic
+    public class PDBHeuristic : Heuristic
     {
         private List<int> variables;
         private Dictionary<int, HashSet<int>> edges;

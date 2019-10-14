@@ -164,6 +164,11 @@ namespace PADD
 		/// </summary>
 		protected bool[] isRigidityDetermined;
 
+		public override string ToString()
+		{
+			return "SAS_Problem: " + this.problemName;
+		}
+
 		protected bool[] _isRigid;
 
 		/// <summary>

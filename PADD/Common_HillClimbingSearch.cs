@@ -5,10 +5,11 @@ using System.Text;
 
 namespace PADD
 {
-    class HillClimbingSearch : HeuristicSearchEngine
+    public class HillClimbingSearch : HeuristicSearchEngine
     {
         private IState currentState;
 		private Action<SASState> onImprovement;
+		Random r = new Random(456);
 
         public override int Search(bool quiet = false)
         {
@@ -44,7 +45,7 @@ namespace PADD
 					else if (val == bestVal)
 						bestOperators.Add(op.GetOrderIndex());
 				}
-                bestOp = ((SASProblem)problem).GetOperators()[bestOperators[Program.r.Next(bestOperators.Count)]];
+                bestOp = ((SASProblem)problem).GetOperators()[bestOperators[r.Next(bestOperators.Count)]];
 				Console.WriteLine("bestVal: " + bestVal);
                 solution.AppendOperator(bestOp);
                 currentState = bestOp.Apply(currentState);// successors[bestOp];

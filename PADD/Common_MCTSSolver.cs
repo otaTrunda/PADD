@@ -564,6 +564,7 @@ namespace PADD
         List<double> cummulatedValues;
         List<int> operatorIndices;
         double tournamentSizeProportional = 0.7;
+		Random r = new Random(123);
 
         public BestPerformance(SASProblem problem)
         {
@@ -606,7 +607,7 @@ namespace PADD
                     foreach (var succ in successors)
                     {
                         int opOrderIndex = succ.GetOperator().GetOrderIndex();
-                        if (Program.r.NextDouble() <= tournamentSizeProportional)
+                        if (r.NextDouble() <= tournamentSizeProportional)
                         {
                             if (opPerformance > getOperatorPerformance(opOrderIndex))
                             {
@@ -651,7 +652,7 @@ namespace PADD
                     cummulatedValues.Add(totalSum);
                     operatorIndices.Add(opOrderIndex);
                 }
-                double rand = Program.r.NextDouble() * totalSum;
+                double rand = r.NextDouble() * totalSum;
                 int opIndex = 0;
                 for (int j = 0; j < cummulatedValues.Count; j++)
                 {

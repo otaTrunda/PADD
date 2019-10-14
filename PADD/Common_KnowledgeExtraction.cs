@@ -7,7 +7,7 @@ using Microsoft.Msagl.GraphViewerGdi;
 
 namespace PADD
 {
-    class KnowledgeExtraction
+    public class KnowledgeExtraction
     {
         public static CausualGraph computeCausualGraph(SASProblem problem)
         {
@@ -151,22 +151,31 @@ namespace PADD
 		public static PDDLProblem translateSASProblemToPDDL(SASProblem s)
 		{
 			var pddlProblemPath = PADDUtils.FileSystemUtils.getPDDLProblemPath(s.GetInputFilePath());
-			string originalText = System.IO.File.ReadAllText(pddlProblemPath.problemFile);
+			string originalText = System.IO.File.ReadAllText(pddlProblemPath.problemFile).Replace("(:INIT", "(:init");
 
 			string PDDLStateInitRegion = originalText.Split(new string[] { "(:init" }, StringSplitOptions.RemoveEmptyEntries).Skip(1).First().
 				Split(new string[] { "(:" }, StringSplitOptions.RemoveEmptyEntries).First();
 			List<string> predicates = PDDLStateInitRegion.Split('(').Select(r => r.Replace(")", "").Trim()).Where(q => !string.IsNullOrWhiteSpace(q)).ToList();
-			predicates = predicates.Select(q => { int firstSpace = q.IndexOf(" "); return q.Remove(firstSpace, 1).Insert(firstSpace, "("); }).Select(q => q.Replace(" ", ", ") + ")").ToList();
+			predicates = predicates.Select(q => 
+			{
+				int firstSpace = q.IndexOf(" ");
+				if (firstSpace < 0)
+				{
+					firstSpace = q.Length;
+					return q.Insert(firstSpace, "(");
+				}
+				else return q.Remove(firstSpace, 1).Insert(firstSpace, "(");
+			}).Select(q => q.Replace(" ", ", ") + ")").ToList();
 
 			List<string> newPredicates = new List<string>();
 			var initialState = (SASState)s.GetInitialState();
 			for (int i = 0; i < initialState.GetAllValues().Length; i++)
 			{
-				List<string> corresponding = predicates.Where(q => s.GetVariablesData()[i].valuesSymbolicMeaning.Contains("Atom " + q)).ToList();
+				List<string> corresponding = predicates.Where(q => s.GetVariablesData()[i].valuesSymbolicMeaning.Contains("Atom " + q.ToLower())).ToList();
 				predicates.RemoveAll(p => corresponding.Contains(p));
 				newPredicates.Add(s.GetVariablesData()[i].valuesSymbolicMeaning[initialState.GetAllValues()[i]]);
 			}
-			predicates.AddRange(newPredicates);
+			predicates.AddRange(newPredicates.Where(x => x.Substring(0, "Atom ".Length) == "Atom "));
 			predicates = predicates.Select(p => p.Replace("Atom ", "").Replace("(", " ").Replace(",", "").Replace(")", "").Trim()).ToList();
 			string tempFileName = System.IO.Path.GetTempFileName();
 

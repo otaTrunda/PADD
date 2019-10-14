@@ -5,6 +5,7 @@ using System.Text;
 using System.Diagnostics;
 using System.Threading;
 using System.Collections;
+using Utils.ExtensionMethods;
 
 namespace PADD
 {
@@ -16,6 +17,7 @@ namespace PADD
         public string problemName;
         public string algorithm;
         public int closedNodes;
+		public double maxGval;
 		public int openNodesCount;
 		public string heuristicName;
         public int timeInSeconds;
@@ -68,9 +70,23 @@ namespace PADD
             sb.Append(avgHeuristicValue);
             sb.Append(delimiter);
 
-            return sb.ToString();
+			sb.Append(maxGval);
+			sb.Append(delimiter);
+
+			return sb.ToString();
         }
-    }
+
+		public void writeToFile()
+		{
+			string directoryName = @"C:\Users\Trunda_Otakar\Documents\Visual Studio 2017\Projects\PADD - NEW\PADD\PADD\bin\tests\benchmarksSAS_ALL_withoutAxioms\" + domainName + "\results";
+			if (!System.IO.Directory.Exists(directoryName))
+				System.IO.Directory.CreateDirectory(directoryName);
+
+			string fileName = System.IO.Path.GetFileNameWithoutExtension(problemName) + ".txt";
+
+			System.IO.File.WriteAllLines(System.IO.Path.Combine(directoryName, fileName), this.ToString().Yield());
+		}
+	}
 
     public struct StateInformation
     {
@@ -94,13 +110,14 @@ namespace PADD
         public Stopwatch stopwatch = new Stopwatch();
         public SearchResults results;
         public IHeap<double, IState> openNodes;
-        protected Dictionary<IState, StateInformation> gValues;
+		public Dictionary<IState, StateInformation> gValues;
         protected Dictionary<IState, IState> predecessor;
 		protected double maxGVal = -1;
 
 
         public TimeSpan searchTime;
         public TimeSpan timeLimit = TimeSpan.FromMinutes(5);
+		public long expansionsLimit = long.MaxValue;
 
         protected const long memoryLimit = 5000000;
 
@@ -183,6 +200,7 @@ namespace PADD
             this.results.solutionFound = false;
 			this.results.algorithm = this.getDescription();
 			this.results.avgHeuristicValue = this.heuristic.statistics.getAverageHeurValue();
+			this.results.maxGval = this.maxGVal;
 			results.bestHeuristicValue = this.heuristic.statistics.bestHeuristicValue;
 			results.problemName = this.problem.GetProblemName();
 			results.heuristicName = this.heuristic.getDescription();
@@ -247,7 +265,19 @@ namespace PADD
                     return -1;
                 }
 
-                if (gValues.Count > memoryLimit)
+				if (gValues.Count > expansionsLimit)
+				{
+					PrintMessage("Search FAILED - expansions limit exceeded.", quiet);
+					stopwatch.Stop();
+					searchTime = stopwatch.Elapsed;
+					PrintMessage("search ended in " + searchTime.TotalSeconds + " seconds", quiet);
+					printSearchStats(quiet);
+					searchStatus = SearchStatus.TimeLimitExceeded;
+					setSearchResults();
+					return -1;
+				}
+
+				if (gValues.Count > memoryLimit)
                 {
                     PrintMessage("Search FAILED - memory limit exceeded.", quiet);
                     stopwatch.Stop();
@@ -378,8 +408,8 @@ namespace PADD
             this.gValues = new Dictionary<IState, StateInformation>();
 			//this.openNodes = new Heaps.LeftistHeap<State>();
 			//this.openNodes = new Heaps.RegularBinaryHeap<IState>();
-			//this.openNodes = new Heaps.RedBlackTreeHeap<IState>();
-			this.openNodes = new Heaps.FibonacciHeap1<IState>();
+			this.openNodes = new Heaps.RedBlackTreeHeap<IState>();
+			//this.openNodes = new Heaps.FibonacciHeap1<IState>();
 			//this.openNodes = new Heaps.BinomialHeap<State>();
 			//this.openNodes = new Heaps.SingleBucket<State>(200000);
 			//this.openNodes = new Heaps.SingleBucket<State>(200*h.getValue(d.initialState));
@@ -398,12 +428,13 @@ namespace PADD
 
         protected virtual void printSearchStats(bool quiet)
         {
-            PrintMessage("Closed nodes: " + (gValues.Where(item => item.Value.isClosed).Count()) +
-                        "\tOpen nodes: " + openNodes.size() +
+			PrintMessage("Closed nodes: " + (gValues.Where(item => item.Value.isClosed).Count()) +
+						"\tOpen nodes: " + openNodes.size() +
 						"\tMax GVal: " + maxGVal +
-                        //"\tHeuristic calls: " + heuristic.heuristicCalls +
-                        "\tMin heuristic: " + heuristic.statistics.bestHeuristicValue +
-                        "\tAvg heuristic: " + heuristic.statistics.getAverageHeurValue().ToString("0.###"), quiet);
+						//"\tHeuristic calls: " + heuristic.heuristicCalls +
+						"\tMin heuristic: " + heuristic.statistics.bestHeuristicValue +
+						"\tAvg heuristic: " + heuristic.statistics.getAverageHeurValue().ToString("0.###") + 
+						"\tcurrent time: " + DateTime.Now.ToString(), quiet);
         }
 
         public override string getDescription()
@@ -685,7 +716,7 @@ namespace PADD
         }
     }
 
-    class SimpleStack : IHeap<double, IState>
+	public class SimpleStack : IHeap<double, IState>
     {
         private List<IState> stack;
 
@@ -747,7 +778,7 @@ namespace PADD
 		}
 	}
 
-	class SimpleQueue : IHeap<double, IState>
+	public class SimpleQueue : IHeap<double, IState>
 	{
 		private LinkedList<IState> queue;
 

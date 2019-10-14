@@ -5,7 +5,7 @@ using System.Text;
 
 namespace PADD
 {
-    class TestResult
+    public class TestResult
     {
         public static int IDStart = 0, currentID = 0;
 

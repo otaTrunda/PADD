@@ -19,7 +19,11 @@ namespace PADD
         /// <summary>
         /// Reference to the parent SAS+ planning problem.
         /// </summary>
-        protected SASProblem parentProblem;
+        public SASProblem parentProblem
+		{
+			get;
+			protected set;
+		}
 
         /// <summary>
         /// Values of all the variables in the SAS+ state.
@@ -183,7 +187,7 @@ namespace PADD
         }
 
         /// <summary>
-        /// Constructs a string representing the state.
+        /// Constructs a string representing the state. 
         /// </summary>
         /// <returns>String representation of the state.</returns>
         public override string ToString()
@@ -221,7 +225,18 @@ namespace PADD
 				return result.ToString();
 			}
         }
-    }
+
+		/// <summary>
+		/// Constructs a string representing the state. Both SASProblem and SASState objects can be reconstructed from this string.
+		/// </summary>
+		/// <returns>String representation of the state.</returns>
+		public string GetInfoString()
+		{
+			var splitted = this.parentProblem.GetInputFilePath().Split(System.IO.Path.DirectorySeparatorChar);
+			string stateInfo = splitted[splitted.Length - 2] + "_" + splitted[splitted.Length - 1] + "_" + this.ToString();
+			return stateInfo;
+		}
+	}
 
     /// <summary>
     /// Extended implementation of the SAS+ state in the SAS+ planning problem. Used in red-black variant of the SAS+ problem (SASProblemRedBlack).

@@ -878,8 +878,11 @@ namespace PADD
                         currVarNames.Add(par.Trim());
                         break;
                     case '-':
-                        if (!requirements.Contains(DomainRequirements.Typing))
-                            throw new PDDLProblemLoaderException(PDDLErrorID.TypedListMissingTypingReq);
+						if (!requirements.Contains(DomainRequirements.Typing))
+						{
+							Console.WriteLine("warning! the domain doesn't list -> typing <- among requirements even though it uses it");
+							//throw new PDDLProblemLoaderException(PDDLErrorID.TypedListMissingTypingReq);
+						}
                         if (nextShouldBeType || currVarNames.Count == 0)
                             throw new PDDLProblemLoaderException(PDDLErrorID.TypedListInvalidTyping);
                         nextShouldBeType = true;
