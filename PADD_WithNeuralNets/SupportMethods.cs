@@ -14,6 +14,9 @@ using System.Text;
 using System.Threading.Tasks;
 using Utils.ExtensionMethods;
 using Utils.MachineLearning;
+using PAD.Planner.Heuristics;
+using PAD.Planner.Search;
+using PAD.Planner.SAS;
 
 namespace PADD_WithNeuralNets
 {
@@ -47,7 +50,7 @@ namespace PADD_WithNeuralNets
 				string problemFile = item;
 				logger.Log("Processing file " + item);
 
-				var d = SASProblem.CreateFromFile(problemFile);
+				var d = new Problem(problemFile, false);
 				List<Heuristic> heuristics = new List<Heuristic>() { new FFHeuristic(d) };
 
 
@@ -163,7 +166,7 @@ namespace PADD_WithNeuralNets
 					string problemFile = item;
 					logger.Log("Processing file " + item);
 
-					var d = SASProblem.CreateFromFile(problemFile);
+					var d = new Problem(problemFile, false);
 
 					string domainName = Path.GetFileName(domainFolder);
 					string probleName = Path.GetFileName(item);
@@ -221,19 +224,20 @@ namespace PADD_WithNeuralNets
 							break;
 						case SearchAlgorithmType.doubleListFF_FileMean:
 						case SearchAlgorithmType.doubleListFF_FileMedian:
-							ast = new MultipleOpenListsAStar(d, new List<Heuristic>() { h, new FFHeuristic(d) });
+							ast = new MultiHeuristicAStarSearch(d, new List<IHeuristic>() { h, new FFHeuristic(d) });
 							break;
 					}
 
-					ast.timeLimit = timeLimit;
-					ast.results.domainName = domainName;
-					ast.results.problemName = probleName;
-					ast.results.heuristicName = h.getDescription();
-					ast.results.algorithm = ast.getDescription() + "+" + ast.openNodes.getName();
+					ast.TimeLimitOfSearch = timeLimit;
+					ast.Start();
 
-					ast.Search();
-					ast.results.bestHeuristicValue = h.statistics.bestHeuristicValue;
-					ast.results.avgHeuristicValue = h.statistics.getAverageHeurValue();
+					var result = ast.GetSearchResults();
+					result.DomainName = domainName;
+					result.ProblemName = probleName;
+					result.Heuristic = h.GetDescription();
+					result.Algorithm = ast.GetDescription() + "+" + ast.OpenNodes.GetName();
+					result.BestHeuristicValue = h.Statistics.BestHeuristicValue;
+					result.AverageHeuristicValue = h.Statistics.AverageHeuristicValue;
 
 #if DEBUG
 					bool printPlan = true;
@@ -242,16 +246,15 @@ namespace PADD_WithNeuralNets
 						Console.WriteLine("Plan:");
 						var state = d.GetInitialState();
 						Console.WriteLine(state.ToString());
-						foreach (var opIndex in ast.GetSolution().GetOperatorSeqIndices())
+						foreach (var op in result.SolutionPlan)
 						{
-							var op = d.GetOperators()[opIndex];
 							state = op.Apply(state);
 							Console.WriteLine(state.ToString() + "\toperator aplied: " + op.ToString());
 						}
 					}
 #endif
 					using (var writer = new System.IO.StreamWriter(resultFile))
-						writer.WriteLine(ast.results.ToString());
+						writer.WriteLine(result.ToString());
 
 					logger.Log("Results successfully written to " + resultFile);
 				}
@@ -270,33 +273,29 @@ namespace PADD_WithNeuralNets
 		{
 			//List<SearchResults> allResults = new List<SearchResults>();
 
-			SASProblem d;
+			Problem d;
 			AStarSearch ast = null;
 			int problemsCount = 0;
 			DomainType type = default;
-			Func<int, double> expansoinsPerSec = null;
 			if (domainName == "zenotravel")
 			{
 				problemsCount = 21;
 				type = DomainType.Zeno;
-				expansoinsPerSec = new Func<int, double>(q => Math.Exp(-q / 2.5) * 80000);
 			}
 			if (domainName == "blocks")
 			{
-				problemsCount = 37;
+				problemsCount = 27;
 				type = DomainType.Blocks;
-				expansoinsPerSec = new Func<int, double>(q => Math.Exp(-q / 8d) * 18000);
 			}
 
 			var problems = PADD_Support.SupportMethods.LoadSASProblemsForDomain(domainName);
 			int problemID = 0;
 			//HillClimbingSearch ast;
-			Utils.Transformations.LinearMapping noiseMap = new Utils.Transformations.LinearMapping(0, problemsCount, WeightedSumHeuristic.noiseMax, 0);
-			Utils.Transformations.Mapping weightMap = new Utils.Transformations.ExpMapping(0, problemsCount, WeightedSumHeuristic.minweight, WeightedSumHeuristic.weightMax, 1.3d);
+			Utils.Transformations.LinearMapping noiseMap = new Utils.Transformations.LinearMapping(0, problemsCount, WeightedSumHeuristicMaxNoice, 0);
+			Utils.Transformations.Mapping weightMap = new Utils.Transformations.ExpMapping(0, problemsCount, WeightedSumHeuristicMinWeight, WeightedSumHeuristicMaxWeight, 1.3d);
 
 			foreach (var problem in problems)
 			{
-				long maxExpansions = -1;
 				problemID++;
 				d = problem;
 				Heuristic h = null;
@@ -311,8 +310,7 @@ namespace PADD_WithNeuralNets
 						break;
 					case HeuristicType.domainSolver_NN:
 						var q = int.Parse(Path.GetFileNameWithoutExtension(hFactory.featuresGenPath).Split('_').Last());
-						h = new WeightedSumHeuristic(new List<(Heuristic heur, double weight)>() { (new NoisyPerfectHeuristic(problem, type, noiseMap.getVal(problemID)), (q - 1) * weightMap.getVal(problemID)), (h, 1) });
-						maxExpansions = (long)Math.Round(expansoinsPerSec(problemID) * time.TotalSeconds);
+						h = new WeightedSumHeuristic(new List<Tuple<IHeuristic, double>>() { Tuple.Create((IHeuristic)new NoisyPerfectHeuristic(problem, type, noiseMap.getVal(problemID)), (q - 1) * weightMap.getVal(problemID)), Tuple.Create((IHeuristic)h, 1.0) });
 						break;
 					case HeuristicType.net:
 						//nothing here
@@ -323,23 +321,18 @@ namespace PADD_WithNeuralNets
 
 				ast = new AStarSearch(d, h);
 
-				ast.timeLimit = time;
-				if (maxExpansions > 0)
-				{
-					ast.timeLimit = TimeSpan.FromMinutes(time.TotalMinutes*10);
-					ast.expansionsLimit = maxExpansions;
-				}
+				ast.TimeLimitOfSearch = time;
+				ast.Start();
 
-				ast.results.domainName = domainName;
-				ast.results.problemName = Path.GetFileName(problem.GetInputFilePath());
-				ast.results.heuristicName = h.getDescription();
-				ast.results.algorithm = ast.getDescription() + "+" + ast.openNodes.getName();
+				var result = ast.GetSearchResults();
+				result.DomainName = domainName;
+				result.ProblemName = Path.GetFileName(problem.GetInputFilePath());
+				result.Heuristic = h.GetDescription();
+				result.Algorithm = ast.GetDescription() + "+" + ast.OpenNodes.GetName();
+				result.BestHeuristicValue = h.Statistics.BestHeuristicValue;
+				result.AverageHeuristicValue = h.Statistics.AverageHeuristicValue;
 
-				ast.Search();
-				ast.results.bestHeuristicValue = h.statistics.bestHeuristicValue;
-				ast.results.avgHeuristicValue = h.statistics.getAverageHeurValue();
-
-				yield return ast.results;
+				yield return result;
 				if (h is SimpleFFNetHeuristic && additionalSamplesPlaceholder != null)
 				{
 					additionalSamplesPlaceholder.Add(((SimpleFFNetHeuristic)h).newSamples);
@@ -347,6 +340,9 @@ namespace PADD_WithNeuralNets
 			}
 			//return allResults;
 		}
+
+		// [pozn. HurtT]: tyto polozky byly puvodne ve WeightedSumHeuristic, ale jsou to nejake specificke veci a ani se nikde neinituji?
+		public static double WeightedSumHeuristicMaxNoice, WeightedSumHeuristicMaxWeight, WeightedSumHeuristicMinWeight;
 
 		/// <summary>
 		/// Main function for creating heuristic-distance histograms OR planners results statistics
@@ -386,6 +382,7 @@ namespace PADD_WithNeuralNets
 			return;
 		}
 
+
 		/// <summary>
 		/// Reads all folders in given folder, searches for folders named "histograms". Inside these folders it finds all histogram files and merges them into a "dataToLearn.tsv" file that can then be used for training a ML model.
 		/// These files will be created in every respective directory. If the ".tsv" file already exists, it will be rewritten only if it is older than <paramref name="reWriteIfOlderThan"/>.
@@ -412,42 +409,9 @@ namespace PADD_WithNeuralNets
 		/// Takes a folder containing trainied networks and runs experiments using them as heuristics. Stores Results into same folders (if they are not present already)
 		/// </summary>
 		/// <param name="networksFolder"></param>
-		public static void runFFHeuristic(int timeMinutes = 30)
-		{
-			string resultsFileName = "resFF.txt";
-
-			foreach (var item in Directory.EnumerateFiles(".").Where(f => Path.GetExtension(f) == ".sas"))
-			{
-				Console.WriteLine("--------------------------");
-				Console.WriteLine();
-				Console.WriteLine("processing file " + item);
-
-
-				SASProblem d = SASProblem.CreateFromFile(item);
-				Heuristic h = new FFHeuristic(d);
-
-				AStarSearch ast = new AStarSearch(d, h);
-
-				ast.timeLimit = TimeSpan.FromMinutes(timeMinutes);
-				ast.results.problemName = Path.GetFileName(d.GetInputFilePath());
-				ast.results.heuristicName = h.getDescription();
-				ast.results.algorithm = ast.getDescription() + "+" + ast.openNodes.getName();
-
-				ast.Search();
-				ast.results.bestHeuristicValue = h.statistics.bestHeuristicValue;
-				ast.results.avgHeuristicValue = h.statistics.getAverageHeurValue();
-
-				File.AppendAllLines(resultsFileName, ast.results.ToString().Yield());
-			}
-		}
-
-		/// <summary>
-		/// Takes a folder containing trainied networks and runs experiments using them as heuristics. Stores Results into same folders (if they are not present already)
-		/// </summary>
-		/// <param name="networksFolder"></param>
 		public static void runNetworks(string domain, int runnerID, int runnersTotal, bool storeAdditionalSamples, int timeMinutes = 30, string architecture = "good4", HeuristicType type = HeuristicType.net)
 		{
-			string resultsFileName = "searchResults_TimeAdjustment.txt";
+			string resultsFileName = "searchResults.txt";
 			string netFileName = "trainedNet.bin";
 			string collectionDir = Path.Combine(@"B:\SAS_Data\", domain, "uniqueSamples");
 			string additionalSamplesDir = Path.Combine(@"B:\SAS_Data\", domain, "additionalSamples");
@@ -486,7 +450,7 @@ namespace PADD_WithNeuralNets
 						if (!File.Exists(netPath))
 							continue;
 						var net = Network.load(netPath);
-
+												
 						int q = int.Parse(Path.GetFileNameWithoutExtension(item).Split("_").First());
 						bool useFF = Path.GetFileNameWithoutExtension(item).Split("_").Skip(1).First() == "ff";
 						string featuresGenPath = Path.Combine(networksFolder, "..", "..", "featuresGen", "generator_" + q + ".bin");
@@ -517,9 +481,9 @@ namespace PADD_WithNeuralNets
 					Console.WriteLine("search finished");
 					if (storeAdditionalSamples)
 					{
-						int q2GeneratorVectorSize = SubgraphsSignatures_FeaturesGenerator.load(Path.Combine(networksFolder, "..", "..", "featuresGen", "generator_2.bin")).bagSize;
-						int q3GeneratorVectorSize = SubgraphsSignatures_FeaturesGenerator.load(Path.Combine(networksFolder, "..", "..", "featuresGen", "generator_3.bin")).bagSize;
-						var samplesWithRes = additionalSamples.Zip(results).Where(w => !w.Item2.solutionFound);
+						int q2GeneratorVectorSize = SubgraphsSignatures_FeatureGenerator.load(Path.Combine(networksFolder, "..", "..", "featuresGen", "generator_2.bin")).bagSize;
+						int q3GeneratorVectorSize = SubgraphsSignatures_FeatureGenerator.load(Path.Combine(networksFolder, "..", "..", "featuresGen", "generator_3.bin")).bagSize;
+						var samplesWithRes = additionalSamples.Zip(results).Where(w => w.Item2.ResultStatus != ResultStatus.SolutionFound);
 						using (var writter = new StreamWriter(additionalSamplesFile, append: true))
 							foreach (var newSamps in samplesWithRes)
 							{
@@ -538,7 +502,6 @@ namespace PADD_WithNeuralNets
 			}
 
 		}
-
 
 		/// <summary>
 		/// Goes through training logs of various networks and prints test error of those trained nets. (to select the best one).
@@ -567,7 +530,7 @@ namespace PADD_WithNeuralNets
 					Console.Write(Path.GetFileNameWithoutExtension(item) + "\t");
 					Console.Write(bestTestErr + "\t");
 					Console.Write(trainingErr + "\t");
-					Console.Write(epoch + "\t");
+					Console.WriteLine(epoch + "\t");
 
 					string fullResPath = Path.Combine(item, "netResults.tsv");
 					var errorMeasures = getErrors(fullResPath);
@@ -899,19 +862,21 @@ namespace PADD_WithNeuralNets
 					List<int> generatedVectorSizes = null;
 
 					List<GraphsFeaturesGenerator> generators = Directory.EnumerateFiles(generatorsDir).Where(q => !Path.GetFileNameWithoutExtension(q).Contains("FULL")).
-						Select(q => (GraphsFeaturesGenerator)SubgraphsSignatures_FeaturesGenerator.load(q)).ToList();
+						Select(q => (GraphsFeatureGenerator)SubgraphsSignatures_FeatureGenerator.load(q)).ToList();
 					if (useFullGenerators)
 						generators = Directory.EnumerateFiles(generatorsDir).Where(q => Path.GetFileNameWithoutExtension(q).Contains("FULL") &&
-						!Path.GetExtension(q).Contains("meta")).Select(q => (GraphsFeaturesGenerator)Subgraphs_FeaturesGenerator.load(q)).ToList();
+						!Path.GetExtension(q).Contains("meta")).Select(q => (GraphsFeatureGenerator)Subgraphs_FeatureGenerator.load(q)).ToList();
 					using (var writter = new StreamWriter(outputFilePath))
 					{
 						foreach (var line in File.ReadLines(statesFile))
 						{
 							var stateDesc = line.Split("\t").First();
-							var state = Helper.ReconstructState(stateDesc);
-							SASProblem p = state.parentProblem;
-							p.SetInitialState(state);
-							var graph = KnowledgeExtraction.computeObjectGraph(p).toMSAGLGraph();
+							var stateAndProblem = Helper.ReconstructState(stateDesc);
+							var state = stateAndProblem.state;
+							var problem = stateAndProblem.problem;
+
+							problem.SetInitialState(state);
+							var graph = KnowledgeExtractionGraphs.computeObjectGraph(problem).toMSAGLGraph();
 							if (labelingData == default)
 								labelingData = UtilsMethods.getLabelingFunction(graph);
 
@@ -934,9 +899,9 @@ namespace PADD_WithNeuralNets
 							}
 
 							if (heurFF == null)
-								heurFF = new FFHeuristic(p);
+								heurFF = new FFHeuristic(problem);
 
-							var FF = heurFF.getValue(state);
+							var FF = heurFF.GetValue(state);
 							features.Add(new double[] { FF });
 							writter.WriteLine(string.Join("\t", features.Select(q => string.Join(",", q))));
 						}
@@ -979,7 +944,7 @@ namespace PADD_WithNeuralNets
 
 				if (File.Exists(outputFile))
 					continue;
-				AStarSearchEnumerator.storeStatesAsTSV(outputFile, new List<SASProblem>() { item }, domain);
+				AStarSearchEnumerator.storeStatesAsTSV(outputFile, new List<Problem>() { item }, domain);
 			}
 
 		}
@@ -1029,7 +994,7 @@ namespace PADD_WithNeuralNets
 							Console.WriteLine("Time's up (at " + DateTime.Now + ")");
 							break;
 						}
-						writter.WriteLine(((SASState)s.state).GetInfoString() + "\t" + s.realDistance);
+						writter.WriteLine((s.state).GetInfoString(item) + "\t" + s.realDistance);
 					}
 				}
 			}
@@ -1134,20 +1099,20 @@ namespace PADD_WithNeuralNets
 
 				if (full)
 				{
-					Subgraphs_FeaturesGenerator g = new Subgraphs_FeaturesGenerator();
+					Subgraphs_FeatureGenerator g = new Subgraphs_FeatureGenerator();
 					g.train(sampledGraphs, item);
 					g.save(outputFilePath);
 				}
 				else
 				{
-					SubgraphsSignatures_FeaturesGenerator g = new SubgraphsSignatures_FeaturesGenerator();
+					SubgraphsSignatures_FeatureGenerator g = new SubgraphsSignatures_FeatureGenerator();
 					g.train(sampledGraphs, item);
 					g.save(outputFilePath);
 				}
 			}
 		}
 
-		public static Heuristic getHeuristicByParam(int param, SASProblem d)
+		public static Heuristic getHeuristicByParam(int param, Problem d)
 		{
 			Heuristic h = null;
 
@@ -1257,21 +1222,21 @@ namespace PADD_WithNeuralNets
 				}
 			}
 			Console.WriteLine("parsing states at " + DateTime.Now);
-			var states = selectedLines.Select(q => Helper.ReconstructState(q.Split("\t").First())).ToList();
+			var statesWithProblems = selectedLines.Select(q => Helper.ReconstructState(q.Split("\t").First())).ToList();
 			selectedLines.Clear();
 			(Func<Microsoft.Msagl.Drawing.Node, float[]> labelingFunc, int labelSize) labelingData = default;
 			Console.WriteLine("Computing graphs at " + DateTime.Now);
 			long completed = 1;
-			foreach (var item in states)
+			foreach (var item in statesWithProblems)
 			{
 				completed++;
 				if (completed % 1000 == 0)
 				{
-					Console.WriteLine("completed " + completed + " out of " + states.Count + " (" + (completed * 100 / states.Count) + " %) at " + DateTime.Now);
+					Console.WriteLine("completed " + completed + " out of " + statesWithProblems.Count + " (" + (completed * 100 / statesWithProblems.Count) + " %) at " + DateTime.Now);
 				}
-				var problem = item.parentProblem;
-				problem.SetInitialState(item);
-				var graph = KnowledgeExtraction.computeObjectGraph(problem).toMSAGLGraph();
+				var problem = item.problem;
+				problem.SetInitialState(item.state);
+				var graph = KnowledgeExtractionGraphs.computeObjectGraph(problem).toMSAGLGraph();
 				if (labelingData == default)
 					labelingData = UtilsMethods.getLabelingFunction(graph);
 				res.Add(MyLabeledGraph.createFromMSAGLGraph(graph, labelingData.labelingFunc, labelingData.labelSize));
@@ -1283,7 +1248,7 @@ namespace PADD_WithNeuralNets
 		public static void testNeuralNetHeuristic(string sasFilePath, string storedNetPath, string generatorPath, int maxTime, string domain, bool storeSamples, bool useFullGenerator)
 		{
 			bool useFFasFeature = true;
-			SASProblem p = SASProblem.CreateFromFile(sasFilePath);
+			Problem p = new Problem(sasFilePath, false);
 
 			DomainDependentSolver domainSolver = null;
 			switch (domain)
@@ -1325,6 +1290,7 @@ namespace PADD_WithNeuralNets
 			}
 		}
 
+
 		public static void testFFNetHeuristic(int fileNumber, HeuristicType type, int filePrefix = 1, int MaxTime_Minutes = 1, bool storeSamples = false, bool isBlocks = false)
 		{
 			string problem = "pfile" + fileNumber + ".sas";
@@ -1346,8 +1312,8 @@ namespace PADD_WithNeuralNets
 			NormalizationType normalization = NormalizationType.Covariance;
 			TargetTransformationType targeTransformation = TargetTransformationType.SqrtLog;
 			bool useFFasFeature = true;
-			SASProblem p = isBlocks ? SASProblem.CreateFromFile(Path.Combine(PADD_Support.SupportMethods.SAS_all_WithoutAxioms, "blocksSmall", problem)) :
-									  SASProblem.CreateFromFile(Path.Combine(PADD_Support.SupportMethods.SAS_all_WithoutAxioms, "zenotravel", problem));
+			Problem p = isBlocks ? 	new Problem(Path.Combine(PADD_Support.SupportMethods.SAS_all_WithoutAxioms, "blocksSmall", problem), false) :
+									new Problem(Path.Combine(PADD_Support.SupportMethods.SAS_all_WithoutAxioms, "zenotravel", problem), false);
 
 			//SASState s = SASState.parse(state, p);
 			string subFolder = subgraphSize.ToString() + (useFFasFeature ? "F" : "") + NormalizationTypeHelper.ToChar(normalization) +
@@ -1376,13 +1342,13 @@ namespace PADD_WithNeuralNets
 				case HeuristicType.net:
 					break;
 				case HeuristicType.sum:
-					heur = new SumHeuristic(new List<Heuristic>() { h, new FFHeuristic(SASProblem.CreateFromFile(Path.Combine(PADD_Support.SupportMethods.SAS_all_WithoutAxioms, "zenotravel", problem))) });
+					heur = new SumHeuristic(new List<Heuristic>() { h, new FFHeuristic(new Problem(Path.Combine(PADD_Support.SupportMethods.SAS_all_WithoutAxioms, "zenotravel", problem), false)) });
 					break;
 				case HeuristicType.max:
-					heur = new MaxHeuristic(new List<Heuristic>() { h, new FFHeuristic(SASProblem.CreateFromFile(Path.Combine(PADD_Support.SupportMethods.SAS_all_WithoutAxioms, "zenotravel", problem))) });
+					heur = new MaxHeuristic(new List<Heuristic>() { h, new FFHeuristic(new Problem(Path.Combine(PADD_Support.SupportMethods.SAS_all_WithoutAxioms, "zenotravel", problem), false)) });
 					break;
 				case HeuristicType.min:
-					heur = new MinHeuristic(new List<Heuristic>() { h, new FFHeuristic(SASProblem.CreateFromFile(Path.Combine(PADD_Support.SupportMethods.SAS_all_WithoutAxioms, "zenotravel", problem))) });
+					heur = new MinHeuristic(new List<Heuristic>() { h, new FFHeuristic(new Problem(Path.Combine(PADD_Support.SupportMethods.SAS_all_WithoutAxioms, "zenotravel", problem), false)) });
 					break;
 				case HeuristicType.weighted10:
 					heur = new WeightedHeuristic(h, 10);

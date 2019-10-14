@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Drawing;
+using PAD.Planner.SAS;
 
 namespace PADD.DomainDependentSolvers.VisitAll
 {
@@ -26,7 +27,7 @@ namespace PADD.DomainDependentSolvers.VisitAll
 		float targetCrossMarginPercent = 20f;
 		Font IDStringFont = new Font("Arial", 10);
 
-		protected List<SASState> statesToDraw;
+		protected List<IState> statesToDraw;
 		protected int alreadyDrawnStates = 0;
 
 		private bool drawAnotherState()
@@ -50,7 +51,7 @@ namespace PADD.DomainDependentSolvers.VisitAll
 			tileSize = Math.Min(screen.Width / (maxGridWidth + 1), screen.Height / (maxGridHeigth + 1));
 		}
 
-		public void draw(List<SASState> states)
+		public void draw(List<IState> states)
 		{
 			this.statesToDraw = states;
 			alreadyDrawnStates = 0;

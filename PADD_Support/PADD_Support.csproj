@@ -23,7 +23,6 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <LangVersion>latest</LangVersion>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -33,7 +32,6 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>
@@ -121,7 +119,20 @@
     <Compile Include="DomainDependentSolvers\Zenotravel\ZenoTravelProblem.cs" />
     <Compile Include="DomainDependentSolvers\Zenotravel\ZenotravelSolver.cs" />
     <Compile Include="DomainDependentSolvers\Zenotravel\ZenotravelSpecialSolver.cs" />
-    <Compile Include="ExtensionMethods.cs" />
+    <Compile Include="KnowledgeExtraction\CausualGraph.cs" />
+    <Compile Include="KnowledgeExtraction\DomainTransitionGraph.cs" />
+    <Compile Include="KnowledgeExtraction\GraphEdge.cs" />
+    <Compile Include="KnowledgeExtraction\GraphVisualizable.cs" />
+    <Compile Include="KnowledgeExtraction\KnowledgeExtractionGraphs.cs" />
+    <Compile Include="KnowledgeExtraction\KnowledgeHolder.cs" />
+    <Compile Include="KnowledgeExtraction\PredicateConstantGraph.cs" />
+    <Compile Include="KnowledgeExtraction\PredicateConstantGraphTrainer.cs" />
+    <Compile Include="KnowledgeVisualizerForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="KnowledgeVisualizerForm.designer.cs">
+      <DependentUpon>KnowledgeVisualizerForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Logger.cs" />
     <Compile Include="MoreHeuristics.cs" />
     <Compile Include="PlanSubmission.cs" />
@@ -154,9 +165,21 @@
       <Project>{60585d47-3e07-4e6f-b786-19f602841885}</Project>
       <Name>Utils</Name>
     </ProjectReference>
-    <ProjectReference Include="..\PADD\PADD.csproj">
-      <Project>{F420BDD3-CE9C-4424-B5E1-8AD0F4143A02}</Project>
-      <Name>PADD</Name>
+    <ProjectReference Include="..\..\..\PAD-hurthys\PAD.InputData\PAD.InputData.csproj">
+      <Project>{66626b85-3b67-407f-bc18-5d3edb81d3d1}</Project>
+      <Name>PAD.InputData</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\PAD-hurthys\PAD.Launcher\PAD.Launcher.csproj">
+      <Project>{95bda0b5-c6d1-433c-a5fe-75a327b2b502}</Project>
+      <Name>PAD.Launcher</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\PAD-hurthys\PAD.Output\PAD.Output.csproj">
+      <Project>{72973733-c433-475f-93c7-2c2ab7e37803}</Project>
+      <Name>PAD.Output</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\PAD-hurthys\PAD.Planner\PAD.Planner.csproj">
+      <Project>{e3014f1d-b823-4779-981c-3ebb66b84aeb}</Project>
+      <Name>PAD.Planner</Name>
     </ProjectReference>
     <ProjectReference Include="..\Utils\Utilities.csproj">
       <Project>{ef4aa8f1-02e6-479c-82aa-8a9edc52abe7}</Project>
@@ -169,6 +192,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="DomainDependentSolvers\VisitAll\VisitAllVisForm.resx">
       <DependentUpon>VisitAllVisForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="KnowledgeVisualizerForm.resx">
+      <DependentUpon>KnowledgeVisualizerForm.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

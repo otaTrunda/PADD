@@ -4,14 +4,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using PAD.Planner.SAS;
 
 namespace PADD.DomainDependentSolvers
 {
 	public abstract class DomainDependentSolver
 	{
 		protected abstract void init();
-		public SASProblem sasProblem;
-		public List<SASVariable> allVariables;
+		public Problem sasProblem;
+		public List<Variable> allVariables;
 
 		public bool canFindPlans { get; protected set; }
 
@@ -23,21 +24,21 @@ namespace PADD.DomainDependentSolvers
 		/// <returns></returns>
 		public abstract List<string> getPDDLPlan();
 
-		public void SetProblem(IPlanningProblem problem)
+		public void SetProblem(PAD.Planner.IProblem problem)
 		{
-			sasProblem = (SASProblem)problem;
-			allVariables = Enumerable.Range(0, sasProblem.variablesData.Count).Select(i => sasProblem.variablesData.GetVariable(i)).ToList();
+			sasProblem = (Problem)problem;
+			allVariables = Enumerable.Range(0, sasProblem.Variables.Count).Select(i => sasProblem.Variables[i]).ToList();
 			init();
 		}
 
 		public string getSymbolicMeaning(int variable, int value)
 		{
-			return allVariables[variable].valuesSymbolicMeaning[value];
+			return allVariables[variable].Values[value];
 		}
 
-		public string getSymbolicMeaning(int variable, SASState state)
+		public string getSymbolicMeaning(int variable, IState state)
 		{
-			return allVariables[variable].valuesSymbolicMeaning[state.GetValue(variable)];
+			return allVariables[variable].Values[state.GetValue(variable)];
 		}
 
 

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Drawing;
 using System.Windows.Forms;
 using TSP;
+using PAD.Planner.SAS;
 
 namespace PADD.DomainDependentSolvers.VisitAll
 {
@@ -17,12 +18,12 @@ namespace PADD.DomainDependentSolvers.VisitAll
 		int withoutImprovement = 0;
 		bool drawNonimproving = false;
 		bool drawTSPPlan = false;
-		protected List<SASState> plan;
+		protected List<IState> plan;
 
 		public override double Search(bool quiet = false)
 		{
 			TSPSolver solver = new GreedyImprovedSolver();
-			var tspinp = new VisitAllState((SASState)this.sasProblem.GetInitialState(), dom).toTSP();
+			var tspinp = new VisitAllState((IState)this.sasProblem.GetInitialState(), dom).toTSP();
 			var solution = solver.solveStartPoint(tspinp.input, tspinp.position);
 			plan = dom.transformToPlan((TSPSolutionPath)solution);
 			if (drawTSPPlan)
@@ -31,7 +32,7 @@ namespace PADD.DomainDependentSolvers.VisitAll
 			}
 
 			VisitAllGoalDistanceCalculator c = new VisitAllGoalDistanceCalculator();
-			var state = new VisitAllState((SASState)this.sasProblem.GetInitialState(), dom);
+			var state = new VisitAllState((IState)this.sasProblem.GetInitialState(), dom);
 			double dist = c.computeDistance(state);
 
 			if (dist < previousBest)
@@ -57,10 +58,10 @@ namespace PADD.DomainDependentSolvers.VisitAll
 
 			dom = new VisitAllDomain(this, sasProblem);
 			vis = new VisitAllVisualizer(dom);
-			//vis.draw(new VisitAllState((SASState)sasProblem.GetInitialState(), dom));
+			//vis.draw(new VisitAllState((IState)sasProblem.GetInitialState(), dom));
 		}
 
-		public void drawPlan(List<SASState> states)
+		public void drawPlan(List<IState> states)
 		{
 			vis.draw(states);
 		}

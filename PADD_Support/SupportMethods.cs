@@ -7,6 +7,10 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using PAD.Planner.SAS;
+using PAD.Planner.Heaps;
+using PAD.Planner.Heuristics;
+using PAD.Planner.Search;
 
 namespace PADD_Support
 {
@@ -27,13 +31,14 @@ namespace PADD_Support
 		public static string testFilesFolder = Path.Combine(benchmarksTestFolder, "test");
 		public static string test2FilesFolder = Path.Combine(benchmarksTestFolder, "test2");
 
-		public static IEnumerable<SASProblem> LoadSASProblemsForDomain(string domainName)
+
+		public static IEnumerable<Problem> LoadSASProblemsForDomain(string domainName)
 		{
-			string folderPath = Path.Combine(SAS_all_WithoutAxioms, domainName);
+			string folderPath = Path.Combine(@"C:\Users\Trunda_Otakar\Documents\Visual Studio 2017\Projects\PADD - NEW\PADD\PADD\bin\tests\benchmarksSAS_ALL_withoutAxioms", domainName);
 			var filesOrderedBySize = Directory.EnumerateFiles(folderPath).Where(x => Path.GetExtension(x) == ".sas").Select(q => (q, new FileInfo(q))).OrderBy(q => q.Item2.Length).ToList();
 			foreach (var item in filesOrderedBySize)
 			{
-				yield return SASProblem.CreateFromFile(item.q);
+				yield return new Problem(item.q, false);
 			}
 		}
 
@@ -45,52 +50,52 @@ namespace PADD_Support
 			string stateAsString = splitted[2];
 
 			string sasProblemPath = Path.Combine(@"C:\Users\Trunda_Otakar\Documents\Visual Studio 2017\Projects\PADD - NEW\PADD\PADD\bin\tests\benchmarksSAS_ALL_withoutAxioms", domainName, problemName);
-			SASProblem p = SASProblem.CreateFromFile(sasProblemPath);
-			SASState state = SASState.parse(stateAsString, p);
+			Problem p = new Problem(sasProblemPath, false);
+			IState state = State.Parse(stateAsString);
 
 			FFHeuristic h = new FFHeuristic(p);
 
-			return h.getValue(state);
+			return h.GetValue(state);
 		}
 
-		public static IHeap<double, IState> getHeapByParam(int param)
+		public static ISearchHeap getHeapByParam(int param)
 		{
-			IHeap<double, IState> heapStructure = null;
+			ISearchHeap heapStructure = null;
 			switch (param)
 			{
 				case 1:
-					heapStructure = new PADD.Heaps.RedBlackTreeHeap<IState>();
+					heapStructure = new RedBlackTreeHeap();
 					break;
 				case 2:
-					heapStructure = new PADD.Heaps.FibonacciHeap1<IState>();
+					heapStructure = new FibonacciHeap();
 					break;
 				case 3:
-					heapStructure = new PADD.Heaps.FibonacciHeap2<IState>();
+					heapStructure = new FibonacciHeap2();
 					break;
 				case 4:
-					heapStructure = new PADD.Heaps.RegularBinaryHeap<IState>();
+					heapStructure = new RegularBinaryHeap();
 					break;
 				case 5:
-					heapStructure = new PADD.Heaps.RegularTernaryHeap<IState>();
+					heapStructure = new RegularTernaryHeap();
 					break;
 				case 6:
-					heapStructure = new PADD.Heaps.BinomialHeap<IState>();
+					heapStructure = new BinomialHeap();
 					break;
 				case 7:
-					heapStructure = new PADD.Heaps.LeftistHeap<IState>();
+					heapStructure = new LeftistHeap();
 					break;
 				default:
 					break;
 			}
 
 			return heapStructure;
-			//heapStructure = new Heaps.RedBlackTreeHeap<IState>();
-			//IHeap<double, IState> heapStructure = new Heaps.FibonacciHeap1<IState>();
-			//IHeap<double, IState> heapStructure = new Heaps.FibonacciHeap2<IState>();
-			//IHeap<double, IState> heapStructure = new Heaps.RegularBinaryHeap<IState>();
-			//IHeap<double, IState> heapStructure = new Heaps.RegularTernaryHeap<IState>();
-			//IHeap<double, IState> heapStructure = new Heaps.BinomialHeap<IState>();
-			//IHeap<double, IState> heapStructure = new Heaps.LeftistHeap<IState>();
+			//heapStructure = new Heaps.RedBlackTreeHeap();
+			//ISearchHeap heapStructure = new Heaps.FibonacciHeap1();
+			//ISearchHeap heapStructure = new Heaps.FibonacciHeap2();
+			//ISearchHeap heapStructure = new Heaps.RegularBinaryHeap();
+			//ISearchHeap heapStructure = new Heaps.RegularTernaryHeap();
+			//ISearchHeap heapStructure = new Heaps.BinomialHeap();
+			//ISearchHeap heapStructure = new Heaps.LeftistHeap();
 		}
 
 		/// <summary>
@@ -101,7 +106,7 @@ namespace PADD_Support
 		public static void DeleteTooComplexTasks(string domainsFolder, TimeSpan timeLimit)
 		{
 			Logger logger = new Logger();
-			SASProblem d;
+			Problem d;
 			AStarSearch ast;
 			//HillClimbingSearch ast;
 			var directories = Directory.EnumerateDirectories(domainsFolder);
@@ -122,14 +127,12 @@ namespace PADD_Support
 						continue;
 					}
 
-					d = SASProblem.CreateFromFile(item);
+					d = new Problem(item, false);
 					//ast = new AStarSearch(d, new FFHeuristic(d));
-					ast = new AStarSearch(d, null);
-					ast.SetHeuristic(new FFHeuristic(d));
-					ast.setHeapDatastructure(new PADD.Heaps.RedBlackTreeHeap<IState>());
-					ast.timeLimit = timeLimit;
-					ast.Search();
-					if (ast.GetSearchStatus() != SearchStatus.SolutionFound && ast.GetSearchStatus() != SearchStatus.NoSolutionExist)
+					ast = new AStarSearch(d, new FFHeuristic(d), new RedBlackTreeHeap());
+					ast.TimeLimitOfSearch = timeLimit;
+					var searchResult = ast.Start();
+					if (searchResult != ResultStatus.SolutionFound && searchResult != ResultStatus.NoSolutionFound)
 					{
 						//task not solved. it will be removed
 						logger.Log("deleting file " + item);
@@ -162,7 +165,7 @@ namespace PADD_Support
 		public static void DeleteTooEasyTasks(string domainsFolder, TimeSpan timeLimit)
 		{
 			Logger logger = new Logger();
-			SASProblem d;
+			Problem d;
 			AStarSearch ast;
 			//HillClimbingSearch ast;
 			var directories = Directory.EnumerateDirectories(domainsFolder);
@@ -183,14 +186,12 @@ namespace PADD_Support
 						continue;
 					}
 
-					d = SASProblem.CreateFromFile(item);
+					d = new Problem(item, false);
 					//ast = new AStarSearch(d, new FFHeuristic(d));
-					ast = new AStarSearch(d, null);
-					ast.SetHeuristic(new FFHeuristic(d));
-					ast.setHeapDatastructure(new PADD.Heaps.RedBlackTreeHeap<IState>());
-					ast.timeLimit = timeLimit;
-					ast.Search();
-					if (ast.GetSearchStatus() == SearchStatus.SolutionFound || ast.GetSearchStatus() == SearchStatus.NoSolutionExist)
+					ast = new AStarSearch(d, new FFHeuristic(d), new RedBlackTreeHeap());
+					ast.TimeLimitOfSearch = timeLimit;
+					var searchResult = ast.Start();
+					if (searchResult == ResultStatus.SolutionFound || searchResult == ResultStatus.NoSolutionFound)
 					{
 						//task solved. it will be removed
 						logger.Log("deleting file " + item);
@@ -223,7 +224,7 @@ namespace PADD_Support
 		public static void DeleteProblemsWithAxiomRules(string domainsFolder)
 		{
 			Logger logger = new Logger();
-			SASProblem d;
+			Problem d;
 
 			var directories = Directory.EnumerateDirectories(domainsFolder);
 			foreach (var directory in directories)
@@ -243,9 +244,9 @@ namespace PADD_Support
 						continue;
 					}
 
-					d = SASProblem.CreateFromFile(item);
+					d = new Problem(item, false);
 
-					if (d.GetAxiomRules().Count > 0)
+					if (d.AxiomRules.Count > 0)
 					{
 						//task has axioms. it will be removed
 						logger.Log("deleting file " + item);
@@ -289,7 +290,7 @@ namespace PADD_Support
 			//if set to true, problem file that don't have histogram computed will be skipped. Otherwise all problems will be processed.
 			bool onlyWhenHistogramExists = false;
 
-			SASProblem d;
+			Problem d;
 			AStarSearch ast;
 			//HillClimbingSearch ast;
 			var directories = Directory.EnumerateDirectories(domainsFolder);
@@ -308,7 +309,7 @@ namespace PADD_Support
 					logger.Log(" ----- new problem ----- ");
 					logger.Log(directory + "\\" + SASFile);
 
-					d = SASProblem.CreateFromFile(SASFile);
+					d = new Problem(SASFile, false);
 
 					Heuristic h = new FFHeuristic(d);
 
@@ -335,47 +336,45 @@ namespace PADD_Support
 					//h = getHeuristicByParam(param, d);
 					//h = getHeuristicByParam(6, d);
 
-					ast = new AStarSearch(d, h);
-					//ast = new MultipleOpenListsAStar(d, h);
-					//ast = new MultipleOpenListsAStar(d, new List<Heuristic>() { h, hNN });
-					//ast = new IDAStarSearch(d, null);
-
-					IHeap<double, IState> heapStructure = null;
-
+					ISearchHeap heapStructure = null;
 					//heapStructure = getHeapByParam(param);
 
-					//IHeap<double, IState> heapStructure = new Heaps.MeasuredHeap<IState>();
-					heapStructure = new PADD.Heaps.RedBlackTreeHeap<IState>();
-					//IHeap<double, IState> heapStructure = new Heaps.FibonacciHeap1<IState>();
-					//IHeap<double, IState> heapStructure = new Heaps.FibonacciHeap2<IState>();
-					//IHeap<double, IState> heapStructure = new Heaps.RegularBinaryHeap<IState>();
-					//IHeap<double, IState> heapStructure = new Heaps.RegularTernaryHeap<IState>();
-					//IHeap<double, IState> heapStructure = new Heaps.BinomialHeap<IState>();
-					//IHeap<double, IState> heapStructure = new Heaps.LeftistHeap<IState>();
+					//ISearchHeap heapStructure = new Heaps.MeasuredHeap();
+					heapStructure = new RedBlackTreeHeap();
+					//ISearchHeap heapStructure = new Heaps.FibonacciHeap1();
+					//ISearchHeap heapStructure = new Heaps.FibonacciHeap2();
+					//ISearchHeap heapStructure = new Heaps.RegularBinaryHeap();
+					//ISearchHeap heapStructure = new Heaps.RegularTernaryHeap();
+					//ISearchHeap heapStructure = new Heaps.BinomialHeap();
+					//ISearchHeap heapStructure = new Heaps.LeftistHeap();
 
-					//ast.setHeapDatastructure(heapStructure);
+					ast = new AStarSearch(d, h, heapStructure);
+					//ast = new MultiHeuristicAStarSearch(d, h);
+					//ast = new MultiHeuristicAStarSearch(d, new List<Heuristic>() { h, hNN });
+					//ast = new IterativeDeepeningAStarSearch(d, null);
 
 					DirectoryInfo currentDirectory = new DirectoryInfo(directory);
 					FileInfo currentFile = new FileInfo(SASFile);
 
-					if (ast.openNodes is PADD.Heaps.MeasuredHeap<IState>)
-						((PADD.Heaps.MeasuredHeap<IState>)ast.openNodes).setOutputFile(currentDirectory.Name + "_" + currentFile.Name);
+					if (ast.OpenNodes is MeasuredHeap<IState>)
+						((MeasuredHeap<IState>)ast.OpenNodes).SetLoggingOutputFile(currentDirectory.Name + "_" + currentFile.Name);
 
-					ast.timeLimit = timeLimit;
-					ast.results.domainName = (Path.GetFileName(directory));
-					ast.results.problemName = (Path.GetFileName(SASFile));
-					ast.results.heuristicName = h.getDescription();
-					ast.results.algorithm = ast.getDescription() + "+" + heapStructure.getName();
+					ast.TimeLimitOfSearch = timeLimit;
+					ast.Start();
 
-					ast.Search();
-					ast.results.bestHeuristicValue = h.statistics.bestHeuristicValue;
-					ast.results.avgHeuristicValue = h.statistics.getAverageHeurValue();
+					var searchResult = ast.GetSearchResults(false);
+					searchResult.DomainName = (Path.GetFileName(directory));
+					searchResult.ProblemName = (Path.GetFileName(SASFile));
+					searchResult.Heuristic = h.GetDescription();
+					searchResult.Algorithm = ast.GetDescription() + "+" + heapStructure.GetName();
+					searchResult.BestHeuristicValue = h.Statistics.BestHeuristicValue;
+					searchResult.AverageHeuristicValue = h.Statistics.AverageHeuristicValue;
 
 					//foreach (var item in ast.GetSolution().GetOperatorSeqIndices())
 					//    Console.Write(item + " ");
-					allResults.Add(ast.results);
-					if (ast.openNodes is PADD.Heaps.MeasuredHeap<IState>)
-						((PADD.Heaps.MeasuredHeap<IState>)ast.openNodes).clearStatistics();
+					allResults.Add(searchResult);
+					if (ast.OpenNodes is MeasuredHeap<IState>)
+						((MeasuredHeap<IState>)ast.OpenNodes).ClearStats();
 					logger.Log();
 				}
 				logger.Log(" ----- new domain ----- ");
@@ -416,24 +415,22 @@ namespace PADD_Support
 
 		public static SearchResults runPlanner(string problem, Heuristic h, bool useTwoQueues = false, int maxTimeMinutes = 10)
 		{
-			SASProblem p = SASProblem.CreateFromFile(problem);
+			Problem p = new Problem(problem, false);
+			p.DomainName = Path.GetFileName(Path.GetDirectoryName(problem));
 
 			if (useTwoQueues)
 			{
-				MultipleOpenListsAStar engine = new MultipleOpenListsAStar(p, new List<Heuristic>() { h, new FFHeuristic(p) });
-				engine.timeLimit = TimeSpan.FromMinutes(maxTimeMinutes);
-				var plan = engine.Search();
-				engine.results.domainName = Path.GetFileName(Path.GetDirectoryName(problem));
-				return engine.results;
+				MultiHeuristicAStarSearch engine = new MultiHeuristicAStarSearch(p, new List<IHeuristic>() { h, new FFHeuristic(p) });
+				engine.TimeLimitOfSearch = TimeSpan.FromMinutes(maxTimeMinutes);
+				engine.Start();
+				return engine.GetSearchResults(false);
 			}
 			else
 			{
 				AStarSearch engine = new AStarSearch(p, h);
-				//AStarSearch engine = new GreedyBFS(p, h);
-				engine.timeLimit = TimeSpan.FromMinutes(maxTimeMinutes);
-				var plan = engine.Search();
-				engine.results.domainName = Path.GetFileName(Path.GetDirectoryName(problem));
-				return engine.results;
+				engine.TimeLimitOfSearch = TimeSpan.FromMinutes(maxTimeMinutes);
+				engine.Start();
+				return engine.GetSearchResults(false);
 			}
 		}
 
@@ -447,7 +444,7 @@ namespace PADD_Support
 			{
 				if (Path.GetExtension(item) != ".sas")
 					continue;
-				solver.SetProblem(SASProblem.CreateFromFile(item));
+				solver.SetProblem(new Problem(item, false));
 				var planLength = (int)solver.Search(quiet: true);
 				var problemInfo = File.ReadAllLines(Path.Combine(domainFolder, "pddl", "_problemInfo", Path.ChangeExtension(Path.GetFileName(item), "txt"))).Distinct().Select(
 					line => line.Split('\t').ToList()).ToDictionary(t => t.First(), t => t.Last());
@@ -480,11 +477,11 @@ namespace PADD_Support
 		public static void testZenoSolver()
 		{
 			var problemPath = Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "pfile10.sas");
-			SASProblem problem = SASProblem.CreateFromFile(problemPath);
+			Problem problem = new Problem(problemPath, false);
 			var solver = new PADD.DomainDependentSolvers.Zenotravel.ZenotravelSolver();
 			string stateString = "[1 5 3 1 0 3 4 2x3 4 2 1 0 2 ]";
 
-			var state = SASState.parse(stateString, problem);
+			var state = State.Parse(stateString);
 			problem.SetInitialState(state);
 
 			solver.SetProblem(problem);
@@ -494,8 +491,8 @@ namespace PADD_Support
 
 		public static void createStatesDB(string problemFile, DomainDependentSolver domainSpecificSolver)
 		{
-			var sasProblem = SASProblem.CreateFromFile(problemFile);
-			StatesEnumerator e = new RandomWalksFromGoalPathStateSpaceEnumerator(sasProblem, domainSpecificSolver);
+			var sasProblem = new Problem(problemFile, false);
+			PADD.StatesDB.StatesEnumerator e = new RandomWalksFromGoalPathStateSpaceEnumerator(sasProblem, domainSpecificSolver);
 			DBCreator c = new DBCreator(e);
 			if (domainSpecificSolver is PADD.DomainDependentSolvers.VisitAll.VisitAllSolver)
 			{
@@ -510,7 +507,7 @@ namespace PADD_Support
 				s => int.Parse(s));
 			states = t.getAllElements().ToList();
 
-			var realStates = states.Select(s => (SASState.parse(s.key, sasProblem), s.value)).ToList();
+			var realStates = states.Select(s => (State.Parse(s.key), s.value)).ToList();
 		}
 
 		public static void createStatesDBForDomain(string domainFolder, string outputFolder, DomainDependentSolver solver, long totalSamples, bool storeObjectGraphs = true)
@@ -529,9 +526,9 @@ namespace PADD_Support
 
 				foreach (var item in problemFiles)
 				{
-					var sasProblem = SASProblem.CreateFromFile(item);
-					var initialState = sasProblem.GetInitialState();
-					StatesEnumerator e = new RandomWalksFromGoalPathStateSpaceEnumerator(sasProblem, solver);
+					var sasProblem = new Problem(item, false);
+					var initialState = sasProblem.InitialState;
+					PADD.StatesDB.StatesEnumerator e = new RandomWalksFromGoalPathStateSpaceEnumerator(sasProblem, solver);
 					DBCreator c = new DBCreator(e);
 					var samples = c.createSamples(item, solver, samplesPerFile, TimeSpan.FromHours(5));
 					foreach (var sample in samples)
@@ -547,9 +544,9 @@ namespace PADD_Support
 						writter.WriteLine(Path.GetFileName(item));
 						if (storeObjectGraphs)
 						{
-							SASState s = SASState.parse(sample.key, sasProblem);
+							IState s = State.Parse(sample.key);
 							sasProblem.SetInitialState(s);
-							var graph = KnowledgeExtraction.computeObjectGraph(sasProblem).toMSAGLGraph();
+							var graph = KnowledgeExtractionGraphs.computeObjectGraph(sasProblem).toMSAGLGraph();
 
 							/*
 							Console.WriteLine(sample.key + "\t" + s.toStringWithMeanings());
@@ -576,20 +573,20 @@ namespace PADD_Support
 			KnowledgeHolder h = null;
 			if (Path.GetExtension(problemFile) == ".sas")
 			{
-				var sasProblem = SASProblem.CreateFromFile(problemFile);
+				var sasProblem = new Problem(problemFile, false);
 				h = KnowledgeHolder.compute(sasProblem);
 			}
 			else
 			{
 				var domain = Path.Combine(Path.GetDirectoryName(problemFile), "domain.pddl");
-				h = KnowledgeHolder.create(PDDLProblem.CreateFromFile(domain, problemFile));
+				h = KnowledgeHolder.create(new PAD.Planner.PDDL.Problem(domain, problemFile));
 			}
 			h.visualize();
 		}
 
 		public static void visualizePDDLKnowledgeGraphs(string PDDLDomainFile, string PDDLProblemFile)
 		{
-			var problem = PDDLProblem.CreateFromFile(PDDLDomainFile, PDDLProblemFile);
+			var problem = new PAD.Planner.PDDL.Problem(PDDLDomainFile, PDDLProblemFile);
 			KnowledgeHolder h = KnowledgeHolder.create(problem);
 			h.visualize();
 		}

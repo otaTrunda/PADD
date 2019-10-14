@@ -10,6 +10,9 @@ using Utils.ExtensionMethods;
 using Utils.MachineLearning;
 using NeuralNetSpecificUtils.GraphFeatureGeneration;
 using PADD_Support;
+using PAD.Planner.SAS;
+using PAD.Planner.Heuristics;
+using PAD.Planner.Search;
 
 namespace PADD.StatesDB
 {
@@ -36,9 +39,9 @@ namespace PADD.StatesDB
 		{
 			System.Diagnostics.Stopwatch watch = System.Diagnostics.Stopwatch.StartNew();
 			int samples = 0;
-			enumerator.problem = SASProblem.CreateFromFile(problemFile);
+			enumerator.problem = new Problem(problemFile, false);
 			var states = enumerator.enumerateStates();
-			var problem = SASProblem.CreateFromFile(problemFile);
+			var problem = new Problem(problemFile, false);
 			HashSet<string> alreadyGenerated = new HashSet<string>();
 			int hashSetHits = 0;
 
@@ -67,9 +70,9 @@ namespace PADD.StatesDB
 			System.Diagnostics.Stopwatch watch = System.Diagnostics.Stopwatch.StartNew();
 			DB = new Trie<int>();
 			int samples = 0;
-			enumerator.problem = SASProblem.CreateFromFile(problemFile);
+			enumerator.problem = new Problem(problemFile, false);
 			var states = enumerator.enumerateStates();
-			var problem = SASProblem.CreateFromFile(problemFile);
+			var problem = new Problem(problemFile, false);
 			foreach (var state in states)
 			{
 				samples++;
@@ -97,11 +100,11 @@ namespace PADD.StatesDB
 	/// </summary>
 	public abstract class StatesEnumerator
 	{
-		public SASProblem problem;
+		public Problem problem;
 
-		public abstract IEnumerable<SASState> enumerateStates();
+		public abstract IEnumerable<IState> enumerateStates();
 
-		public StatesEnumerator(SASProblem problem)
+		public StatesEnumerator(Problem problem)
 		{
 			this.problem = problem;
 		}
@@ -109,23 +112,23 @@ namespace PADD.StatesDB
 
 	public class RandomWalkStateSpaceEnumerator : StatesEnumerator
 	{
-		public SASState initialState;
+		public IState initialState;
 
-		public override IEnumerable<SASState> enumerateStates()
+		public override IEnumerable<IState> enumerateStates()
 		{
-			SASState currentState = initialState;
+			IState currentState = initialState;
 
 			while(true)
 			{
-				currentState = (SASState)problem.GetRandomSuccessor(currentState).GetSuccessorState();
+				currentState = (IState)problem.GetRandomSuccessor(currentState).GetSuccessorState();
 				yield return currentState;
 			}
 		}
 
-		public RandomWalkStateSpaceEnumerator(SASProblem problem)
+		public RandomWalkStateSpaceEnumerator(Problem problem)
 			:base(problem)
 		{
-			this.initialState = (SASState)problem.GetInitialState();
+			this.initialState = (IState)problem.GetInitialState();
 		}
 
 	}
@@ -133,12 +136,12 @@ namespace PADD.StatesDB
 	public class RandomWalksFromGoalPathStateSpaceEnumerator : StatesEnumerator
 	{
 		List<RandomWalkStateSpaceEnumerator> StateSpaceEnumeratos;
-		public List<SASState> goalPath;
+		public List<IState> goalPath;
 
-		HeuristicSearchEngine goalPathFinder;
+		HeuristicSearch goalPathFinder;
 		DomainDependentSolver domainSolver;
 
-		public RandomWalksFromGoalPathStateSpaceEnumerator(SASProblem problem, DomainDependentSolver domainDependentSolver) 
+		public RandomWalksFromGoalPathStateSpaceEnumerator(Problem problem, DomainDependentSolver domainDependentSolver) 
 			: base(problem)
 		{
 			domainDependentSolver.SetProblem(problem);
@@ -154,24 +157,23 @@ namespace PADD.StatesDB
 			
 		}
 
-		List<SASState> findGoalPath()
+		List<IState> findGoalPath()
 		{
 			if (domainSolver.canFindPlans)
 			{
 				domainSolver.Search();
 				var plan = domainSolver.getPDDLPlan();
 
-				var sasPlan = plan.Select(s => s.Replace("(", "").Replace(")", "")).Select(s => (IOperator)problem.GetOperators().Where(op => op.GetName() == s).Single()).ToList();
-				SolutionPlan p = new SolutionPlan(sasPlan);
-				return p.getSequenceOfStates(problem.GetInitialState()).Select(state => (SASState)state).ToList();
+				var sasPlan = plan.Select(s => s.Replace("(", "").Replace(")", "")).Select(s => (PAD.Planner.IOperator)problem.Operators.Where(op => op.GetName() == s).Single());
+				SolutionPlan p = new SolutionPlan(problem.GetInitialState(), sasPlan);
+				return p.GetStatesSequence().Select(state => (IState)state).ToList();
 			}
 
-			var initialState = goalPathFinder.problem.GetInitialState();
-			goalPathFinder.Search(quiet: true);
-			return goalPathFinder.GetSolution().getSequenceOfStates(initialState).Select(state => (SASState)state).ToList();
+			goalPathFinder.Start();
+			return goalPathFinder.GetSolutionPlan().GetStatesSequence().Select(state => (IState)state).ToList();
 		}
 
-		public override IEnumerable<SASState> enumerateStates()
+		public override IEnumerable<IState> enumerateStates()
 		{
 			var enumerators = StateSpaceEnumeratos.Select(s => s.enumerateStates().GetEnumerator()).ToList();
 			var hasNext = enumerators.Select(en => en.MoveNext()).ToList();
@@ -192,12 +194,12 @@ namespace PADD.StatesDB
 	{
 		DomainDependentSolver solver;
 
-		public override string getDescription()
+		public override string GetDescription()
 		{
 			return "Solver used as heuristic";
 		}
 
-		protected override double evaluate(IState state)
+		protected override double GetValueImpl(PAD.Planner.IState state)
 		{
 			var problem = solver.sasProblem;
 			problem.SetInitialState(state);
@@ -205,7 +207,7 @@ namespace PADD.StatesDB
 			return solver.Search(quiet: true);
 		}
 
-		public HeuristicWrapper(DomainDependentSolver solver)
+		public HeuristicWrapper(DomainDependentSolver solver) : base(null)
 		{
 			this.solver = solver;
 		}
@@ -213,71 +215,27 @@ namespace PADD.StatesDB
 
 	public static class Helper
 	{
-		static Dictionary<string, SASProblem> loadedProblems = new Dictionary<string, SASProblem>();
+		static Dictionary<string, Problem> loadedProblems = new Dictionary<string, Problem>();
 
-		private static SASProblem getProblem(string description)
+		private static Problem getProblem(string description)
 		{
 			if (!loadedProblems.ContainsKey(description))
 			{
 				string[] parts = description.Split('_');
-				SASProblem p = SASProblem.CreateFromFile(@"C:\Users\Trunda_Otakar\Documents\Visual Studio 2017\Projects\PADD - NEW\PADD\PADD\bin\tests\benchmarksSAS_ALL_withoutAxioms\" + parts[0] + "\\" + parts[1]);
+				Problem p = new Problem(@"C:\Users\Trunda_Otakar\Documents\Visual Studio 2017\Projects\PADD - NEW\PADD\PADD\bin\tests\benchmarksSAS_ALL_withoutAxioms\" + parts[0] + "\\" + parts[1], false);
 				loadedProblems.Add(description, p);
 			}
 			return loadedProblems[description];
 		}
 
-		public static SASState ReconstructState(string stateInfo)
+		public static (IState state, Problem problem) ReconstructState(string stateInfo)
 		{
 			string[] parts1 = stateInfo.Split('_');
-			SASProblem p1 = getProblem(parts1[0] + "_" + parts1[1]);
-			SASState s1 = SASState.parse(parts1[2], p1);
-			return s1;
+			Problem p1 = getProblem(parts1[0] + "_" + parts1[1]);
+			IState s1 = State.Parse(parts1[2]);
+			return (s1, p1);
 		}
-
-		/// <summary>
-		/// Takes a list of training samples (previously created from SAS-states), transforms them back to SAS-states and then back to training samples using updated procedure
-		/// </summary>
-		/// <param name="samples"></param>
-		public static IEnumerable<TrainingSample> ReGenerateSamples(List<TrainingSample> samples, string storeGeneratorPath = "")
-		{
-			SubgraphsSignatures_FeaturesGenerator g = SubgraphsSignatures_FeaturesGenerator.load("trainedGeneratorNEW.bin");
-			loadedProblems = new Dictionary<string, SASProblem>();
-
-			string[] parts1 = samples.First().userData.Split('_');
-			SASProblem p1 = getProblem(parts1[0] + "_" + parts1[1]);
-			SASState s1 = SASState.parse(parts1[2], p1);
-			p1.SetInitialState(s1);
-			var sampleGraph = KnowledgeExtraction.computeObjectGraph(p1).toMSAGLGraph();
-			var labelingFunction = NeuralNetSpecificUtils.UtilsMethods.getLabelingFunction(sampleGraph);
-			var labeledGraphs = new List<MyLabeledGraph>();
-			int i = 0;
-			foreach (var item in samples)
-			{
-				i++;
-				var t = item.userData;
-				string[] parts = t.Split('_');
-				SASProblem p = getProblem(parts[0] + "_" + parts[1]);
-				SASState s = SASState.parse(parts[2], p);
-				p.SetInitialState(s);
-				var graph = KnowledgeExtraction.computeObjectGraph(p).toMSAGLGraph();
-				labeledGraphs.Add(MyLabeledGraph.createFromMSAGLGraph(graph, labelingFunction.labelingFunc, labelingFunction.labelSize));
-				if (i % 10000 == 0)
-					Console.WriteLine("Completed " + i + " out of " + samples.Count + " .Time: " + DateTime.Now.ToString());
-			}
-			g = new SubgraphsSignatures_FeaturesGenerator(".");
-			g.train(labeledGraphs, 4);
-			if (storeGeneratorPath != "")
-				g.save(storeGeneratorPath);
-			g.save("trainedGeneratorNEW.bin");
-			Console.WriteLine("Transformation started");
-			foreach (var item in samples.Zip(labeledGraphs))
-			{
-				var res = new TrainingSample(g.getFeatures(item.Item2), item.Item1.targets);
-				res.userData = item.Item1.userData;
-				yield return res;
-			}
-		}
-	}
+}
 
 	/// <summary>
 	/// Runs A* on the given problem and stores all states that were added to the open list
@@ -288,23 +246,23 @@ namespace PADD.StatesDB
 		AStarSearch astar;
 		NoisyPerfectHeuristic h;
 		//Heuristic trueGoalDistance;
-		SASProblem problem;
+		Problem problem;
 		IState originalInitialState;
 
-		public IEnumerable<(SASState state, double trueGoalDistance)> enumerateStatesWithDistances(int repeats = 10)
+		public IEnumerable<(Problem planningProblem, IState state, double trueGoalDistance)> enumerateStatesWithDistances(int repeats = 10)
 		{
 			for (int i = 0; i < repeats; i++)
 			{
 				Console.WriteLine("Heuristic multiplier: " + h.multiplier);
 				problem.SetInitialState(originalInitialState);
 				h.perfectDistances.Clear();
-				astar = new AStarSearch(this.problem, h);
-				astar.timeLimit = TimeSpan.FromHours(5);
-				astar.Search(quiet: false);
+				astar = new AStarSearch(this.problem, h, null);
+				astar.TimeLimitOfSearch = TimeSpan.FromHours(5);
+				astar.Start();
 
 				foreach (var item in h.perfectDistances)
 				{
-					yield return ((SASState)item.Item1, item.Item2);
+					yield return (problem, (IState)item.Item1, item.Item2);
 				}
 
 				Console.WriteLine();
@@ -316,13 +274,13 @@ namespace PADD.StatesDB
 		/// </summary>
 		/// <param name="p"></param>
 		/// <returns></returns>
-		protected (int min, int max) getPlanLengthMinMax(SASProblem p)
+		protected (int min, int max) getPlanLengthMinMax(Problem p)
 		{
 			var SASFiles = Directory.EnumerateFiles(Path.GetDirectoryName(p.GetInputFilePath())).Where(f => Path.GetExtension(f) == ".sas").ToList();
 			return SASFiles.Select(f => getPlanLength(f)).ToList().GetMinMax();
 		}
 
-		protected int getPlanLength(SASProblem p)
+		protected int getPlanLength(Problem p)
 		{
 			var file = Path.Combine(Path.GetDirectoryName(p.GetInputFilePath()), "plans", Path.GetFileNameWithoutExtension(p.GetInputFilePath()) + ".txt");
 			int linesCount = File.ReadAllLines(file).Count();
@@ -336,7 +294,7 @@ namespace PADD.StatesDB
 			return linesCount;
 		}
 
-		public AStarSearchEnumerator(SASProblem p, DomainType domain, double noisePercentage)
+		public AStarSearchEnumerator(Problem p, DomainType domain, double noisePercentage)
 		{
 			var planLengthMinMax = getPlanLengthMinMax(p);
 			Utils.Transformations.Mapping m = new Utils.Transformations.LinearMapping(planLengthMinMax.min, planLengthMinMax.max, 1, 2);
@@ -344,10 +302,10 @@ namespace PADD.StatesDB
 			problem = p;
 			h = new NoisyPerfectHeuristic(p, domain, noisePercentage);
 			h.multiplier = m.getVal(getPlanLength(p));
-			originalInitialState = p.GetInitialState();
+			originalInitialState = p.InitialState;
 		}
 
-		public static IEnumerable<(SASState state, double trueGoalDistance)> enumerateStatesWithDistances(List<SASProblem> problems, DomainType domain, int repeats = 10)
+		public static IEnumerable<(Problem planningProblem, IState state, double trueGoalDistance)> enumerateStatesWithDistances(List<Problem> problems, DomainType domain, int repeats = 10)
 		{
 			foreach (var item in problems)
 			{
@@ -360,10 +318,10 @@ namespace PADD.StatesDB
 			}
 		}
 
-		public static void storeStatesAsTSV(string tsvFile, List<SASProblem> problems, DomainType domain, int repeats = 10)
+		public static void storeStatesAsTSV(string tsvFile, List<Problem> problems, DomainType domain, int repeats = 10)
 		{
 			var states = enumerateStatesWithDistances(problems, domain, repeats);
-			File.WriteAllLines(tsvFile, states.Select(x => x.state.GetInfoString() + "\t" + x.trueGoalDistance));
+			File.WriteAllLines(tsvFile, states.Select(x => x.state.GetInfoString(x.planningProblem) + "\t" + x.trueGoalDistance));
 		}
 	}
 }

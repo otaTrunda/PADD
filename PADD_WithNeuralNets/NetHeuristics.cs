@@ -12,6 +12,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Utils.ExtensionMethods;
 using Utils.MachineLearning;
+using PAD.Planner.SAS;
+using PAD.Planner.Heuristics;
 
 namespace PADD_WithNeuralNets
 {
@@ -293,21 +295,21 @@ namespace PADD_WithNeuralNets
 		List<float> nnInputs;
 		double nextFFHeurResult = -1;
 
-		public override string getDescription()
+		public override string GetDescription()
 		{
 			return "Neural net heuristic";
 		}
 
-		protected override double evaluate(IState state)
+		protected override double GetValueImpl(PAD.Planner.IState state)
 		{
-			float heurVal = nextFFHeurResult == -1 ? (float)heur.getValue(state) : (float)nextFFHeurResult;
+			float heurVal = nextFFHeurResult == -1 ? (float)heur.GetValue(state) : (float)nextFFHeurResult;
 			nextFFHeurResult = -1;
 			nnInputs[nnInputs.Count - 1] = heurVal;
 			double networkVal = network.eval(nnInputs);
 			return networkVal >= 0 ? networkVal + (double)heurVal / 10000 : heurVal;    //breaking ties in this heuristic values by values of the inner heuristic 
 		}
 
-		public NNHeuristic(SASProblem p)
+		public NNHeuristic(Problem p)
 		{
 			this.heur = new FFHeuristic(p);
 			var features = FeaturesCalculator.generateFeaturesFromProblem(p);
@@ -315,16 +317,16 @@ namespace PADD_WithNeuralNets
 			nnInputs = features.Select(d => (float)d).ToList();
 		}
 
-		public NNHeuristic(SASProblem p, string trainedNetworkFile, bool useNetwork = true)
+		public NNHeuristic(Problem p, string trainedNetworkFile, bool useNetwork = true)
 			: this(p)
 		{
 			if (useNetwork)
 				this.network = BrightWireNN.load(trainedNetworkFile);
 		}
 
-		public override void sethFFValueForNextState(double heurVal)
+		public override void SetNextCallHint(double heuristicValue)
 		{
-			this.nextFFHeurResult = heurVal;
+			this.nextFFHeurResult = heuristicValue;
 		}
 	}
 
@@ -333,7 +335,7 @@ namespace PADD_WithNeuralNets
 		IState originalState;
 		Func<Microsoft.Msagl.Drawing.Node, float[]> labelingFunc;
 		int labelSize;
-		GraphsFeaturesGenerator gen, genForStoring;
+		GraphsFeaturesGenerator<MyLabeledGraph, GraphNode, int> gen, genForStoring;
 		List<(float[,] weights, float[] biases)> netParams;
 		DataNormalizer normalizer;
 		public List<(TrainingSample, double output)> newSamples;
@@ -383,11 +385,8 @@ namespace PADD_WithNeuralNets
 				int previousVal = (int)predecessorFeatures[i];
 				int newVal = (int)successorFeatures[i];
 				List<int> determiningIndices = null;
-				if (gen is SubgraphsSignatures_FeaturesGenerator)
-				{
-					determiningIndices = (gen as SubgraphsSignatures_FeaturesGenerator).indexesOfSubsets[i].OrderBy(x => x).ToList();
-				}
-				else determiningIndices = Enumerable.Range(0, predecessorFeatures.Length).ToList();
+
+				determiningIndices = Enumerable.Range(0, predecessorFeatures.Length).ToList();
 				var valsOfDeterminingIndices = predecessorFeatures.ElementsAt(determiningIndices).Select(x => (int)x).ToList();
 				if (!newValsByPredecessorsVals[op].ContainsKey((i, valsOfDeterminingIndices)))
 					newValsByPredecessorsVals[op].Add((i, valsOfDeterminingIndices), (newVal, predecessorGraph, successorGraph, predecessorFeatures, predMeaning, successorFeatures, succMeaning));
@@ -399,23 +398,23 @@ namespace PADD_WithNeuralNets
 					Console.WriteLine("predecessor1Features " + string.Join(" ", newValsByPredecessorsVals[op][(i, valsOfDeterminingIndices)].predecessorFeatures));
 					Console.WriteLine("predecessor1 meaning: " + newValsByPredecessorsVals[op][(i, valsOfDeterminingIndices)].predMeaning);
 					Console.WriteLine("predecessor1Graph");
-					NeuralNetSpecificUtils.GraphVisualization.GraphVis.showGraph(newValsByPredecessorsVals[op][(i, valsOfDeterminingIndices)].predGraph);
+					newValsByPredecessorsVals[op][(i, valsOfDeterminingIndices)].predGraph.visualize();
 
 					Console.WriteLine("succ1Features " + string.Join(" ", newValsByPredecessorsVals[op][(i, valsOfDeterminingIndices)].successorFeatures));
 					Console.WriteLine("succ1 meaning: " + newValsByPredecessorsVals[op][(i, valsOfDeterminingIndices)].succMeaning);
 					Console.WriteLine("succ1Graph");
-					NeuralNetSpecificUtils.GraphVisualization.GraphVis.showGraph(newValsByPredecessorsVals[op][(i, valsOfDeterminingIndices)].succGraph);
+					newValsByPredecessorsVals[op][(i, valsOfDeterminingIndices)].succGraph.visualize();
 
 
 					Console.WriteLine("predecessor2Features " + string.Join(" ", predecessorFeatures));
 					Console.WriteLine("predecessor1 meaning: " + predMeaning);
 					Console.WriteLine("predecessor2Graph");
-					NeuralNetSpecificUtils.GraphVisualization.GraphVis.showGraph(predecessorGraph);
+					predecessorGraph.visualize();
 
 					Console.WriteLine("succ2Features " + string.Join(" ", successorFeatures));
 					Console.WriteLine("succ2 meaning: " + succMeaning);
 					Console.WriteLine("succ2Graph");
-					NeuralNetSpecificUtils.GraphVisualization.GraphVis.showGraph(successorGraph);
+					successorGraph.visualize();
 
 					return false;
 				}
@@ -449,19 +448,16 @@ namespace PADD_WithNeuralNets
 			return true;
 		}
 
-		public SimpleFFNetHeuristic(string featuresGeneratorPath, string savedNetworkPath, SASProblem problem, bool useFFHeuristicAsFeature, TargetTransformationType targeTransformation, bool useFullGenerator = false)
+		public SimpleFFNetHeuristic(string featuresGeneratorPath, string savedNetworkPath, Problem problem, bool useFFHeuristicAsFeature, TargetTransformationType targeTransformation)
 		{
-			this.problem = problem;
-			originalState = problem.GetInitialState();
-			var labelingData = UtilsMethods.getLabelingFunction(KnowledgeExtraction.computeObjectGraph(problem).toMSAGLGraph());
+			this.Problem = problem;
+			originalState = problem.InitialState;
+			var labelingData = UtilsMethods.getLabelingFunction(KnowledgeExtractionGraphs.computeObjectGraph(problem).toMSAGLGraph());
 			this.labelingFunc = labelingData.labelingFunc;
 			this.labelSize = labelingData.labelSize;
 			if (featuresGeneratorPath != null)
 			{
-				if (useFullGenerator)
-					this.gen = Subgraphs_FeaturesGenerator.load(featuresGeneratorPath);
-				else
-					this.gen = SubgraphsSignatures_FeaturesGenerator.load(featuresGeneratorPath);
+				this.gen = Subgraphs_FeaturesGenerator<MyLabeledGraph, GraphNode, int>.load(featuresGeneratorPath);
 			}
 			else
 				this.gen = null;
@@ -483,9 +479,9 @@ namespace PADD_WithNeuralNets
 		/// <param name="savedNetworkPath"></param>
 		/// <param name="problem"></param>
 		/// <param name="solver"></param>
-		public SimpleFFNetHeuristic(string featuresGeneratorPath, string savedNetworkPath, SASProblem problem, bool useFFHeuristicAsFeature, TargetTransformationType targetTransformation, PADD.DomainDependentSolvers.DomainDependentSolver solver,
-			string generatorUsedForStoringStates, bool useFullGenerator = false) :
-			this(featuresGeneratorPath, savedNetworkPath, problem, useFFHeuristicAsFeature, targetTransformation, useFullGenerator)
+		public SimpleFFNetHeuristic(string featuresGeneratorPath, string savedNetworkPath, Problem problem, bool useFFHeuristicAsFeature, TargetTransformationType targetTransformation,
+			DomainDependentSolver solver, string generatorUsedForStoringStates) :
+			this(featuresGeneratorPath, savedNetworkPath, problem, useFFHeuristicAsFeature, targetTransformation)
 		{
 			this.solver = solver;
 			this.storeStates = true;
@@ -493,32 +489,33 @@ namespace PADD_WithNeuralNets
 			this.genForStoring = null;
 			if (generatorUsedForStoringStates != null)
 			{
-				if (useFullGenerator)
-					this.genForStoring = Subgraphs_FeaturesGenerator.load(generatorUsedForStoringStates);
-				else
-					this.genForStoring = SubgraphsSignatures_FeaturesGenerator.load(generatorUsedForStoringStates);
-
+				this.genForStoring = Subgraphs_FeaturesGenerator<MyLabeledGraph, GraphNode, int>.load(generatorUsedForStoringStates);
 			}
 		}
 
-		public override string getDescription()
+		public override string GetDescription()
 		{
 			return "FF-net heuristic";
 		}
 
-		protected override double evaluate(IState state)
+		protected override double GetValueImpl(PAD.Planner.IState state)
 		{
 			throw new NotImplementedException();
 		}
 
-		protected override double evaluate(IState state, IState predecessor, IOperator op)
+		protected override double GetValueImpl(PAD.Planner.IState stateC, PAD.Planner.IState predecessorC, PAD.Planner.IOperator opC)
 		{
-			this.originalState = problem.GetInitialState();
+			var state = (IState)stateC;
+			var predecessor = (IState)predecessorC;
+			var op = (IOperator)opC;
+
+			var problem = (Problem)Problem;
+			this.originalState = problem.InitialState;
 			problem.SetInitialState(state);
 
-			var msaglGraph = KnowledgeExtraction.computeObjectGraph(problem);
+			var msaglGraph = KnowledgeExtractionGraphs.computeObjectGraph(problem);
 			//PADDUtils.GraphVisualization.GraphVis.showGraph(msaglGraph.toMSAGLGraph());
-			MyLabeledGraph graph = MyLabeledGraph.createFromMSAGLGraph(msaglGraph.toMSAGLGraph(), this.labelingFunc, this.labelSize);
+			VectorLabeledGraph graph = VectorLabeledGraph.createFromMSAGLGraph(msaglGraph.toMSAGLGraph(), this.labelingFunc);
 			//var mmg = graph.toMSAGLGraph(true);
 			//PADDUtils.GraphVisualization.GraphVis.showGraph(mmg);
 
@@ -527,78 +524,9 @@ namespace PADD_WithNeuralNets
 			if (predecessor != null)
 			{
 				problem.SetInitialState(predecessor);
-				var msaglGraphPred = KnowledgeExtraction.computeObjectGraph(problem);
+				var msaglGraphPred = KnowledgeExtractionGraphs.computeObjectGraph(problem);
 				MyLabeledGraph graphPred = MyLabeledGraph.createFromMSAGLGraph(msaglGraphPred.toMSAGLGraph(), this.labelingFunc, this.labelSize);
 				var predFeatures = getFeatures(predecessor, graphPred);
-
-				storeStatistics(predFeatures, ((SASState)predecessor).toStringWithMeanings(), features, ((SASState)state).toStringWithMeanings(), op, graphPred.toMSAGLGraph(true), graph.toMSAGLGraph(true));
-
-				var diff = features.Zip(predFeatures, (curr, pred) => curr - pred).ToList();
-				if (!diffsByOps.ContainsKey(op))
-					diffsByOps.Add(op, new List<(List<float>, IState, MyLabeledGraph, float[], IState, MyLabeledGraph, float[])>());
-
-				if (diffsByOps[op].Any(x => !CollectionsExtenstensions.AreArraysEqual(x.Item1.ToArray(), diff.ToArray())))
-				{
-					Console.WriteLine("Operator: " + op.ToString());
-
-					Console.WriteLine("Predecessor1:\t");
-					Console.WriteLine(diffsByOps[op].First().Item2.ToString());
-					int[] vals = ((SASState)diffsByOps[op].First().Item2).GetAllValues();
-					for (int i = 0; i < vals.Length; i++)
-					{
-						Console.Write(problem.variablesData[i].GetValueSymbolicMeaning(vals[i]) + ", ");
-					}
-					Console.WriteLine();
-					Console.WriteLine("Predecessor features:\t");
-					Console.WriteLine(string.Join(" ", diffsByOps[op].First().Item4));
-					Console.WriteLine("Predecessor graph:\t");
-					NeuralNetSpecificUtils.GraphVisualization.GraphVis.showGraph(diffsByOps[op].First().Item3.toMSAGLGraph());
-
-					Console.WriteLine("Successor1:\t");
-					Console.WriteLine(diffsByOps[op].First().Item5.ToString());
-					vals = ((SASState)diffsByOps[op].First().Item5).GetAllValues();
-					for (int i = 0; i < vals.Length; i++)
-					{
-						Console.Write(problem.variablesData[i].GetValueSymbolicMeaning(vals[i]) + ", ");
-					}
-					Console.WriteLine();
-					Console.WriteLine("Sucessor features:\t");
-					Console.WriteLine(string.Join(" ", diffsByOps[op].First().Item7));
-					Console.WriteLine("Sucessor graph:\t");
-					NeuralNetSpecificUtils.GraphVisualization.GraphVis.showGraph(diffsByOps[op].First().Item6.toMSAGLGraph());
-					Console.WriteLine("First diff:");
-					Console.WriteLine(string.Join(" ", diffsByOps[op].First().Item1));
-
-					Console.WriteLine("Predecessor2:\t");
-					Console.WriteLine(predecessor.ToString());
-					vals = ((SASState)predecessor).GetAllValues();
-					for (int i = 0; i < vals.Length; i++)
-					{
-						Console.Write(problem.variablesData[i].GetValueSymbolicMeaning(vals[i]) + ", ");
-					}
-					Console.WriteLine();
-					Console.WriteLine("Predecessor features:\t");
-					Console.WriteLine(string.Join(" ", predFeatures));
-					Console.WriteLine("Predecessor graph:\t");
-					NeuralNetSpecificUtils.GraphVisualization.GraphVis.showGraph(graphPred.toMSAGLGraph());
-
-					Console.WriteLine("Successor2:\t");
-					Console.WriteLine(state.ToString());
-					vals = ((SASState)state).GetAllValues();
-					for (int i = 0; i < vals.Length; i++)
-					{
-						Console.Write(problem.variablesData[i].GetValueSymbolicMeaning(vals[i]) + ", ");
-					}
-					Console.WriteLine();
-					Console.WriteLine("Sucessor features:\t");
-					Console.WriteLine(string.Join(" ", features));
-					Console.WriteLine("Sucessor graph:\t");
-					NeuralNetSpecificUtils.GraphVisualization.GraphVis.showGraph(graph.toMSAGLGraph());
-					Console.WriteLine("Second diff:");
-					Console.WriteLine(string.Join(" ", diff));
-				}
-				diffsByOps[op].Add((diff, predecessor, graphPred, predFeatures, state, graph, features));
-
 			}
 
 			TrainingSample s = null;
@@ -611,7 +539,7 @@ namespace PADD_WithNeuralNets
 				string stateInfo = splitted[splitted.Length - 2] + "_" + splitted[splitted.Length - 1] + "_" + state.ToString();
 
 				var inputs = genForStoring.getFeatures(graph);
-				var hFF = ffH.getValue(state);
+				var hFF = ffH.GetValue(state);
 				s = new TrainingSample(inputs.Concat(hFF.Yield()).ToArray(), targets);
 				s.userData = stateInfo;
 			}
@@ -644,7 +572,7 @@ namespace PADD_WithNeuralNets
 			var features = gen != null ? gen.getFeatures(graph).ToFloats() : new float[] { 0 };
 			if (useFFHeuristicAsFeature)
 			{
-				var ffVal = ffH.getValue(state);
+				var ffVal = ffH.GetValue(state);
 				features = features.Append((float)ffVal).ToArray();
 			}
 			return features;
@@ -655,7 +583,7 @@ namespace PADD_WithNeuralNets
 
 	class FileBasedHeuristic : NNHeuristic
 	{
-		public FileBasedHeuristic(SASProblem p, string trainedNetworkFile, bool useNetwork = false) : base(p, trainedNetworkFile, useNetwork)
+		public FileBasedHeuristic(Problem p, string trainedNetworkFile, bool useNetwork = false) : base(p, trainedNetworkFile, useNetwork)
 		{
 			this.network = new FileBasedModel(trainedNetworkFile);
 		}
@@ -669,7 +597,7 @@ namespace PADD_WithNeuralNets
 		DomainDependentSolver solver = null;
 		string generatorUsedForStoringStates;
 
-		public Heuristic create(SASProblem problem)
+		public Heuristic create(Problem problem)
 		{
 			if (solver == null)
 				return new SimpleFFNetHeuristic(featuresGenPath, savedNetPath, problem, useFFasFeature, transformation);

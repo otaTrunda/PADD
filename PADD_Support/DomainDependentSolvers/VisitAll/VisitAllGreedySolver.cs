@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using PAD.Planner.SAS;
 
 namespace PADD.DomainDependentSolvers.VisitAll
 {
@@ -18,7 +19,7 @@ namespace PADD.DomainDependentSolvers.VisitAll
 		protected override void init()
 		{
 			base.init();
-			this.plan = new List<SASState>();
+			this.plan = new List<IState>();
 		}
 
 		public override double Search(bool quiet = false)
@@ -28,18 +29,18 @@ namespace PADD.DomainDependentSolvers.VisitAll
 			visited.Add(startNode.ID);
 
 			VisitAllNode currentNode = startNode;
-			SASState currentState = (SASState)dom.visitAllproblem.GetInitialState();
+			IState currentState = (IState)dom.visitAllproblem.GetInitialState();
 			plan.Clear();
 			plan.Add(currentState);
 
-			var operators = dom.visitAllproblem.GetOperators().GroupBy(op => op.GetPreconditions().Where(p => p.variable == 0).Single().value).ToDictionary(q => q.Key, 
-				q => q.GroupBy(g => g.GetEffects().Where(eff => eff.GetEff().variable == 0).Single().GetEff().value).ToDictionary(r => r.Key, r => r.Single()));
+			var operators = dom.visitAllproblem.Operators.GroupBy(op => op.GetPreconditions().Where(p => p.GetVariable() == 0).Single().GetValue()).ToDictionary(q => q.Key, 
+				q => q.GroupBy(g => g.GetEffects().Where(eff => eff.GetAssignment().GetVariable() == 0).Single().GetAssignment().GetValue()).ToDictionary(r => r.Key, r => r.Single()));
 
 			while (visited.Count < dom.nodes.Count)
 			{
 				var bestSucc = getSuccessors(currentNode).MaxElement(s => evaluateSuccessor(s));
 				var op = getTransitionOperator(currentNode, bestSucc, operators);
-				var newState = (SASState)op.Apply(currentState);
+				var newState = (IState)op.Apply(currentState);
 				plan.Add(newState);
 				currentNode = bestSucc;
 				currentState = newState;
@@ -48,10 +49,10 @@ namespace PADD.DomainDependentSolvers.VisitAll
 			return plan.Count() - 1;
 		}
 
-		private SASOperator getTransitionOperator(VisitAllNode currentNode, VisitAllNode bestSucc, Dictionary<int, Dictionary<int, SASOperator>> operators)
+		private IOperator getTransitionOperator(VisitAllNode currentNode, VisitAllNode bestSucc, Dictionary<int, Dictionary<int, IOperator>> operators)
 		{
 			if (!dom.variableNoByNodeID.ContainsKey(currentNode.ID))
-				return operators[((SASState)dom.visitAllproblem.GetInitialState()).GetValue(0)][bestSucc.ID];
+				return operators[((IState)dom.visitAllproblem.GetInitialState()).GetValue(0)][bestSucc.ID];
 
 			return operators[currentNode.ID][bestSucc.ID];
 		}

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using PAD.Planner.SAS;
 
 namespace PADD.DomainDependentSolvers.BlocksWorld
 {
@@ -126,33 +127,33 @@ namespace PADD.DomainDependentSolvers.BlocksWorld
 			return actionsCount;
 		}
 
-		public BlocksWorldProblem(SASProblem blockWorldInSAS)
+		public BlocksWorldProblem(Problem blockWorldInSAS)
 		{
 			Block.resetIDHolder();
 
-			SASState initialState = (SASState)blockWorldInSAS.GetInitialState();
+			IState initialState = blockWorldInSAS.InitialState;
 			blocksByIDs = new Dictionary<int, Block>();
 			blocksBySASNames = new Dictionary<string, Block>();
 			var stringSeparators = new string[] { " ", ",", "(", ")" };
 
-			var SASVars = Enumerable.Range(0, blockWorldInSAS.GetVariablesCount());
-			var blocksClearenceVars = SASVars.Where(i => blockWorldInSAS.variablesData.GetVariable(i).valuesSymbolicMeaning.Any(m => m.Contains("clear"))).ToList();
+			var SASVars = Enumerable.Range(0, blockWorldInSAS.Variables.Count);
+			var blocksClearenceVars = SASVars.Where(i => blockWorldInSAS.Variables[i].Values.Any(m => m.Contains("clear"))).ToList();
 
 			foreach (var item in blocksClearenceVars)
 			{
 				int val = initialState.GetValue(item);
-				string blockName = blockWorldInSAS.variablesData.GetVariable(item).GetValueSymbolicMeaning(val).Split(stringSeparators, StringSplitOptions.RemoveEmptyEntries).Last();
+				string blockName = blockWorldInSAS.Variables[item].Values[val].Split(stringSeparators, StringSplitOptions.RemoveEmptyEntries).Last();
 				Block b = new Block(null);
 				blocksByIDs.Add(b.ID, b);
 				blocksBySASNames.Add(blockName, b);
 				b.originalName = blockName;
 			}
-			var blocksPositionsVars = SASVars.Where(i => blockWorldInSAS.variablesData.GetVariable(i).valuesSymbolicMeaning.Any(m => m.Contains("on("))).ToList();
+			var blocksPositionsVars = SASVars.Where(i => blockWorldInSAS.Variables[i].Values.Any(m => m.Contains("on("))).ToList();
 
 			foreach (var item in blocksPositionsVars)
 			{
 				int val = initialState.GetValue(item);
-				string description = blockWorldInSAS.variablesData.GetVariable(item).GetValueSymbolicMeaning(val);
+				string description = blockWorldInSAS.Variables[item].Values[val];
 				if (description.Contains("holding"))
 				{
 					var name = description.Split(stringSeparators, StringSplitOptions.RemoveEmptyEntries).Last();
@@ -183,10 +184,10 @@ namespace PADD.DomainDependentSolvers.BlocksWorld
 				}
 			}
 
-			var goal = blockWorldInSAS.GetGoalConditions();
+			Conditions goal = (Conditions)blockWorldInSAS.GoalConditions;
 			foreach (var item in goal)
 			{
-				string description = blockWorldInSAS.variablesData.GetVariable(item.variable).GetValueSymbolicMeaning(item.value);
+				string description = blockWorldInSAS.Variables[item.GetVariable()].Values[item.GetValue()];
 				if (description.Contains("holding"))
 				{
 					throw new ArgumentException();

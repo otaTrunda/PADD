@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using PAD.Planner.SAS;
 
 namespace PADD.DomainDependentSolvers.Zenotravel
 {
@@ -19,20 +20,20 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 		private static string[] delimiters = new string[] { "(", ",", " ", ")", "Atom" };
 		private static Func<string, List<string>> splitSAS = new Func<string, List<string>>(f => f.Split(delimiters, StringSplitOptions.RemoveEmptyEntries).ToList());
 
-		private void load(SASProblem zenoTravelProblemInSAS)
+		private void load(Problem zenoTravelProblemInSAS)
 		{
-			SASState initialState = (SASState)zenoTravelProblemInSAS.GetInitialState();
+			IState initialState = zenoTravelProblemInSAS.InitialState;
 			int variableIndex = -1;
-			foreach (var variable in zenoTravelProblemInSAS.variablesData)
+			foreach (var variable in zenoTravelProblemInSAS.Variables)
 			{
 				variableIndex++;
 				int currentValue = initialState.GetValue(variableIndex);
 				int desiredValue = -1;
-				if (zenoTravelProblemInSAS.GetGoalConditions().Any(g => g.variable == variableIndex))
-					desiredValue = zenoTravelProblemInSAS.GetGoalConditions().Where(g => g.variable == variableIndex).Single().value;
+				if (zenoTravelProblemInSAS.GoalConditions.Any(g => g.GetVariable() == variableIndex))
+					desiredValue = zenoTravelProblemInSAS.GoalConditions.Where(g => g.GetVariable() == variableIndex).Single().GetValue();
 				int value = -1;
 
-				foreach (var meaning in variable.valuesSymbolicMeaning)
+				foreach (var meaning in variable.Values)
 				{
 					value++;
 					var parts = splitSAS(meaning);
@@ -149,7 +150,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 				.GroupBy(p => p.location).ToDictionary(p => p.Key, p => p.Select(r => r.ID).ToList());
 		}
 
-		public static ZenoTravelProblem loadFromSAS(SASProblem zenoTravelProblemInSAS)
+		public static ZenoTravelProblem loadFromSAS(Problem zenoTravelProblemInSAS)
 		{
 			ZenoTravelProblem res = new ZenoTravelProblem();
 			res.load(zenoTravelProblemInSAS);

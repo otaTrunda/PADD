@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using PAD.Planner.SAS;
+using PAD.Planner.Heuristics;
 
 namespace PADD_Support
 {
@@ -15,21 +17,21 @@ namespace PADD_Support
 		NoiseGenerator g;
 		Heuristic h;
 
-		public NoisyHeuristic(Heuristic h, NoiseGenerator generator)
+		public NoisyHeuristic(Heuristic h, NoiseGenerator generator) : base(h.Problem)
 		{
 			this.h = h;
 			this.g = generator;
 		}
 
-		protected override double evaluate(IState state)
+		protected override double GetValueImpl(PAD.Planner.IState state)
 		{
-			double val = h.getValue(state);
+			double val = h.GetValue(state);
 			return val + g.generateNoise(val);
 		}
 
-		public override string getDescription()
+		public override string GetDescription()
 		{
-			return "Noisy heuristic(" + h.getDescription() + " + " + g.getDescription() + ")";
+			return "Noisy heuristic(" + h.GetDescription() + " + " + g.getDescription() + ")";
 		}
 	}
 
@@ -149,24 +151,25 @@ namespace PADD_Support
 		}
 	}
 
+
 	public class SpecificSolverHeuristic : Heuristic
 	{
 		DomainDependentSolver solver;
 
-		public override string getDescription()
+		public override string GetDescription()
 		{
 			return "DomainDependentSolverHeuristic";
 		}
 
-		protected override double evaluate(IState state)
+		protected override double GetValueImpl(PAD.Planner.IState state)
 		{
-			this.problem.SetInitialState(state);
-			solver.SetProblem(this.problem);
+			Problem.SetInitialState(state);
+			solver.SetProblem(Problem);
 			var solutionLength = solver.Search(quiet: true);
 			return solutionLength;
 		}
 
-		public SpecificSolverHeuristic(IPlanningProblem problem, DomainType domain)
+		public SpecificSolverHeuristic(PAD.Planner.IProblem problem, DomainType domain) : base(problem)
 		{
 			switch (domain)
 			{
@@ -184,8 +187,7 @@ namespace PADD_Support
 				default:
 					throw new Exception();
 			}
-			this.problem = (SASProblem)problem;
-			this.doMeasures = false;
+			this.Statistics.DoMeasure = false;
 		}
 	}
 
@@ -197,12 +199,12 @@ namespace PADD_Support
 	public class NoisyPerfectHeuristic : SpecificSolverHeuristic
 	{
 		private double noisePercentage;
-		public List<(IState, double)> perfectDistances;
+		public List<(PAD.Planner.IState, double)> perfectDistances;
 		public double multiplier = 1;
 
-		protected override double evaluate(IState state)
+		protected override double GetValueImpl(PAD.Planner.IState state)
 		{
-			var val = base.evaluate(state);
+			var val = base.GetValueImpl(state);
 			perfectDistances.Add((state, val));
 			if (val <= 0)
 				return 0;
@@ -215,16 +217,16 @@ namespace PADD_Support
 			return val;
 		}
 
-		public NoisyPerfectHeuristic(IPlanningProblem problem, DomainType domain, double noisePercentage = 1d / 6)
+		public NoisyPerfectHeuristic(PAD.Planner.IProblem problem, DomainType domain, double noisePercentage = 1d / 6)
 			: base(problem, domain)
 		{
 			this.noisePercentage = noisePercentage;
-			this.perfectDistances = new List<(IState, double)>();
+			this.perfectDistances = new List<(PAD.Planner.IState, double)>();
 		}
 
-		public override string getDescription()
+		public override string GetDescription()
 		{
-			return base.getDescription() + ", noise: " + this.noisePercentage;
+			return base.GetDescription() + ", noise: " + this.noisePercentage;
 		}
 	}
 

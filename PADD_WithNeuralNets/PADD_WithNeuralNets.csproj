@@ -96,9 +96,21 @@
       <Project>{60585D47-3E07-4E6F-B786-19F602841885}</Project>
       <Name>Utils</Name>
     </ProjectReference>
-    <ProjectReference Include="..\PADD\PADD.csproj">
-      <Project>{F420BDD3-CE9C-4424-B5E1-8AD0F4143A02}</Project>
-      <Name>PADD</Name>
+    <ProjectReference Include="..\..\..\PAD-hurthys\PAD.InputData\PAD.InputData.csproj">
+      <Project>{66626b85-3b67-407f-bc18-5d3edb81d3d1}</Project>
+      <Name>PAD.InputData</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\PAD-hurthys\PAD.Launcher\PAD.Launcher.csproj">
+      <Project>{95bda0b5-c6d1-433c-a5fe-75a327b2b502}</Project>
+      <Name>PAD.Launcher</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\PAD-hurthys\PAD.Output\PAD.Output.csproj">
+      <Project>{72973733-c433-475f-93c7-2c2ab7e37803}</Project>
+      <Name>PAD.Output</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\PAD-hurthys\PAD.Planner\PAD.Planner.csproj">
+      <Project>{e3014f1d-b823-4779-981c-3ebb66b84aeb}</Project>
+      <Name>PAD.Planner</Name>
     </ProjectReference>
     <ProjectReference Include="..\PADD_Support\PADD_Support.csproj">
       <Project>{8849F7F1-7379-4D9B-9DE6-8EC3AD73A028}</Project>

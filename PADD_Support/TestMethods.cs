@@ -5,6 +5,11 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using PAD.Planner.SAS;
+using PAD.Planner.Heaps;
+using PAD.Planner.Heuristics;
+using PAD.Planner.Search;
+using PAD.Planner;
 
 namespace PADD_Support
 {
@@ -14,7 +19,7 @@ namespace PADD_Support
 
 		#region Patterns methods
 
-		static void testPatterns(bool[] isSelected, int selectedCount, int position, int limit, SASProblem d, System.IO.StreamWriter writer)
+		static void testPatterns(bool[] isSelected, int selectedCount, int position, int limit, Problem d, System.IO.StreamWriter writer)
 		{
 			if (selectedCount == limit)
 			{
@@ -31,7 +36,7 @@ namespace PADD_Support
 					if (isSelected[i])
 					{
 						pattern.Add(i);
-						if (d.GetGoalConditions().IsVariableAffected(i))
+						if (d.GoalConditions.IsVariableConstrained(i))
 							intersectsWithGoal = true;
 					}
 				}
@@ -41,16 +46,15 @@ namespace PADD_Support
 					return;
 				}
 
-				PDBHeuristic h = new PDBHeuristic(d);
 				DateTime buildingStarted = DateTime.Now;
-				h.initializePatterns(pattern);
+				PDBHeuristic h = new PDBHeuristic(d, true, new List<HashSet<int>> { pattern });
 				DateTime buildingEnded = DateTime.Now;
 				AStarSearch ast = new AStarSearch(d, h);
 				DateTime searchStarted = DateTime.Now;
-				ast.Search();
+				ast.Start();
 				DateTime searchEnded = DateTime.Now;
 				writer.WriteLine(TestResult.currentID + "\t" + pattern.Count + "\t" + String.Format("{0:0.##}", (buildingEnded - buildingStarted).TotalSeconds) +
-					"\t" + String.Format("{0:0.##}", (searchEnded - searchStarted).TotalSeconds) + "\t" + h.statistics.heuristicCalls);
+					"\t" + String.Format("{0:0.##}", (searchEnded - searchStarted).TotalSeconds) + "\t" + h.Statistics.HeuristicCallsCount);
 				//res.Add(new TestResult(d, pattern, (buildingEnded - buildingStarted).TotalSeconds, (searchEnded - searchStarted).TotalSeconds, nodes));
 				TestResult.currentID++;
 
@@ -70,11 +74,11 @@ namespace PADD_Support
 
 		static void runPatternsTest(string domainFile)
 		{
-			SASProblem d = SASProblem.CreateFromFile(domainFile);
+			Problem d = new Problem(domainFile, false);
 			//AStarSearch ast;
 			PDBHeuristic h = new PDBHeuristic(d);
 
-			bool[] isSeleceted = new bool[d.GetVariablesCount()];
+			bool[] isSeleceted = new bool[d.Variables.Count];
 			//List<TestResult> res = new List<TestResult>(); 
 			if (System.IO.File.Exists("idStart.txt"))
 			{
@@ -94,7 +98,7 @@ namespace PADD_Support
 			using (var writer = new System.IO.StreamWriter("results.txt", true))
 			{
 				writer.AutoFlush = true;
-				for (int i = 0; i <= d.GetVariablesCount(); i++)
+				for (int i = 0; i <= d.Variables.Count; i++)
 				{
 					testPatterns(isSeleceted, 0, 0, i, d, writer);
 				}
@@ -112,10 +116,29 @@ namespace PADD_Support
 			}
 		}
 
-		#endregion Patterns methods
+        public class TestResult
+        {
+            public static int IDStart = 0, currentID = 0;
 
-		#region Heap test methods
-		private static void runHeapTests()
+            public Problem d;
+            public HashSet<int> pattern;
+            public double creation, search;
+            public int nodes;
+
+            public TestResult(Problem d, HashSet<int> pattern, double creationTime, double searchTime, int expandedNodes)
+            {
+                this.d = d;
+                this.pattern = pattern;
+                this.creation = creationTime;
+                this.search = searchTime;
+                this.nodes = expandedNodes;
+            }
+        }
+
+        #endregion Patterns methods
+
+        #region Heap test methods
+        private static void runHeapTests()
 		{
 			Logger logger = new Logger();
 			logger.Log("\nTest number 0");
@@ -150,11 +173,11 @@ namespace PADD_Support
 			if (maxValue < 0) maxValue = size / 4;
 			List<IHeap<double, int>> testSubjects = new List<IHeap<double, int>>();
 			List<string> names = new List<string>();
-			testSubjects.Add(new PADD.Heaps.RegularBinaryHeap<int>());
+			testSubjects.Add(new RegularBinaryHeap<int>());
 			names.Add("Regular Heap");
-			testSubjects.Add(new PADD.Heaps.LeftistHeap<int>());
+			testSubjects.Add(new LeftistHeap<int>());
 			names.Add("Leftist Heap");
-			testSubjects.Add(new PADD.Heaps.BinomialHeap<int>());
+			testSubjects.Add(new BinomialHeap<int>());
 			names.Add("Binomial Heap");
 			//testSubjects.Add(new SortedListHeap<int>());
 			//names.Add("SortedList Heap");
@@ -177,10 +200,10 @@ namespace PADD_Support
 
 				for (int i = 0; i < size; i++)
 				{
-					heap.insert(input[i], input[i]);
+					heap.Add(input[i], input[i]);
 					if (i % removeInterval == 0)
 					{
-						heap.removeMin();
+						heap.RemoveMin();
 						if ((DateTime.Now - start).TotalSeconds > 120)
 						{
 							logger.Log(names[j] + " time limit exceeded.");
@@ -462,7 +485,7 @@ namespace PADD_Support
 		#endregion
 
 
-		static void runHeapsTestsOLD(string domainsFolder, List<IHeap<double, IState>> dataStrucutures, TimeSpan timeLimit)
+		static void runHeapsTestsOLD(string domainsFolder, List<ISearchHeap> dataStrucutures, TimeSpan timeLimit)
 		{
 			Logger logger = new Logger();
 			List<List<string>> results = new List<List<string>>();
@@ -479,8 +502,8 @@ namespace PADD_Support
 			foreach (var ds in dataStrucutures)
 			{
 				results.Add(new List<string>());
-				results[results.Count - 1].Add(ds.getName());
-				SASProblem d;
+				results[results.Count - 1].Add(ds.GetName());
+				Problem d;
 				AStarSearch ast;
 				//HillClimbingSearch ast;
 				foreach (var directory in Directory.EnumerateDirectories(domainsFolder))
@@ -488,14 +511,13 @@ namespace PADD_Support
 					foreach (var item in Directory.EnumerateFiles(directory))
 					{
 						logger.Log(" ----- new problem ----- ");
-						ds.clear();
-						d = SASProblem.CreateFromFile(item);
+						ds.Clear();
+						d = new Problem(item, false);
 						//ast = new AStarSearch(d, new FFHeuristic(d));
-						ast = new AStarSearch(d, new FFHeuristic(d));
-						ast.setHeapDatastructure(ds);
-						ast.Search();
+						ast = new AStarSearch(d, new FFHeuristic(d), ds);
+						ast.Start();
 						logger.Log();
-						results[results.Count - 1].Add(ast.searchTime.TotalSeconds.ToString());
+						results[results.Count - 1].Add(ast.GetSearchTime().TotalSeconds.ToString());
 					}
 					logger.Log(" ----- new domain ----- ");
 				}
@@ -510,11 +532,11 @@ namespace PADD_Support
 			}
 		}
 
-		static void runHeapsTests(string domainsFolder, List<IHeap<double, IState>> dataStrucutures, TimeSpan timeLimit)
+		static void runHeapsTests(string domainsFolder, List<ISearchHeap> dataStrucutures, TimeSpan timeLimit)
 		{
 			Logger logger = new Logger();
 			string heapsResultsFolder = @".\..\tests\heapsResults";
-			SASProblem d;
+			Problem d;
 			AStarSearch ast;
 			//HillClimbingSearch ast;
 			foreach (var ds in dataStrucutures)
@@ -523,7 +545,7 @@ namespace PADD_Support
 				{
 					Directory.CreateDirectory(heapsResultsFolder);
 				}
-				using (var writer = new StreamWriter(heapsResultsFolder + "\\" + ds.getName() + ".txt"))
+				using (var writer = new StreamWriter(heapsResultsFolder + "\\" + ds.GetName() + ".txt"))
 				{
 					var directories = Directory.EnumerateDirectories(domainsFolder);
 					foreach (var directory in directories)
@@ -534,23 +556,22 @@ namespace PADD_Support
 							logger.Log(" ----- new problem ----- ");
 							logger.Log(directory + "\\" + item);
 
-							d = SASProblem.CreateFromFile(item);
+							d = new Problem(item, false);
 							//ast = new AStarSearch(d, new FFHeuristic(d));
-							ast = new AStarSearch(d, null);
-							ast.SetHeuristic(new FFHeuristic(d));
+							ast = new AStarSearch(d, new FFHeuristic(d), ds);
+
 
 							DirectoryInfo currentDirectory = new DirectoryInfo(directory);
 							FileInfo currentFile = new FileInfo(item);
 
-							ds.clear();
-							ast.setHeapDatastructure(ds);
+							ds.Clear();
 
-							if (ast.openNodes is PADD.Heaps.MeasuredHeap<IState>)
-								((PADD.Heaps.MeasuredHeap<IState>)ast.openNodes).setOutputFile(currentDirectory.Name + "_" + currentFile.Name);
+							if (ast.OpenNodes is MeasuredHeap<PAD.Planner.IState>)
+								((MeasuredHeap<PAD.Planner.IState>)ast.OpenNodes).SetLoggingOutputFile(currentDirectory.Name + "_" + currentFile.Name);
 
-							ast.timeLimit = timeLimit;
-							ast.Search();
-							writer.WriteLine(currentDirectory.Name + "_" + currentFile.Name + "\t" + ast.searchTime.TotalSeconds + "\t" + ast.GetSearchStatus());
+							ast.TimeLimitOfSearch = timeLimit;
+							var result = ast.Start();
+							writer.WriteLine(currentDirectory.Name + "_" + currentFile.Name + "\t" + ast.GetSearchTime().TotalSeconds + "\t" + result);
 							writer.Flush();
 
 							logger.Log();

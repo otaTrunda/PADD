@@ -3,18 +3,19 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using PAD.Planner.SAS;
 
 namespace PADD.DomainDependentSolvers
 {
 	class GripperSolver : DomainDependentSolver
 	{
 		(int variable, int value) robotInRoomA;
-		SASState initialState => (SASState)(sasProblem.GetInitialState());
+		IState initialState => sasProblem.InitialState;
 
 		protected override void init()
 		{
-			robotInRoomA.variable = int.Parse(allVariables.Where(v => v.valuesSymbolicMeaning.Any(str => str.Contains("at-robby(rooma)"))).Single().GetName().Substring("var".Length));
-			robotInRoomA.value = allVariables[this.robotInRoomA.variable].valuesSymbolicMeaning.FindIndex(str => str.Contains("at-robby(rooma)"));
+			robotInRoomA.variable = int.Parse(allVariables.Where(v => v.Values.Any(str => str.Contains("at-robby(rooma)"))).Single().Name.Substring("var".Length));
+			robotInRoomA.value = allVariables[this.robotInRoomA.variable].Values.FindIndex(str => str.Contains("at-robby(rooma)"));
 		}
 
 		public override double Search(bool quiet = false)
@@ -66,18 +67,18 @@ namespace PADD.DomainDependentSolvers
 			return result;
 		}
 
-		protected bool isInA(SASState state)
+		protected bool isInA(IState state)
 		{
 			return state.GetValue(robotInRoomA.variable) == robotInRoomA.value;
 		}
 
 
-		protected int holdingBalls(SASState state)
+		protected int holdingBalls(IState state)
 		{
 			return Enumerable.Range(0, allVariables.Count).Where(i => getSymbolicMeaning(i, state).Contains("carry(")).Count();
 		}
 
-		protected int ballsAtA(SASState state)
+		protected int ballsAtA(IState state)
 		{
 			return Enumerable.Range(0, allVariables.Count).Where(i => (getSymbolicMeaning(i, state).Contains("at(") && getSymbolicMeaning(i, state).Contains("rooma"))).Count();
 		}

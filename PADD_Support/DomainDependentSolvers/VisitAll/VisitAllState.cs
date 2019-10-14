@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using TSP;
+using PAD.Planner.SAS;
 
 namespace PADD.DomainDependentSolvers.VisitAll
 {
@@ -13,7 +14,7 @@ namespace PADD.DomainDependentSolvers.VisitAll
 		public int position;
 		public VisitAllDomain domain;
 
-		public VisitAllState(SASState state, VisitAllDomain domain)
+		public VisitAllState(IState state, VisitAllDomain domain)
 		{
 			var values = state.GetAllValues();
 			position = values[domain.positionVariable];
