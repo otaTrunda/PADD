@@ -125,6 +125,7 @@
     <Compile Include="KnowledgeExtraction\GraphVisualizable.cs" />
     <Compile Include="KnowledgeExtraction\KnowledgeExtractionGraphs.cs" />
     <Compile Include="KnowledgeExtraction\KnowledgeHolder.cs" />
+    <Compile Include="KnowledgeExtraction\ObjectGraphNode.cs" />
     <Compile Include="KnowledgeExtraction\PredicateConstantGraph.cs" />
     <Compile Include="KnowledgeExtraction\PredicateConstantGraphTrainer.cs" />
     <Compile Include="KnowledgeVisualizerForm.cs">
@@ -157,9 +158,9 @@
       <Project>{fd8aaef6-2edb-446c-bb19-5ebee5cde982}</Project>
       <Name>BrightWire.Net4</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\GIT_REPOS\NeuralNetTrainer\NeuralNetSpecificUtils\NeuralNetSpecificUtils.csproj">
+    <ProjectReference Include="..\..\..\GIT_REPOS\NeuralNetTrainer\GraphUtils\GraphUtils.csproj">
       <Project>{0483cf4e-3b0c-4d2f-9683-699f90304a8a}</Project>
-      <Name>NeuralNetSpecificUtils</Name>
+      <Name>GraphUtils</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\GIT_REPOS\Utils\Utils\Utils.csproj">
       <Project>{60585d47-3e07-4e6f-b786-19f602841885}</Project>

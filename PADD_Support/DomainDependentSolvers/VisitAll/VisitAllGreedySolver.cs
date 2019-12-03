@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using PAD.Planner.SAS;
+using Utils.ExtensionMethods;
 
 namespace PADD.DomainDependentSolvers.VisitAll
 {
@@ -38,7 +39,7 @@ namespace PADD.DomainDependentSolvers.VisitAll
 
 			while (visited.Count < dom.nodes.Count)
 			{
-				var bestSucc = getSuccessors(currentNode).MaxElement(s => evaluateSuccessor(s));
+				var bestSucc = getSuccessors(currentNode).ArgMax(s => evaluateSuccessor(s));
 				var op = getTransitionOperator(currentNode, bestSucc, operators);
 				var newState = (IState)op.Apply(currentState);
 				plan.Add(newState);

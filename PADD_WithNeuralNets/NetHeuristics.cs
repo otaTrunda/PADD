@@ -1,6 +1,6 @@
-﻿using NeuralNetSpecificUtils;
-using NeuralNetSpecificUtils.GraphFeatureGeneration;
-using NeuralNetSpecificUtils.Graphs;
+﻿using GraphUtils;
+using GraphUtils.GraphFeatureGeneration;
+using GraphUtils.Graphs;
 using NeuralNetTrainer;
 using PADD;
 using PADD.DomainDependentSolvers;
@@ -14,6 +14,10 @@ using Utils.ExtensionMethods;
 using Utils.MachineLearning;
 using PAD.Planner.SAS;
 using PAD.Planner.Heuristics;
+using PADD_Support.KnowledgeExtraction;
+using PAD.Planner;
+using IOperator = PAD.Planner.IOperator;
+using IState = PAD.Planner.IState;
 
 namespace PADD_WithNeuralNets
 {
@@ -333,9 +337,9 @@ namespace PADD_WithNeuralNets
 	class SimpleFFNetHeuristic : Heuristic
 	{
 		IState originalState;
-		Func<Microsoft.Msagl.Drawing.Node, float[]> labelingFunc;
+		Func<Microsoft.Msagl.Drawing.Node, int> labelingFunc;
 		int labelSize;
-		GraphsFeaturesGenerator<MyLabeledGraph, GraphNode, int> gen, genForStoring;
+		GraphsFeaturesGenerator<IntLabeledGraph, GraphNode, int> gen, genForStoring;
 		List<(float[,] weights, float[] biases)> netParams;
 		DataNormalizer normalizer;
 		public List<(TrainingSample, double output)> newSamples;
@@ -346,8 +350,8 @@ namespace PADD_WithNeuralNets
 		bool useFFHeuristicAsFeature = false;
 		TargetTransformationType targetTransformation;
 		FFHeuristic ffH;
-		public Dictionary<IOperator, List<(List<float>, IState, MyLabeledGraph, float[], IState, MyLabeledGraph, float[])>> diffsByOps =
-			new Dictionary<IOperator, List<(List<float>, IState, MyLabeledGraph, float[], IState, MyLabeledGraph, float[])>>();
+		public Dictionary<IOperator, List<(List<float>, IState, IntLabeledGraph, float[], IState, IntLabeledGraph, float[])>> diffsByOps =
+			new Dictionary<IOperator, List<(List<float>, IState, IntLabeledGraph, float[], IState, IntLabeledGraph, float[])>>();
 
 		public Dictionary<IOperator, Dictionary<(int, List<int>), (int, Microsoft.Msagl.Drawing.Graph predGraph, Microsoft.Msagl.Drawing.Graph succGraph, float[] predecessorFeatures, string predMeaning, float[] successorFeatures, string succMeaning)>> newValsByPredecessorsVals =
 			new Dictionary<IOperator, Dictionary<(int, List<int>), (int, Microsoft.Msagl.Drawing.Graph predGraph, Microsoft.Msagl.Drawing.Graph succGraph, float[] predecessorFeatures, string predMeaning, float[] successorFeatures, string succMeaning)>>();
@@ -457,7 +461,7 @@ namespace PADD_WithNeuralNets
 			this.labelSize = labelingData.labelSize;
 			if (featuresGeneratorPath != null)
 			{
-				this.gen = Subgraphs_FeaturesGenerator<MyLabeledGraph, GraphNode, int>.load(featuresGeneratorPath);
+				this.gen = Subgraphs_FeaturesGenerator<IntLabeledGraph, GraphNode, int>.load(featuresGeneratorPath);
 			}
 			else
 				this.gen = null;
@@ -489,7 +493,7 @@ namespace PADD_WithNeuralNets
 			this.genForStoring = null;
 			if (generatorUsedForStoringStates != null)
 			{
-				this.genForStoring = Subgraphs_FeaturesGenerator<MyLabeledGraph, GraphNode, int>.load(generatorUsedForStoringStates);
+				this.genForStoring = Subgraphs_FeaturesGenerator<IntLabeledGraph, GraphNode, int>.load(generatorUsedForStoringStates);
 			}
 		}
 
@@ -498,16 +502,16 @@ namespace PADD_WithNeuralNets
 			return "FF-net heuristic";
 		}
 
-		protected override double GetValueImpl(PAD.Planner.IState state)
+		protected override double GetValueImpl(IState state)
 		{
 			throw new NotImplementedException();
 		}
 
-		protected override double GetValueImpl(PAD.Planner.IState stateC, PAD.Planner.IState predecessorC, PAD.Planner.IOperator opC)
+		protected override double GetValueImpl(IState stateC, IState predecessorC, IOperator opC)
 		{
-			var state = (IState)stateC;
-			var predecessor = (IState)predecessorC;
-			var op = (IOperator)opC;
+			var state = stateC;
+			var predecessor = predecessorC;
+			var op = opC;
 
 			var problem = (Problem)Problem;
 			this.originalState = problem.InitialState;
@@ -515,7 +519,7 @@ namespace PADD_WithNeuralNets
 
 			var msaglGraph = KnowledgeExtractionGraphs.computeObjectGraph(problem);
 			//PADDUtils.GraphVisualization.GraphVis.showGraph(msaglGraph.toMSAGLGraph());
-			VectorLabeledGraph graph = VectorLabeledGraph.createFromMSAGLGraph(msaglGraph.toMSAGLGraph(), this.labelingFunc);
+			IntLabeledGraph graph = IntLabeledGraph.createFromMSAGLGraph(msaglGraph.toMSAGLGraph(), this.labelingFunc);
 			//var mmg = graph.toMSAGLGraph(true);
 			//PADDUtils.GraphVisualization.GraphVis.showGraph(mmg);
 
@@ -525,7 +529,7 @@ namespace PADD_WithNeuralNets
 			{
 				problem.SetInitialState(predecessor);
 				var msaglGraphPred = KnowledgeExtractionGraphs.computeObjectGraph(problem);
-				MyLabeledGraph graphPred = MyLabeledGraph.createFromMSAGLGraph(msaglGraphPred.toMSAGLGraph(), this.labelingFunc, this.labelSize);
+				IntLabeledGraph graphPred = IntLabeledGraph.createFromMSAGLGraph(msaglGraphPred.toMSAGLGraph(), this.labelingFunc);
 				var predFeatures = getFeatures(predecessor, graphPred);
 			}
 
@@ -567,7 +571,7 @@ namespace PADD_WithNeuralNets
 			return netOutput.Single();
 		}
 
-		protected float[] getFeatures(IState state, MyLabeledGraph graph)
+		protected float[] getFeatures(IState state, IntLabeledGraph graph)
 		{
 			var features = gen != null ? gen.getFeatures(graph).ToFloats() : new float[] { 0 };
 			if (useFFHeuristicAsFeature)

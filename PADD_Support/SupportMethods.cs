@@ -11,6 +11,7 @@ using PAD.Planner.SAS;
 using PAD.Planner.Heaps;
 using PAD.Planner.Heuristics;
 using PAD.Planner.Search;
+using PADD_Support.KnowledgeExtraction;
 
 namespace PADD_Support
 {

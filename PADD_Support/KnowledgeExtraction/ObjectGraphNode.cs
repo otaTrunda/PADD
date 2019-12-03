@@ -6,13 +6,8 @@ using System.Threading.Tasks;
 
 namespace PADD_Support.KnowledgeExtraction
 {
-	class PredicateConstantGraphTrainer
+	abstract class ObjectGraphNode
 	{
-		public void Train(PAD.Planner.PDDL.Problem p)
-		{
-
-		}
-
 
 
 	}

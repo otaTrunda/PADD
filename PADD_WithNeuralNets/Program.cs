@@ -1,4 +1,5 @@
-﻿using PADD;
+﻿using PAD.Planner.Heuristics;
+using PADD;
 using PADD_Support;
 using System;
 using System.Collections.Generic;
@@ -36,7 +37,7 @@ namespace PADD_WithNeuralNets
 
 			//runNetworks("blocks", 0, 1, false, 30, "FastForward", HeuristicType.FF); return;
 
-			SupportMethods.testNeuralNetHeuristic(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "pfile8.sas"), @"B:\SAS_Data\zenotravel\uniqueSamplesFULL\c_1000000\4_ff,FULL_good6\trainedNet.bin", @"B:\SAS_Data\zenotravel\featuresGen\generator_4_FULL.bin", 10, "zenotravel", false, useFullGenerator: true); return;
+			SupportMethods.testNeuralNetHeuristic(Path.Combine(SAS_all_WithoutAxioms, "zenotravel", "pfile8.sas"), @"B:\SAS_Data\zenotravel\uniqueSamplesFULL\c_1000000\4_ff,FULL_good6\trainedNet.bin", @"B:\SAS_Data\zenotravel\featuresGen\generator_4_FULL.bin", 10, "zenotravel", false); return;
 
 			//runNetworks("zenotravel", int.Parse(args[0]), int.Parse(args[1]), storeAdditionalSamples: false, architecture: args[2], timeMinutes: args.Length > 3 ? int.Parse(args[3]) : 30); return;
 
@@ -202,62 +203,8 @@ namespace PADD_WithNeuralNets
 		{
 			//SupportMethods.printTestErrors("zenotravel", true); return;
 			//RunFakeNetworks(args);
-			runFFHeurisitc();
+			SupportMethods.storeStatesForTraining("blocks", PADD.DomainDependentSolvers.DomainType.Blocks);
 		}
-
-		static void RunFakeNetworks(string[] args)
-		{
-			//zeno
-			string architecture = "good4";
-			WeightedSumHeuristic.minweight = 0.1;
-			WeightedSumHeuristic.noiseMax = 0.5;
-			WeightedSumHeuristic.weightMax = 1;
-			SupportMethods.runNetworks("zenotravel", int.Parse(args[0]), int.Parse(args[1]), storeAdditionalSamples: false, architecture: architecture, timeMinutes: args.Length > 3 ? int.Parse(args[3]) : 30, type: HeuristicType.domainSolver_NN);
-
-			WeightedSumHeuristic.noiseMax = 0.2;
-			WeightedSumHeuristic.weightMax = 20;
-			SupportMethods.runNetworks("zenotravel", int.Parse(args[0]), int.Parse(args[1]), storeAdditionalSamples: false, architecture: architecture, timeMinutes: args.Length > 3 ? int.Parse(args[3]) : 30, type: HeuristicType.domainSolver_NN);
-
-			WeightedSumHeuristic.noiseMax = 0.02;
-			WeightedSumHeuristic.weightMax = 50;
-			SupportMethods.runNetworks("zenotravel", int.Parse(args[0]), int.Parse(args[1]), storeAdditionalSamples: false, architecture: architecture, timeMinutes: args.Length > 3 ? int.Parse(args[3]) : 30, type: HeuristicType.domainSolver_NN);
-
-			WeightedSumHeuristic.noiseMax = 0.002;
-			WeightedSumHeuristic.weightMax = 100;
-			SupportMethods.runNetworks("zenotravel", int.Parse(args[0]), int.Parse(args[1]), storeAdditionalSamples: false, architecture: architecture, timeMinutes: args.Length > 3 ? int.Parse(args[3]) : 30, type: HeuristicType.domainSolver_NN);
-
-			WeightedSumHeuristic.noiseMax = 0.02;
-			WeightedSumHeuristic.weightMax = 1000;
-			SupportMethods.runNetworks("zenotravel", int.Parse(args[0]), int.Parse(args[1]), storeAdditionalSamples: false, architecture: architecture, timeMinutes: args.Length > 3 ? int.Parse(args[3]) : 30, type: HeuristicType.domainSolver_NN);
-			//return;
-
-			//blocks
-			WeightedSumHeuristic.minweight = 0;
-			WeightedSumHeuristic.noiseMax = 0.5;
-			WeightedSumHeuristic.weightMax = 5;
-			SupportMethods.runNetworks("blocks", int.Parse(args[0]), int.Parse(args[1]), storeAdditionalSamples: false, architecture: architecture, timeMinutes: args.Length > 3 ? int.Parse(args[3]) : 30, type: HeuristicType.domainSolver_NN);
-
-			WeightedSumHeuristic.minweight = 0.3;
-			WeightedSumHeuristic.noiseMax = 0.1;
-			WeightedSumHeuristic.weightMax = 10;
-			SupportMethods.runNetworks("blocks", int.Parse(args[0]), int.Parse(args[1]), storeAdditionalSamples: false, architecture: architecture, timeMinutes: args.Length > 3 ? int.Parse(args[3]) : 30, type: HeuristicType.domainSolver_NN);
-
-			WeightedSumHeuristic.noiseMax = 0.01;
-			WeightedSumHeuristic.weightMax = 30;
-			SupportMethods.runNetworks("blocks", int.Parse(args[0]), int.Parse(args[1]), storeAdditionalSamples: false, architecture: architecture, timeMinutes: args.Length > 3 ? int.Parse(args[3]) : 30, type: HeuristicType.domainSolver_NN);
-
-			WeightedSumHeuristic.noiseMax = 0.001;
-			WeightedSumHeuristic.weightMax = 60;
-			SupportMethods.runNetworks("blocks", int.Parse(args[0]), int.Parse(args[1]), storeAdditionalSamples: false, architecture: architecture, timeMinutes: args.Length > 3 ? int.Parse(args[3]) : 30, type: HeuristicType.domainSolver_NN);
-			return;
-		}
-
-		/// <summary>
-		/// Runs search with FF heuristic on all sas problems in current directory. Stores the results in res.txt in current directory.
-		/// </summary>
-		static void runFFHeurisitc()
-		{
-			SupportMethods.runFFHeuristic();
-		}
+		
 	}
 }

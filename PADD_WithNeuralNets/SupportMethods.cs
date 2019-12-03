@@ -1,7 +1,4 @@
-﻿using NeuralNetSpecificUtils;
-using NeuralNetSpecificUtils.GraphFeatureGeneration;
-using NeuralNetSpecificUtils.Graphs;
-using NeuralNetTrainer;
+﻿using NeuralNetTrainer;
 using PADD;
 using PADD.DomainDependentSolvers;
 using PADD.StatesDB;
@@ -17,6 +14,10 @@ using Utils.MachineLearning;
 using PAD.Planner.Heuristics;
 using PAD.Planner.Search;
 using PAD.Planner.SAS;
+using GraphUtils.Graphs;
+using GraphUtils.GraphFeatureGeneration;
+using PADD_Support.KnowledgeExtraction;
+using GraphUtils;
 
 namespace PADD_WithNeuralNets
 {
@@ -458,8 +459,8 @@ namespace PADD_WithNeuralNets
 						factory = new FFNetHeuristicFactory(featuresGenPath, netPath, useFF, TargetTransformationType.none);
 						if (storeAdditionalSamples)
 						{
-							int q2GeneratorVectorSize = SubgraphsSignatures_FeaturesGenerator.load(Path.Combine(networksFolder, "..", "..", "featuresGen", "generator_2.bin")).bagSize;
-							int q3GeneratorVectorSize = SubgraphsSignatures_FeaturesGenerator.load(Path.Combine(networksFolder, "..", "..", "featuresGen", "generator_3.bin")).bagSize;
+							int q2GeneratorVectorSize = Subgraphs_FeaturesGenerator<IntLabeledGraph, GraphNode, int>.load(Path.Combine(networksFolder, "..", "..", "featuresGen", "generator_2.bin")).vectorSize();
+							int q3GeneratorVectorSize = Subgraphs_FeaturesGenerator<IntLabeledGraph, GraphNode, int>.load(Path.Combine(networksFolder, "..", "..", "featuresGen", "generator_3.bin")).vectorSize();
 
 							DomainDependentSolver s = null;
 							if (domain == "zenotravel")
@@ -481,8 +482,8 @@ namespace PADD_WithNeuralNets
 					Console.WriteLine("search finished");
 					if (storeAdditionalSamples)
 					{
-						int q2GeneratorVectorSize = SubgraphsSignatures_FeatureGenerator.load(Path.Combine(networksFolder, "..", "..", "featuresGen", "generator_2.bin")).bagSize;
-						int q3GeneratorVectorSize = SubgraphsSignatures_FeatureGenerator.load(Path.Combine(networksFolder, "..", "..", "featuresGen", "generator_3.bin")).bagSize;
+						int q2GeneratorVectorSize = Subgraphs_FeaturesGenerator<IntLabeledGraph, GraphNode, int>.load(Path.Combine(networksFolder, "..", "..", "featuresGen", "generator_2.bin")).vectorSize();
+						int q3GeneratorVectorSize = Subgraphs_FeaturesGenerator<IntLabeledGraph, GraphNode, int>.load(Path.Combine(networksFolder, "..", "..", "featuresGen", "generator_3.bin")).vectorSize();
 						var samplesWithRes = additionalSamples.Zip(results).Where(w => w.Item2.ResultStatus != ResultStatus.SolutionFound);
 						using (var writter = new StreamWriter(additionalSamplesFile, append: true))
 							foreach (var newSamps in samplesWithRes)
@@ -835,7 +836,7 @@ namespace PADD_WithNeuralNets
 				Directory.CreateDirectory(samplesDir);
 			string statesDir = Path.Combine(domainDirectory, "sampledStates");
 
-			(Func<Microsoft.Msagl.Drawing.Node, float[]> labelingFunc, int labelSize) labelingData = default;
+			(Func<Microsoft.Msagl.Drawing.Node, int> labelingFunc, int labelSize) labelingData = default;
 
 			string generatorsDir = Path.Combine(domainDirectory, "featuresGen");
 
@@ -861,11 +862,11 @@ namespace PADD_WithNeuralNets
 					FFHeuristic heurFF = null;
 					List<int> generatedVectorSizes = null;
 
-					List<GraphsFeaturesGenerator> generators = Directory.EnumerateFiles(generatorsDir).Where(q => !Path.GetFileNameWithoutExtension(q).Contains("FULL")).
-						Select(q => (GraphsFeatureGenerator)SubgraphsSignatures_FeatureGenerator.load(q)).ToList();
+					List<GraphsFeaturesGenerator<IntLabeledGraph, GraphNode, int>> generators = Directory.EnumerateFiles(generatorsDir).
+						Select(q => (GraphsFeaturesGenerator<IntLabeledGraph, GraphNode, int>)Subgraphs_FeaturesGenerator<IntLabeledGraph, GraphNode, int>.load(q)).ToList();
 					if (useFullGenerators)
 						generators = Directory.EnumerateFiles(generatorsDir).Where(q => Path.GetFileNameWithoutExtension(q).Contains("FULL") &&
-						!Path.GetExtension(q).Contains("meta")).Select(q => (GraphsFeatureGenerator)Subgraphs_FeatureGenerator.load(q)).ToList();
+						!Path.GetExtension(q).Contains("meta")).Select(q => (GraphsFeaturesGenerator<IntLabeledGraph, GraphNode, int>)Subgraphs_FeaturesGenerator<IntLabeledGraph, GraphNode, int>.load(q)).ToList();
 					using (var writter = new StreamWriter(outputFilePath))
 					{
 						foreach (var line in File.ReadLines(statesFile))
@@ -880,7 +881,7 @@ namespace PADD_WithNeuralNets
 							if (labelingData == default)
 								labelingData = UtilsMethods.getLabelingFunction(graph);
 
-							var myGraph = MyLabeledGraph.createFromMSAGLGraph(graph, labelingData.labelingFunc, labelingData.labelSize);
+							var myGraph = IntLabeledGraph.createFromMSAGLGraph(graph, labelingData.labelingFunc);
 
 							List<double[]> features = null;
 
@@ -1074,7 +1075,7 @@ namespace PADD_WithNeuralNets
 		/// </summary>
 		/// <param name="domainName"></param>
 		/// <param name="subgraphSizes"></param>
-		public static void trainAndSaveFeaturesGenerator(string domainName, List<int> subgraphSizes, bool full = false)
+		public static void trainAndSaveFeaturesGenerator(string domainName, List<int> subgraphSizes)
 		{
 			var outputDirectory = @"B:\SAS_Data\" + domainName + @"\featuresGen";
 			if (!Directory.Exists(outputDirectory))
@@ -1086,7 +1087,7 @@ namespace PADD_WithNeuralNets
 			{
 				Console.WriteLine("processing size " + item);
 
-				var outputFileName = "generator_" + item + (full ? "_FULL" : "") + ".bin";
+				var outputFileName = "generator_" + item + ".bin";
 				var outputFilePath = Path.Combine(outputDirectory, outputFileName);
 
 				if (File.Exists(outputFilePath))
@@ -1097,18 +1098,10 @@ namespace PADD_WithNeuralNets
 
 				Console.WriteLine("creating file " + outputFileName + " at " + DateTime.Now);
 
-				if (full)
-				{
-					Subgraphs_FeatureGenerator g = new Subgraphs_FeatureGenerator();
-					g.train(sampledGraphs, item);
-					g.save(outputFilePath);
-				}
-				else
-				{
-					SubgraphsSignatures_FeatureGenerator g = new SubgraphsSignatures_FeatureGenerator();
-					g.train(sampledGraphs, item);
-					g.save(outputFilePath);
-				}
+				Subgraphs_FeaturesGenerator<IntLabeledGraph, GraphNode, int> g = new Subgraphs_FeaturesGenerator<IntLabeledGraph, GraphNode, int>();
+				g.train(sampledGraphs, item);
+				g.save(outputFilePath);
+
 			}
 		}
 
@@ -1198,9 +1191,9 @@ namespace PADD_WithNeuralNets
 		/// </summary>
 		/// <param name="domainName"></param>
 		/// <returns></returns>
-		public static List<MyLabeledGraph> sampleGraphs(string domainName)
+		public static List<IntLabeledGraph> sampleGraphs(string domainName)
 		{
-			List<MyLabeledGraph> res = new List<MyLabeledGraph>();
+			List<IntLabeledGraph> res = new List<IntLabeledGraph>();
 			string statesFolder = Path.Combine(@"B:\SAS_Data\", domainName, "uniqueStates");
 
 			int samplesPerFile = 1000;
@@ -1224,7 +1217,7 @@ namespace PADD_WithNeuralNets
 			Console.WriteLine("parsing states at " + DateTime.Now);
 			var statesWithProblems = selectedLines.Select(q => Helper.ReconstructState(q.Split("\t").First())).ToList();
 			selectedLines.Clear();
-			(Func<Microsoft.Msagl.Drawing.Node, float[]> labelingFunc, int labelSize) labelingData = default;
+			(Func<Microsoft.Msagl.Drawing.Node, int> labelingFunc, int labelSize) labelingData = default;
 			Console.WriteLine("Computing graphs at " + DateTime.Now);
 			long completed = 1;
 			foreach (var item in statesWithProblems)
@@ -1239,13 +1232,13 @@ namespace PADD_WithNeuralNets
 				var graph = KnowledgeExtractionGraphs.computeObjectGraph(problem).toMSAGLGraph();
 				if (labelingData == default)
 					labelingData = UtilsMethods.getLabelingFunction(graph);
-				res.Add(MyLabeledGraph.createFromMSAGLGraph(graph, labelingData.labelingFunc, labelingData.labelSize));
+				res.Add(IntLabeledGraph.createFromMSAGLGraph(graph, labelingData.labelingFunc));
 			}
 
 			return res;
 		}
 
-		public static void testNeuralNetHeuristic(string sasFilePath, string storedNetPath, string generatorPath, int maxTime, string domain, bool storeSamples, bool useFullGenerator)
+		public static void testNeuralNetHeuristic(string sasFilePath, string storedNetPath, string generatorPath, int maxTime, string domain, bool storeSamples)
 		{
 			bool useFFasFeature = true;
 			Problem p = new Problem(sasFilePath, false);
@@ -1265,7 +1258,7 @@ namespace PADD_WithNeuralNets
 
 			SimpleFFNetHeuristic h = storeSamples ?
 				new SimpleFFNetHeuristic(generatorPath, storedNetPath, p, useFFasFeature, TargetTransformationType.none, domainSolver, generatorPath) :
-				new SimpleFFNetHeuristic(generatorPath, storedNetPath, p, useFFasFeature, TargetTransformationType.none, useFullGenerator: useFullGenerator);
+				new SimpleFFNetHeuristic(generatorPath, storedNetPath, p, useFFasFeature, TargetTransformationType.none);
 
 			var result = PADD_Support.SupportMethods.runPlanner(sasFilePath, h, maxTimeMinutes: maxTime);
 

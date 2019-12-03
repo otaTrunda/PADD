@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Msagl.Drawing;
 using System.Windows.Forms;
 using PADD_Support;
+using Utils.ExtensionMethods;
 
 namespace PADD.DomainDependentSolvers.Zenotravel
 {
@@ -574,7 +575,7 @@ namespace PADD.DomainDependentSolvers.Zenotravel
 				var result = new List<HashSet<int>>();
 				result.AddRange(enforcedActions.startLeaves);
 				result.AddRange(POPlan);
-				result.AddRange(enforcedActions.endLeaves, reverse: true);
+				result.AddRange(enforcedActions.endLeaves.Backwards());
 				return result;
 			});
 

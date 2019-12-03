@@ -6,6 +6,7 @@ using System.Drawing;
 using System.Linq;
 using System.IO;
 using System.Windows.Forms;
+using PADD_Support.KnowledgeExtraction;
 
 namespace PADD_Support
 {

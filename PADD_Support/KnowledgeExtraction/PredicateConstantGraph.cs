@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 using Microsoft.Msagl.Drawing;
-using NeuralNetSpecificUtils.Graphs;
+using GraphUtils.Graphs;
 using PAD.Planner.PDDL;
 
 namespace PADD_Support.KnowledgeExtraction
@@ -197,9 +197,9 @@ namespace PADD_Support.KnowledgeExtraction
 			return problem.IDManager.Types.GetNameFromID(typeID) + "\n[type]";
 		}
 
-		public MyLabeledGraph ToMyGraph()
+		public IntLabeledGraph ToMyGraph()
 		{
-			MyLabeledGraph res = new MyLabeledGraph();
+			IntLabeledGraph res = new IntLabeledGraph();
 
 			throw new Exception();
 
