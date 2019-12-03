@@ -311,7 +311,9 @@ namespace PADD_WithNeuralNets
 						break;
 					case HeuristicType.domainSolver_NN:
 						var q = int.Parse(Path.GetFileNameWithoutExtension(hFactory.featuresGenPath).Split('_').Last());
-						h = new WeightedSumHeuristic(new List<Tuple<IHeuristic, double>>() { Tuple.Create((IHeuristic)new NoisyPerfectHeuristic(problem, type, noiseMap.getVal(problemID)), (q - 1) * weightMap.getVal(problemID)), Tuple.Create((IHeuristic)h, 1.0) });
+						h = new WeightedSumHeuristic(new List<Tuple<IHeuristic, double>>() { Tuple.Create(
+							(IHeuristic)new NoisyPerfectHeuristic(problem, type, new List<HeuristicType>(), noiseMap.getVal(problemID)), (q - 1) * weightMap.getVal(problemID)),
+							Tuple.Create((IHeuristic)h, 1.0) });
 						break;
 					case HeuristicType.net:
 						//nothing here
@@ -919,7 +921,7 @@ namespace PADD_WithNeuralNets
 		/// <param name="domainName"></param>
 		/// <param name="outputFile"></param>
 		/// <param name="domain"></param>
-		public static void storeStatesForTraining(string domainName, DomainType domain)
+		public static void storeStatesForTraining(string domainName, DomainType domain, List<HeuristicType> otherHeuristics)
 		{
 			var problems = PADD_Support.SupportMethods.LoadSASProblemsForDomain(domainName);
 			foreach (var item in problems)
@@ -932,8 +934,6 @@ namespace PADD_WithNeuralNets
 
 				var outputFile = Path.Combine(outputDir, Path.GetFileNameWithoutExtension(item.GetInputFilePath()) + ".tsv");
 
-
-
 				/*
 				var directory = Path.GetDirectoryName(item.GetInputFilePath());
 				var outputDir = Path.Combine(directory, "states");
@@ -945,7 +945,7 @@ namespace PADD_WithNeuralNets
 
 				if (File.Exists(outputFile))
 					continue;
-				AStarSearchEnumerator.storeStatesAsTSV(outputFile, new List<Problem>() { item }, domain);
+				AStarSearchEnumerator.storeStatesAsTSV(outputFile, new List<Problem>() { item }, domain, otherHeuristics, repeats: 1);
 			}
 
 		}

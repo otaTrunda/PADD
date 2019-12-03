@@ -203,7 +203,7 @@ namespace PADD_WithNeuralNets
 		{
 			//SupportMethods.printTestErrors("zenotravel", true); return;
 			//RunFakeNetworks(args);
-			SupportMethods.storeStatesForTraining("blocks", PADD.DomainDependentSolvers.DomainType.Blocks);
+			SupportMethods.storeStatesForTraining("blocks", PADD.DomainDependentSolvers.DomainType.Blocks, new List<HeuristicType>() { HeuristicType.FF });
 		}
 		
 	}

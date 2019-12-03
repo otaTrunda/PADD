@@ -199,13 +199,20 @@ namespace PADD_Support
 	public class NoisyPerfectHeuristic : SpecificSolverHeuristic
 	{
 		private double noisePercentage;
-		public List<(PAD.Planner.IState, double)> perfectDistances;
+		public Dictionary<PAD.Planner.IState, (double realVal, List<double> heuristicsVals)> perfectDistances;
 		public double multiplier = 1;
+
+		/// <summary>
+		/// Other heuristics that are evaluated on stored states.
+		/// </summary>
+		private List<Heuristic> otherHeuristics;
 
 		protected override double GetValueImpl(PAD.Planner.IState state)
 		{
 			var val = base.GetValueImpl(state);
-			perfectDistances.Add((state, val));
+			var heuristicVals = otherHeuristics.Select(h => h.GetValue(state)).ToList();
+
+			perfectDistances.Add(state, (val, heuristicVals));
 			if (val <= 0)
 				return 0;
 			var res = MathNet.Numerics.Distributions.Normal.Sample(val, val * noisePercentage);
@@ -217,11 +224,12 @@ namespace PADD_Support
 			return val;
 		}
 
-		public NoisyPerfectHeuristic(PAD.Planner.IProblem problem, DomainType domain, double noisePercentage = 1d / 6)
+		public NoisyPerfectHeuristic(PAD.Planner.IProblem problem, DomainType domain, List<HeuristicType> otherHeuristics, double noisePercentage = 1d / 6)
 			: base(problem, domain)
 		{
 			this.noisePercentage = noisePercentage;
-			this.perfectDistances = new List<(PAD.Planner.IState, double)>();
+			this.perfectDistances = new Dictionary<PAD.Planner.IState, (double realVal, List<double> heuristicsVals)>();
+			this.otherHeuristics = otherHeuristics.Select(t => HeuristicFactory.Create(t, problem)).ToList();
 		}
 
 		public override string GetDescription()

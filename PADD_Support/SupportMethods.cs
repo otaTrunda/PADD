@@ -35,7 +35,7 @@ namespace PADD_Support
 
 		public static IEnumerable<Problem> LoadSASProblemsForDomain(string domainName)
 		{
-			string folderPath = Path.Combine(@"C:\Users\Trunda_Otakar\Documents\Visual Studio 2017\Projects\PADD - NEW\PADD\PADD\bin\tests\benchmarksSAS_ALL_withoutAxioms", domainName);
+			string folderPath = Path.Combine(SAS_all_WithoutAxioms, domainName);
 			var filesOrderedBySize = Directory.EnumerateFiles(folderPath).Where(x => Path.GetExtension(x) == ".sas").Select(q => (q, new FileInfo(q))).OrderBy(q => q.Item2.Length).ToList();
 			foreach (var item in filesOrderedBySize)
 			{
@@ -50,7 +50,7 @@ namespace PADD_Support
 			string problemName = splitted[1];
 			string stateAsString = splitted[2];
 
-			string sasProblemPath = Path.Combine(@"C:\Users\Trunda_Otakar\Documents\Visual Studio 2017\Projects\PADD - NEW\PADD\PADD\bin\tests\benchmarksSAS_ALL_withoutAxioms", domainName, problemName);
+			string sasProblemPath = Path.Combine(SAS_all_WithoutAxioms, domainName, problemName);
 			Problem p = new Problem(sasProblemPath, false);
 			IState state = State.Parse(stateAsString);
 
@@ -812,6 +812,27 @@ namespace PADD_Support
 		heurFile_Mean,
 		doubleListFF_FileMedian,
 		doubleListFF_FileMean,
+	}
+
+	public static class HeuristicFactory
+	{
+		public static Heuristic Create(HeuristicType type, PAD.Planner.IProblem p)
+		{
+			switch (type)
+			{
+				case HeuristicType.FF:
+					return new FFHeuristic(p);
+				case HeuristicType.net:
+				case HeuristicType.sum:
+				case HeuristicType.max:
+				case HeuristicType.min:
+				case HeuristicType.weighted10:
+				case HeuristicType.doubleList:
+				case HeuristicType.domainSolver_NN:
+				default:
+					throw new NotImplementedException();
+			}
+		}
 	}
 
 	public enum HeuristicType

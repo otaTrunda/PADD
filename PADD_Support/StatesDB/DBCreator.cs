@@ -249,7 +249,7 @@ namespace PADD.StatesDB
 		Problem problem;
 		IState originalInitialState;
 
-		public IEnumerable<(Problem planningProblem, IState state, double trueGoalDistance)> enumerateStatesWithDistances(int repeats = 10)
+		public IEnumerable<(Problem planningProblem, IState state, double trueGoalDistance, List<double> heuristicValues)> enumerateStatesWithDistances(int repeats = 10)
 		{
 			for (int i = 0; i < repeats; i++)
 			{
@@ -262,7 +262,7 @@ namespace PADD.StatesDB
 
 				foreach (var item in h.perfectDistances)
 				{
-					yield return (problem, (IState)item.Item1, item.Item2);
+					yield return (problem, (IState)item.Key, item.Value.realVal, item.Value.heuristicsVals);
 				}
 
 				Console.WriteLine();
@@ -294,22 +294,23 @@ namespace PADD.StatesDB
 			return linesCount;
 		}
 
-		public AStarSearchEnumerator(Problem p, DomainType domain, double noisePercentage)
+		public AStarSearchEnumerator(Problem p, DomainType domain, double noisePercentage, List<HeuristicType> otherHeuristics)
 		{
 			var planLengthMinMax = getPlanLengthMinMax(p);
 			Utils.Transformations.Mapping m = new Utils.Transformations.LinearMapping(planLengthMinMax.min, planLengthMinMax.max, 1, 2);
 
 			problem = p;
-			h = new NoisyPerfectHeuristic(p, domain, noisePercentage);
-			h.multiplier = m.getVal(getPlanLength(p));
+			h = new NoisyPerfectHeuristic(p, domain, otherHeuristics, noisePercentage);
+			//h.multiplier = m.getVal(getPlanLength(p));
+			h.multiplier = 0;   //ignores the heuristic, uses blind search (used when we want to have more states returned)
 			originalInitialState = p.InitialState;
 		}
 
-		public static IEnumerable<(Problem planningProblem, IState state, double trueGoalDistance)> enumerateStatesWithDistances(List<Problem> problems, DomainType domain, int repeats = 10)
+		public static IEnumerable<(Problem planningProblem, IState state, double trueGoalDistance, List<double> heuristicValues)> enumerateStatesWithDistances(List<Problem> problems, DomainType domain, List<HeuristicType> otherHeuristics, int repeats = 10)
 		{
 			foreach (var item in problems)
 			{
-				AStarSearchEnumerator s = new AStarSearchEnumerator(item, domain, noisePercentage: 1d/100);
+				AStarSearchEnumerator s = new AStarSearchEnumerator(item, domain, noisePercentage: 1d/100, otherHeuristics);
 				var res = s.enumerateStatesWithDistances(repeats);
 				foreach (var resItem in res)
 				{
@@ -318,10 +319,10 @@ namespace PADD.StatesDB
 			}
 		}
 
-		public static void storeStatesAsTSV(string tsvFile, List<Problem> problems, DomainType domain, int repeats = 10)
+		public static void storeStatesAsTSV(string tsvFile, List<Problem> problems, DomainType domain, List<HeuristicType> otherHeuristics, int repeats = 10)
 		{
-			var states = enumerateStatesWithDistances(problems, domain, repeats);
-			File.WriteAllLines(tsvFile, states.Select(x => x.state.GetInfoString(x.planningProblem) + "\t" + x.trueGoalDistance));
+			var states = enumerateStatesWithDistances(problems, domain, otherHeuristics, repeats);
+			File.WriteAllLines(tsvFile, states.Select(x => x.state.GetInfoString(x.planningProblem) + "\t" + x.trueGoalDistance + "\t" + string.Join("\t", x.heuristicValues)));
 		}
 	}
 }
